@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Agent Commerce Handoff",
+  "type": "object",
+  "required": [
+    "handoff_id",
+    "from",
+    "to",
+    "created_at",
+    "status",
+    "objective",
+    "summary",
+    "evidence_paths",
+    "requested_action",
+    "limitations"
+  ],
+  "properties": {
+    "handoff_id": {"type": "string", "minLength": 1},
+    "from": {"enum": ["hermes", "chatgpt"]},
+    "to": {"enum": ["hermes", "chatgpt"]},
+    "created_at": {"type": "string", "format": "date-time"},
+    "status": {"enum": ["draft", "ready", "reviewed", "blocked", "complete"]},
+    "objective": {"type": "string"},
+    "summary": {"type": "string"},
+    "evidence_paths": {"type": "array", "items": {"type": "string"}},
+    "requested_action": {"type": "string"},
+    "limitations": {"type": "array", "items": {"type": "string"}},
+    "source_commit": {"type": ["string", "null"]},
+    "checksums": {"type": "object", "additionalProperties": {"type": "string"}}
+  },
+  "additionalProperties": true
+}
