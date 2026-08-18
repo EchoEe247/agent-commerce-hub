@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "project": "agent-commerce-hub",
+  "status": "initialized",
+  "active_focus": "commerce-market-research",
+  "current_research": ["agent402", "the402"],
+  "paused_channels": ["hypawave"],
+  "canonical_fiat_exit": "coinbase",
+  "notes": [
+    "Repository initialized as the shared Hermes/ChatGPT coordination layer.",
+    "No wallet credentials or secrets belong in this repository."
+  ]
+}
