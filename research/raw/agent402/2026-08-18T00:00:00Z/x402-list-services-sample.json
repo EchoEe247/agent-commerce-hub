@@ -1,0 +1,1895 @@
+{
+  "data": [
+    {
+      "slug": "general-relay",
+      "name": "General Relay",
+      "description": "Real-time maritime data, paid per call. Ask for a vessel by MMSI and get its position and metadata.",
+      "base_url": "https://api.generalrelay.xyz",
+      "website_url": "https://generalrelay.xyz",
+      "category": "Data",
+      "source": "submitted",
+      "status": "online",
+      "verified": false,
+      "payment_ready": true,
+      "endpoint_count": 1,
+      "min_price_usd": 0.005,
+      "networks": [
+        "SOL"
+      ],
+      "networks_caip2": [
+        "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp"
+      ],
+      "uptime_24h": 100,
+      "avg_response_time_ms": 808,
+      "last_checked_at": "2026-08-18T14:31:00.317Z",
+      "created_at": "2026-08-17T16:06:54.174Z",
+      "assessment": {
+        "compliance_grade": "A",
+        "compliance_passed": 13,
+        "compliance_total": 13,
+        "compliance_failed_checks": [],
+        "compliance_staleness": {
+          "probe_failing": false,
+          "last_success_at": "2026-08-18T14:31:00.330Z",
+          "envelope_captured_at": "2026-08-17T16:07:00.964Z"
+        },
+        "reliability_uptime_30d": 100,
+        "response_p95_ms": 1874,
+        "price_usd": 0.005,
+        "category_percentile": 37,
+        "price_stability": 1,
+        "price_max_usd": 0.005,
+        "category_percentile_max": 12,
+        "endpoint_count": 1,
+        "distinct_price_count": 1,
+        "risk_level": "clean",
+        "capability_tags": null,
+        "summary": null,
+        "traction": {
+          "status": "measured",
+          "volume_usd_30d": 0,
+          "tx_count_30d": 0,
+          "unique_buyers_30d": 0,
+          "last_settlement_at": null,
+          "top_buyer_share_30d": null,
+          "trend_7d_vs_30d": null,
+          "shared_payout": false,
+          "shared_with": 0,
+          "measured_networks": [
+            "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdpKuc147dw2N9d"
+          ],
+          "first_settlement_at": null,
+          "volume_usd_all_time": 0,
+          "tx_count_all_time": 0,
+          "median_settlement_usd_30d": null,
+          "max_settlement_usd_30d": null,
+          "settled_via": [],
+          "settled_via_detail": [],
+          "shared_with_services": [],
+          "pro_quota_share": 1,
+          "caveat": "Conservative undercount: only USDC settlements via facilitators we measure are counted. A measured floor, not an estimate.",
+          "all_time_caveat": "All-time is floored at the start of our harvest window, not the service full history."
+        },
+        "updated_at": "2026-08-18T10:43:00.229Z"
+      }
+    },
+    {
+      "slug": "synthora",
+      "name": "SYNTHORA",
+      "description": "On-chain and real-world data intelligence for autonomous agents: 57 x402-native endpoints (wallet enrichment, sanctions/AML screening, DeFi/market data, LLM inference, stock intel, email/DNS/security tooling). USDC on Base mainnet, Ed25519-signed responses. Canonical machine-readable catalogue: https://api.hergertsynthora.com/.well-known/x402.json",
+      "base_url": "https://api.hergertsynthora.com",
+      "website_url": "https://hergertsynthora.com",
+      "category": "Data",
+      "source": "submitted",
+      "status": "online",
+      "verified": false,
+      "payment_ready": true,
+      "endpoint_count": 49,
+      "min_price_usd": 0.005,
+      "networks": [
+        "BSE"
+      ],
+      "networks_caip2": [
+        "eip155:8453"
+      ],
+      "uptime_24h": 100,
+      "avg_response_time_ms": 75,
+      "last_checked_at": "2026-08-18T14:38:03.306Z",
+      "created_at": "2026-08-17T15:41:54.148Z",
+      "assessment": {
+        "compliance_grade": "A",
+        "compliance_passed": 13,
+        "compliance_total": 14,
+        "compliance_failed_checks": [
+          "x402_version_current"
+        ],
+        "compliance_staleness": {
+          "probe_failing": false,
+          "last_success_at": "2026-08-18T14:38:03.311Z",
+          "envelope_captured_at": "2026-08-17T15:42:04.180Z"
+        },
+        "reliability_uptime_30d": 100,
+        "response_p95_ms": 91,
+        "price_usd": 0.005,
+        "category_percentile": 37,
+        "price_stability": 1,
+        "price_max_usd": 0.32,
+        "category_percentile_max": 89,
+        "endpoint_count": 49,
+        "distinct_price_count": 7,
+        "risk_level": "clean",
+        "capability_tags": null,
+        "summary": null,
+        "traction": {
+          "status": "measured",
+          "volume_usd_30d": 2.043,
+          "tx_count_30d": 111,
+          "unique_buyers_30d": 11,
+          "last_settlement_at": "2026-08-17T18:17:05Z",
+          "top_buyer_share_30d": 0.7621145374449338,
+          "trend_7d_vs_30d": 4.105307321166352,
+          "shared_payout": false,
+          "shared_with": 0,
+          "measured_networks": [
+            "eip155:8453"
+          ],
+          "first_settlement_at": "2026-06-29T13:00:17Z",
+          "volume_usd_all_time": 3.73,
+          "tx_count_all_time": 256,
+          "median_settlement_usd_30d": 0.005,
+          "max_settlement_usd_30d": 0.1,
+          "settled_via": [
+            "coinbase",
+            "payAI"
+          ],
+          "settled_via_detail": [
+            {
+              "id": "coinbase",
+              "volume_usd_30d": 1.993,
+              "tx_count_30d": 110
+            },
+            {
+              "id": "payAI",
+              "volume_usd_30d": 0.05,
+              "tx_count_30d": 1
+            }
+          ],
+          "shared_with_services": [],
+          "pro_quota_share": 1,
+          "caveat": "Conservative undercount: only USDC settlements via facilitators we measure are counted. A measured floor, not an estimate.",
+          "all_time_caveat": "All-time is floored at the start of our harvest window, not the service full history."
+        },
+        "updated_at": "2026-08-18T10:13:00.378Z"
+      }
+    },
+    {
+      "slug": "x402tap",
+      "name": "x402tap",
+      "description": "Pay-per-call x402 demo services on Base + Solana: live weather (Open-Meteo), dynamic-priced insights, usage-based generation, and a batch-settlement ping endpoint.",
+      "base_url": "https://x402tap.com",
+      "website_url": "https://x402tap.com",
+      "category": "Data",
+      "source": "submitted",
+      "status": "online",
+      "verified": false,
+      "payment_ready": true,
+      "endpoint_count": 5,
+      "min_price_usd": 0.001,
+      "networks": [
+        "BSE",
+        "SOL"
+      ],
+      "networks_caip2": [
+        "eip155:8453",
+        "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp"
+      ],
+      "uptime_24h": 100,
+      "avg_response_time_ms": 260,
+      "last_checked_at": "2026-08-18T14:32:01.386Z",
+      "created_at": "2026-08-17T15:19:50.354Z",
+      "assessment": {
+        "compliance_grade": "A",
+        "compliance_passed": 14,
+        "compliance_total": 14,
+        "compliance_failed_checks": [],
+        "compliance_staleness": {
+          "probe_failing": false,
+          "last_success_at": "2026-08-18T14:32:01.389Z",
+          "envelope_captured_at": "2026-08-18T10:32:01.256Z"
+        },
+        "reliability_uptime_30d": 100,
+        "response_p95_ms": 421,
+        "price_usd": 0.001,
+        "category_percentile": 10,
+        "price_stability": 0.5,
+        "price_max_usd": 0.05,
+        "category_percentile_max": 61,
+        "endpoint_count": 5,
+        "distinct_price_count": 2,
+        "risk_level": "clean",
+        "capability_tags": null,
+        "summary": null,
+        "traction": {
+          "status": "measured",
+          "volume_usd_30d": 0.05595,
+          "tx_count_30d": 23,
+          "unique_buyers_30d": 2,
+          "last_settlement_at": "2026-08-17T19:56:57Z",
+          "top_buyer_share_30d": 0.9463806970509383,
+          "trend_7d_vs_30d": 4.2857142857142865,
+          "shared_payout": false,
+          "shared_with": 0,
+          "measured_networks": [
+            "eip155:8453",
+            "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdpKuc147dw2N9d"
+          ],
+          "first_settlement_at": "2026-08-17T05:23:49Z",
+          "volume_usd_all_time": 0.06,
+          "tx_count_all_time": 23,
+          "median_settlement_usd_30d": 0.002,
+          "max_settlement_usd_30d": 0.01195,
+          "settled_via": [
+            "coinbase"
+          ],
+          "settled_via_detail": [
+            {
+              "id": "coinbase",
+              "volume_usd_30d": 0.05595,
+              "tx_count_30d": 23
+            }
+          ],
+          "shared_with_services": [],
+          "pro_quota_share": 1,
+          "caveat": "Conservative undercount: only USDC settlements via facilitators we measure are counted. A measured floor, not an estimate.",
+          "all_time_caveat": "All-time is floored at the start of our harvest window, not the service full history."
+        },
+        "updated_at": "2026-08-18T09:53:01.995Z"
+      }
+    },
+    {
+      "slug": "coprocesseur-d-terministe",
+      "name": "Coprocesseur d\u00e9terministe",
+      "description": "Calculs d\u00e9terministes v\u00e9rifiables pour agents IA : tableaux\r\nd'amortissement de pr\u00eat, distances g\u00e9od\u00e9siques, conversions\r\nd'unit\u00e9s. Chaque r\u00e9ponse inclut une preuve SHA-256 v\u00e9rifiable\r\nind\u00e9pendamment par le client, sans avoir \u00e0 faire confiance au\r\nserveur.",
+      "base_url": "https://x402.laboiteatubes.media",
+      "website_url": "https://x402.laboiteatubes.media",
+      "category": "Compute",
+      "source": "submitted",
+      "status": "online",
+      "verified": false,
+      "payment_ready": true,
+      "endpoint_count": 3,
+      "min_price_usd": 0.001,
+      "networks": [
+        "BSE"
+      ],
+      "networks_caip2": [
+        "eip155:8453"
+      ],
+      "uptime_24h": 100,
+      "avg_response_time_ms": 54,
+      "last_checked_at": "2026-08-18T14:39:00.125Z",
+      "created_at": "2026-08-17T15:10:56.113Z",
+      "assessment": {
+        "compliance_grade": "A",
+        "compliance_passed": 14,
+        "compliance_total": 14,
+        "compliance_failed_checks": [],
+        "compliance_staleness": {
+          "probe_failing": false,
+          "last_success_at": "2026-08-18T14:39:00.133Z",
+          "envelope_captured_at": "2026-08-17T15:11:00.647Z"
+        },
+        "reliability_uptime_30d": 100,
+        "response_p95_ms": 232,
+        "price_usd": 0.001,
+        "category_percentile": 25,
+        "price_stability": 1,
+        "price_max_usd": 0.003,
+        "category_percentile_max": 25,
+        "endpoint_count": 3,
+        "distinct_price_count": 2,
+        "risk_level": "clean",
+        "capability_tags": null,
+        "summary": null,
+        "traction": {
+          "status": "measured",
+          "volume_usd_30d": 0,
+          "tx_count_30d": 0,
+          "unique_buyers_30d": 0,
+          "last_settlement_at": null,
+          "top_buyer_share_30d": null,
+          "trend_7d_vs_30d": null,
+          "shared_payout": false,
+          "shared_with": 0,
+          "measured_networks": [
+            "eip155:8453"
+          ],
+          "first_settlement_at": null,
+          "volume_usd_all_time": 0,
+          "tx_count_all_time": 0,
+          "median_settlement_usd_30d": null,
+          "max_settlement_usd_30d": null,
+          "settled_via": [],
+          "settled_via_detail": [],
+          "shared_with_services": [],
+          "pro_quota_share": 1,
+          "caveat": "Conservative undercount: only USDC settlements via facilitators we measure are counted. A measured floor, not an estimate.",
+          "all_time_caveat": "All-time is floored at the start of our harvest window, not the service full history."
+        },
+        "updated_at": "2026-08-18T09:43:05.731Z"
+      }
+    },
+    {
+      "slug": "echo-sentiment-api",
+      "name": "Echo Sentiment API",
+      "description": "Pay-per-call XLM market intelligence: sentiment, quote, arbitrage, and Today's Weather (procedural PNG of market mood). x402 exact, USDC Base + Solana.",
+      "base_url": "https://api.6766587364.lol",
+      "website_url": "https://api.6766587364.lol",
+      "category": "Other",
+      "source": "submitted",
+      "status": "online",
+      "verified": false,
+      "payment_ready": true,
+      "endpoint_count": 1,
+      "min_price_usd": 0.01,
+      "networks": [
+        "BSE",
+        "SOL"
+      ],
+      "networks_caip2": [
+        "eip155:8453",
+        "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp"
+      ],
+      "uptime_24h": 69.77,
+      "avg_response_time_ms": 2114,
+      "last_checked_at": "2026-08-18T14:38:02.516Z",
+      "created_at": "2026-08-17T13:48:11.888Z",
+      "assessment": {
+        "compliance_grade": "A",
+        "compliance_passed": 14,
+        "compliance_total": 14,
+        "compliance_failed_checks": [],
+        "compliance_staleness": {
+          "probe_failing": false,
+          "last_success_at": "2026-08-18T14:38:02.521Z",
+          "envelope_captured_at": "2026-08-17T13:49:02.368Z"
+        },
+        "reliability_uptime_30d": 73.1,
+        "response_p95_ms": 3407,
+        "price_usd": 0.01,
+        "category_percentile": 66,
+        "price_stability": 0,
+        "price_max_usd": 0.01,
+        "category_percentile_max": 37,
+        "endpoint_count": 1,
+        "distinct_price_count": 1,
+        "risk_level": "clean",
+        "capability_tags": null,
+        "summary": null,
+        "traction": {
+          "status": "measured",
+          "volume_usd_30d": 0,
+          "tx_count_30d": 0,
+          "unique_buyers_30d": 0,
+          "last_settlement_at": null,
+          "top_buyer_share_30d": null,
+          "trend_7d_vs_30d": null,
+          "shared_payout": false,
+          "shared_with": 0,
+          "measured_networks": [
+            "eip155:8453",
+            "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdpKuc147dw2N9d"
+          ],
+          "first_settlement_at": null,
+          "volume_usd_all_time": 0,
+          "tx_count_all_time": 0,
+          "median_settlement_usd_30d": null,
+          "max_settlement_usd_30d": null,
+          "settled_via": [],
+          "settled_via_detail": [],
+          "shared_with_services": [],
+          "pro_quota_share": 1,
+          "caveat": "Conservative undercount: only USDC settlements via facilitators we measure are counted. A measured floor, not an estimate.",
+          "all_time_caveat": "All-time is floored at the start of our harvest window, not the service full history."
+        },
+        "updated_at": "2026-08-18T14:33:04.637Z"
+      }
+    },
+    {
+      "slug": "payan-catalog-health-checker",
+      "name": "Payan Catalog Health Checker",
+      "description": "4-cent x402 health check: hit a PayanAgent catalog endpoint and get live 402/accepts/payTo/uptime evidence as JSON. USDC on Base. No signup.",
+      "base_url": "https://payanagent.com",
+      "website_url": "https://payanagent.com",
+      "category": "Verification",
+      "source": "submitted",
+      "status": "online",
+      "verified": false,
+      "payment_ready": true,
+      "endpoint_count": 1,
+      "min_price_usd": 0.04,
+      "networks": [
+        "BSE"
+      ],
+      "networks_caip2": [
+        "eip155:8453"
+      ],
+      "uptime_24h": 100,
+      "avg_response_time_ms": 759,
+      "last_checked_at": "2026-08-18T14:37:00.856Z",
+      "created_at": "2026-08-17T13:48:09.525Z",
+      "assessment": {
+        "compliance_grade": "A",
+        "compliance_passed": 14,
+        "compliance_total": 14,
+        "compliance_failed_checks": [],
+        "compliance_staleness": {
+          "probe_failing": false,
+          "last_success_at": "2026-08-18T14:37:00.861Z",
+          "envelope_captured_at": "2026-08-17T13:49:00.749Z"
+        },
+        "reliability_uptime_30d": 100,
+        "response_p95_ms": 1459,
+        "price_usd": 0.04,
+        "category_percentile": 71,
+        "price_stability": 1,
+        "price_max_usd": 0.04,
+        "category_percentile_max": 32,
+        "endpoint_count": 1,
+        "distinct_price_count": 1,
+        "risk_level": "clean",
+        "capability_tags": null,
+        "summary": null,
+        "traction": {
+          "status": "measured",
+          "volume_usd_30d": 0,
+          "tx_count_30d": 0,
+          "unique_buyers_30d": 0,
+          "last_settlement_at": null,
+          "top_buyer_share_30d": null,
+          "trend_7d_vs_30d": null,
+          "shared_payout": false,
+          "shared_with": 0,
+          "measured_networks": [
+            "eip155:8453"
+          ],
+          "first_settlement_at": null,
+          "volume_usd_all_time": 0,
+          "tx_count_all_time": 0,
+          "median_settlement_usd_30d": null,
+          "max_settlement_usd_30d": null,
+          "settled_via": [],
+          "settled_via_detail": [],
+          "shared_with_services": [],
+          "pro_quota_share": 1,
+          "caveat": "Conservative undercount: only USDC settlements via facilitators we measure are counted. A measured floor, not an estimate.",
+          "all_time_caveat": "All-time is floored at the start of our harvest window, not the service full history."
+        },
+        "updated_at": "2026-08-18T14:33:04.563Z"
+      }
+    },
+    {
+      "slug": "trafficmonetize-btc-prediction-feed",
+      "name": "TrafficMonetize BTC Prediction Feed",
+      "description": "Proprietary BTC 15-minute cycle Kalshi prediction feed \u2014 740 verified trades, 82.7% win rate all-time (84.1% last 7d, 82.8% last 30d). Automated Kalshi trading bot signals delivered via x402 micropayments. Pay USDC on Base mainnet OR Solana mainnet. SSE stream: variable \u2014 any multiple of $10 USDC ($1/signal, $10=10 signals up to $1000=1000). Snapshot endpoints: 10.00 USDC each. Free aggregate stats at /api/v1/data-hub/btc/stats.",
+      "base_url": "https://trafficmonetize.com",
+      "website_url": "https://trafficmonetize.com",
+      "category": "Finance",
+      "source": "submitted",
+      "status": "online",
+      "verified": false,
+      "payment_ready": true,
+      "endpoint_count": 4,
+      "min_price_usd": 10,
+      "networks": [
+        "BSE",
+        "SOL"
+      ],
+      "networks_caip2": [
+        "eip155:8453",
+        "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp"
+      ],
+      "uptime_24h": 100,
+      "avg_response_time_ms": 221,
+      "last_checked_at": "2026-08-18T14:37:00.353Z",
+      "created_at": "2026-08-17T13:48:06.945Z",
+      "assessment": {
+        "compliance_grade": "A",
+        "compliance_passed": 14,
+        "compliance_total": 14,
+        "compliance_failed_checks": [],
+        "compliance_staleness": {
+          "probe_failing": false,
+          "last_success_at": "2026-08-18T14:37:00.357Z",
+          "envelope_captured_at": "2026-08-17T13:49:01.018Z"
+        },
+        "reliability_uptime_30d": 100,
+        "response_p95_ms": 408,
+        "price_usd": 10,
+        "category_percentile": 98,
+        "price_stability": 1,
+        "price_max_usd": 10,
+        "category_percentile_max": 95,
+        "endpoint_count": 4,
+        "distinct_price_count": 1,
+        "risk_level": "clean",
+        "capability_tags": null,
+        "summary": null,
+        "traction": {
+          "status": "measured",
+          "volume_usd_30d": 0,
+          "tx_count_30d": 0,
+          "unique_buyers_30d": 0,
+          "last_settlement_at": null,
+          "top_buyer_share_30d": null,
+          "trend_7d_vs_30d": null,
+          "shared_payout": false,
+          "shared_with": 0,
+          "measured_networks": [
+            "eip155:8453",
+            "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdpKuc147dw2N9d"
+          ],
+          "first_settlement_at": null,
+          "volume_usd_all_time": 0,
+          "tx_count_all_time": 0,
+          "median_settlement_usd_30d": null,
+          "max_settlement_usd_30d": null,
+          "settled_via": [],
+          "settled_via_detail": [],
+          "shared_with_services": [],
+          "pro_quota_share": 1,
+          "caveat": "Conservative undercount: only USDC settlements via facilitators we measure are counted. A measured floor, not an estimate.",
+          "all_time_caveat": "All-time is floored at the start of our harvest window, not the service full history."
+        },
+        "updated_at": "2026-08-18T14:33:05.948Z"
+      }
+    },
+    {
+      "slug": "vianerds-page-signal-audit",
+      "name": "Vianerds Page Signal Audit",
+      "description": "Deterministic pay-per-call audit for supplied static HTML. Returns a 0-100 launch-risk baseline with exact SEO, social sharing, accessibility and markup evidence plus prioritized fixes. The endpoint does not fetch or mutate websites and makes no ranking claim.",
+      "base_url": "https://vianerds.com",
+      "website_url": "https://vianerds.com/x402/",
+      "category": "Verification",
+      "source": "submitted",
+      "status": "online",
+      "verified": false,
+      "payment_ready": true,
+      "endpoint_count": 1,
+      "min_price_usd": 5,
+      "networks": [
+        "BSE"
+      ],
+      "networks_caip2": [
+        "eip155:8453"
+      ],
+      "uptime_24h": 100,
+      "avg_response_time_ms": 572,
+      "last_checked_at": "2026-08-18T14:37:02.326Z",
+      "created_at": "2026-08-17T13:48:04.271Z",
+      "assessment": {
+        "compliance_grade": "A",
+        "compliance_passed": 14,
+        "compliance_total": 14,
+        "compliance_failed_checks": [],
+        "compliance_staleness": {
+          "probe_failing": false,
+          "last_success_at": "2026-08-18T14:37:02.333Z",
+          "envelope_captured_at": "2026-08-17T13:49:00.543Z"
+        },
+        "reliability_uptime_30d": 100,
+        "response_p95_ms": 1172,
+        "price_usd": 5,
+        "category_percentile": 99,
+        "price_stability": 1,
+        "price_max_usd": 5,
+        "category_percentile_max": 97,
+        "endpoint_count": 1,
+        "distinct_price_count": 1,
+        "risk_level": "clean",
+        "capability_tags": null,
+        "summary": null,
+        "traction": {
+          "status": "measured",
+          "volume_usd_30d": 0,
+          "tx_count_30d": 0,
+          "unique_buyers_30d": 0,
+          "last_settlement_at": null,
+          "top_buyer_share_30d": null,
+          "trend_7d_vs_30d": null,
+          "shared_payout": false,
+          "shared_with": 0,
+          "measured_networks": [
+            "eip155:8453"
+          ],
+          "first_settlement_at": null,
+          "volume_usd_all_time": 0,
+          "tx_count_all_time": 0,
+          "median_settlement_usd_30d": null,
+          "max_settlement_usd_30d": null,
+          "settled_via": [],
+          "settled_via_detail": [],
+          "shared_with_services": [],
+          "pro_quota_share": 1,
+          "caveat": "Conservative undercount: only USDC settlements via facilitators we measure are counted. A measured floor, not an estimate.",
+          "all_time_caveat": "All-time is floored at the start of our harvest window, not the service full history."
+        },
+        "updated_at": "2026-08-18T14:33:04.744Z"
+      }
+    },
+    {
+      "slug": "forge-launch-signals-x402-verifier",
+      "name": "Forge Launch Signals + x402 Verifier",
+      "description": "Two paid endpoints, USDC on Base (exact scheme, xpay facilitator). GET /launch-signals ($0.03): live pump.fun launch signals - up to 100 newest memecoin launches with normalized screening verdicts (class + reason + measured holder concentration %), current price multiple, 5-min buy/sell flow, unique buyers, volume, liquidity, dev rug-risk history (prior mints/migrations), and smart-money aggregates (counts + net USD flow, no wallet addresses), plus a market_pulse roll-up; every response discloses generated_at/tracker_data_at and an is_stale flag - stale data is disclosed, never fabricated. POST /verify-x402 ($0.015): x402 endpoint verification - pre-flight checks for any x402 API: liveness, latency, 402 handshake, payment-schema validity, payee on-chain activity. Free /health and / self-description.",
+      "base_url": "https://forgesignals.org",
+      "website_url": "https://forgesignals.org",
+      "category": "Data",
+      "source": "submitted",
+      "status": "online",
+      "verified": false,
+      "payment_ready": true,
+      "endpoint_count": 2,
+      "min_price_usd": 0.015,
+      "networks": [
+        "BSE"
+      ],
+      "networks_caip2": [
+        "eip155:8453"
+      ],
+      "uptime_24h": 100,
+      "avg_response_time_ms": 689,
+      "last_checked_at": "2026-08-18T14:37:05.560Z",
+      "created_at": "2026-08-17T13:48:01.435Z",
+      "assessment": {
+        "compliance_grade": "A",
+        "compliance_passed": 14,
+        "compliance_total": 14,
+        "compliance_failed_checks": [],
+        "compliance_staleness": {
+          "probe_failing": false,
+          "last_success_at": "2026-08-18T14:37:05.565Z",
+          "envelope_captured_at": "2026-08-17T13:49:00.773Z"
+        },
+        "reliability_uptime_30d": 100,
+        "response_p95_ms": 1293,
+        "price_usd": 0.015,
+        "category_percentile": 67,
+        "price_stability": 1,
+        "price_max_usd": 0.03,
+        "category_percentile_max": 50,
+        "endpoint_count": 2,
+        "distinct_price_count": 2,
+        "risk_level": "clean",
+        "capability_tags": null,
+        "summary": null,
+        "traction": {
+          "status": "measured",
+          "volume_usd_30d": 0.17,
+          "tx_count_30d": 8,
+          "unique_buyers_30d": 1,
+          "last_settlement_at": "2026-08-17T21:38:55Z",
+          "top_buyer_share_30d": 1,
+          "trend_7d_vs_30d": 4.285714285714286,
+          "shared_payout": false,
+          "shared_with": 0,
+          "measured_networks": [
+            "eip155:8453"
+          ],
+          "first_settlement_at": "2026-08-17T07:01:25Z",
+          "volume_usd_all_time": 0.17,
+          "tx_count_all_time": 8,
+          "median_settlement_usd_30d": 0.02,
+          "max_settlement_usd_30d": 0.03,
+          "settled_via": [
+            "coinbase"
+          ],
+          "settled_via_detail": [
+            {
+              "id": "coinbase",
+              "volume_usd_30d": 0.17,
+              "tx_count_30d": 8
+            }
+          ],
+          "shared_with_services": [],
+          "pro_quota_share": 1,
+          "caveat": "Conservative undercount: only USDC settlements via facilitators we measure are counted. A measured floor, not an estimate.",
+          "all_time_caveat": "All-time is floored at the start of our harvest window, not the service full history."
+        },
+        "updated_at": "2026-08-18T14:33:03.745Z"
+      }
+    },
+    {
+      "slug": "bananabanana",
+      "name": "BananaBanana",
+      "description": "Pay-per-call AI image, video and speech generation on Google's Nano Banana, Veo 3.1 and Gemini TTS models. Images from $0.03, video from $0.30, speech $0.01 per 200 characters. No account, no API key, no prepaid balance \u2014 an unpaid POST answers 402 with the exact price for the given arguments.",
+      "base_url": "https://bananabanana.pro/api/x402",
+      "website_url": "https://bananabanana.pro/mcp",
+      "category": "AI",
+      "source": "submitted",
+      "status": "offline",
+      "verified": false,
+      "payment_ready": false,
+      "endpoint_count": 1,
+      "min_price_usd": null,
+      "networks": [],
+      "networks_caip2": [],
+      "uptime_24h": 0,
+      "avg_response_time_ms": null,
+      "last_checked_at": "2026-08-18T11:00:00.304Z",
+      "created_at": "2026-08-17T13:47:58.642Z",
+      "assessment": {
+        "compliance_grade": "unknown",
+        "compliance_passed": 0,
+        "compliance_total": 0,
+        "compliance_failed_checks": [],
+        "compliance_staleness": {
+          "probe_failing": true,
+          "last_success_at": null,
+          "envelope_captured_at": null
+        },
+        "reliability_uptime_30d": 0,
+        "response_p95_ms": null,
+        "price_usd": null,
+        "category_percentile": null,
+        "price_stability": null,
+        "price_max_usd": null,
+        "category_percentile_max": null,
+        "endpoint_count": 0,
+        "distinct_price_count": 0,
+        "risk_level": "clean",
+        "capability_tags": null,
+        "summary": null,
+        "traction": {
+          "status": "no-payto",
+          "volume_usd_30d": null,
+          "tx_count_30d": null,
+          "unique_buyers_30d": null,
+          "last_settlement_at": null,
+          "top_buyer_share_30d": null,
+          "trend_7d_vs_30d": null,
+          "shared_payout": false,
+          "shared_with": 0,
+          "measured_networks": [],
+          "first_settlement_at": null,
+          "volume_usd_all_time": null,
+          "tx_count_all_time": null,
+          "median_settlement_usd_30d": null,
+          "max_settlement_usd_30d": null,
+          "settled_via": [],
+          "settled_via_detail": [],
+          "shared_with_services": [],
+          "pro_quota_share": null,
+          "caveat": "Conservative undercount: only USDC settlements via facilitators we measure are counted. A measured floor, not an estimate.",
+          "all_time_caveat": "All-time is floored at the start of our harvest window, not the service full history."
+        },
+        "updated_at": "2026-08-18T14:33:03.521Z"
+      }
+    },
+    {
+      "slug": "entropy-index",
+      "name": "Entropy Index",
+      "description": "Thermodynamic risk intelligence for agentic capital. Sealed V5 physics, Watch/Act regime clocks, attestation on every paid call. Crisis registered six months before Lehman. Probe at $0.07 USDC on Base; clock at $5 before size.",
+      "base_url": "https://www.entropyindex.com",
+      "website_url": "https://www.entropyindex.com",
+      "category": "Finance",
+      "source": "submitted",
+      "status": "online",
+      "verified": false,
+      "payment_ready": true,
+      "endpoint_count": 7,
+      "min_price_usd": 0.07,
+      "networks": [
+        "AVX",
+        "BSE"
+      ],
+      "networks_caip2": [
+        "eip155:43114",
+        "eip155:8453"
+      ],
+      "uptime_24h": 100,
+      "avg_response_time_ms": 174,
+      "last_checked_at": "2026-08-18T14:34:01.918Z",
+      "created_at": "2026-08-17T13:47:55.595Z",
+      "assessment": {
+        "compliance_grade": "A",
+        "compliance_passed": 14,
+        "compliance_total": 14,
+        "compliance_failed_checks": [],
+        "compliance_staleness": {
+          "probe_failing": false,
+          "last_success_at": "2026-08-18T14:34:01.921Z",
+          "envelope_captured_at": "2026-08-17T21:15:01.606Z"
+        },
+        "reliability_uptime_30d": 100,
+        "response_p95_ms": 277,
+        "price_usd": 0.07,
+        "category_percentile": 78,
+        "price_stability": 1,
+        "price_max_usd": 0.07,
+        "category_percentile_max": 63,
+        "endpoint_count": 7,
+        "distinct_price_count": 1,
+        "risk_level": "clean",
+        "capability_tags": null,
+        "summary": null,
+        "traction": {
+          "status": "measured",
+          "volume_usd_30d": 1.19,
+          "tx_count_30d": 17,
+          "unique_buyers_30d": 1,
+          "last_settlement_at": "2026-08-18T01:49:23Z",
+          "top_buyer_share_30d": 1,
+          "trend_7d_vs_30d": 4.285714285714286,
+          "shared_payout": false,
+          "shared_with": 0,
+          "measured_networks": [
+            "eip155:8453"
+          ],
+          "first_settlement_at": "2026-08-17T05:09:09Z",
+          "volume_usd_all_time": 1.19,
+          "tx_count_all_time": 17,
+          "median_settlement_usd_30d": 0.07,
+          "max_settlement_usd_30d": 0.07,
+          "settled_via": [
+            "coinbase"
+          ],
+          "settled_via_detail": [
+            {
+              "id": "coinbase",
+              "volume_usd_30d": 1.19,
+              "tx_count_30d": 17
+            }
+          ],
+          "shared_with_services": [],
+          "pro_quota_share": 1,
+          "caveat": "Conservative undercount: only USDC settlements via facilitators we measure are counted. A measured floor, not an estimate.",
+          "all_time_caveat": "All-time is floored at the start of our harvest window, not the service full history."
+        },
+        "updated_at": "2026-08-18T14:33:03.751Z"
+      }
+    },
+    {
+      "slug": "ffpipe",
+      "name": "ffpipe",
+      "description": "Video conversion for agents: any video to web-ready MP4 from a source URL or direct upload, $0.05 USDC per job over x402 on Base mainnet. Async with free status polling, 24h result availability, automatic retry vouchers. Remote MCP server at /mcp; discovery at /.well-known/x402 and /openapi.json.",
+      "base_url": "https://ffpipe.dev",
+      "website_url": "https://ffpipe.dev",
+      "category": "Other",
+      "source": "submitted",
+      "status": "online",
+      "verified": false,
+      "payment_ready": true,
+      "endpoint_count": 1,
+      "min_price_usd": 0.05,
+      "networks": [
+        "BSE"
+      ],
+      "networks_caip2": [
+        "eip155:8453"
+      ],
+      "uptime_24h": 86.79,
+      "avg_response_time_ms": 965,
+      "last_checked_at": "2026-08-18T14:34:00.954Z",
+      "created_at": "2026-08-17T13:47:52.938Z",
+      "assessment": {
+        "compliance_grade": "A",
+        "compliance_passed": 14,
+        "compliance_total": 14,
+        "compliance_failed_checks": [],
+        "compliance_staleness": {
+          "probe_failing": false,
+          "last_success_at": "2026-08-18T14:34:00.958Z",
+          "envelope_captured_at": "2026-08-17T13:48:01.010Z"
+        },
+        "reliability_uptime_30d": 92.4,
+        "response_p95_ms": 1864,
+        "price_usd": 0.05,
+        "category_percentile": 92,
+        "price_stability": 1,
+        "price_max_usd": 0.05,
+        "category_percentile_max": 66,
+        "endpoint_count": 1,
+        "distinct_price_count": 1,
+        "risk_level": "clean",
+        "capability_tags": null,
+        "summary": null,
+        "traction": {
+          "status": "measured",
+          "volume_usd_30d": 0.14,
+          "tx_count_30d": 4,
+          "unique_buyers_30d": 1,
+          "last_settlement_at": "2026-08-18T03:15:57Z",
+          "top_buyer_share_30d": 1,
+          "trend_7d_vs_30d": 4.285714285714286,
+          "shared_payout": false,
+          "shared_with": 0,
+          "measured_networks": [
+            "eip155:8453"
+          ],
+          "first_settlement_at": "2026-08-17T20:40:47Z",
+          "volume_usd_all_time": 0.14,
+          "tx_count_all_time": 4,
+          "median_settlement_usd_30d": 0.04,
+          "max_settlement_usd_30d": 0.05,
+          "settled_via": [
+            "coinbase"
+          ],
+          "settled_via_detail": [
+            {
+              "id": "coinbase",
+              "volume_usd_30d": 0.14,
+              "tx_count_30d": 4
+            }
+          ],
+          "shared_with_services": [],
+          "pro_quota_share": 1,
+          "caveat": "Conservative undercount: only USDC settlements via facilitators we measure are counted. A measured floor, not an estimate.",
+          "all_time_caveat": "All-time is floored at the start of our harvest window, not the service full history."
+        },
+        "updated_at": "2026-08-18T14:33:04.906Z"
+      }
+    },
+    {
+      "slug": "colombia-trm",
+      "name": "Colombia TRM",
+      "description": "Official Superintendencia Financiera de Colombia daily USD/COP (TRM) as a prepaid x402 GET. Source datos.gov.co dataset mcec-87by. $0.005 USDC on Base.",
+      "base_url": "https://x402.lagaceta.net",
+      "website_url": "https://x402.lagaceta.net/trm",
+      "category": "Finance",
+      "source": "submitted",
+      "status": "online",
+      "verified": false,
+      "payment_ready": true,
+      "endpoint_count": 1,
+      "min_price_usd": 0.005,
+      "networks": [
+        "BSE"
+      ],
+      "networks_caip2": [
+        "eip155:8453"
+      ],
+      "uptime_24h": 100,
+      "avg_response_time_ms": 298,
+      "last_checked_at": "2026-08-18T14:34:00.545Z",
+      "created_at": "2026-08-17T13:47:50.057Z",
+      "assessment": {
+        "compliance_grade": "A",
+        "compliance_passed": 14,
+        "compliance_total": 14,
+        "compliance_failed_checks": [],
+        "compliance_staleness": {
+          "probe_failing": false,
+          "last_success_at": "2026-08-18T14:34:00.553Z",
+          "envelope_captured_at": "2026-08-17T13:48:00.261Z"
+        },
+        "reliability_uptime_30d": 100,
+        "response_p95_ms": 934,
+        "price_usd": 0.005,
+        "category_percentile": 28,
+        "price_stability": 1,
+        "price_max_usd": 0.005,
+        "category_percentile_max": 10,
+        "endpoint_count": 1,
+        "distinct_price_count": 1,
+        "risk_level": "clean",
+        "capability_tags": null,
+        "summary": null,
+        "traction": {
+          "status": "measured",
+          "volume_usd_30d": 0,
+          "tx_count_30d": 0,
+          "unique_buyers_30d": 0,
+          "last_settlement_at": null,
+          "top_buyer_share_30d": null,
+          "trend_7d_vs_30d": null,
+          "shared_payout": false,
+          "shared_with": 0,
+          "measured_networks": [
+            "eip155:8453"
+          ],
+          "first_settlement_at": null,
+          "volume_usd_all_time": 0,
+          "tx_count_all_time": 0,
+          "median_settlement_usd_30d": null,
+          "max_settlement_usd_30d": null,
+          "settled_via": [],
+          "settled_via_detail": [],
+          "shared_with_services": [],
+          "pro_quota_share": 1,
+          "caveat": "Conservative undercount: only USDC settlements via facilitators we measure are counted. A measured floor, not an estimate.",
+          "all_time_caveat": "All-time is floored at the start of our harvest window, not the service full history."
+        },
+        "updated_at": "2026-08-18T14:33:03.407Z"
+      }
+    },
+    {
+      "slug": "stipend-sh-gas-top-up",
+      "name": "stipend.sh gas top-up",
+      "description": "Non-custodial USDC wallet on Base that an AI agent installs unaided. This x402 endpoint tops up gas credits: we broadcast the agents signed transfer and pay the network fee so it can send without ever holding ETH.",
+      "base_url": "https://stipend.sh",
+      "website_url": "https://stipend.sh",
+      "category": "Finance",
+      "source": "submitted",
+      "status": "online",
+      "verified": false,
+      "payment_ready": true,
+      "endpoint_count": 1,
+      "min_price_usd": 7.8,
+      "networks": [
+        "BSE"
+      ],
+      "networks_caip2": [
+        "eip155:8453"
+      ],
+      "uptime_24h": 100,
+      "avg_response_time_ms": 1497,
+      "last_checked_at": "2026-08-18T14:37:05.894Z",
+      "created_at": "2026-08-17T08:46:50.554Z",
+      "assessment": {
+        "compliance_grade": "C",
+        "compliance_passed": 13,
+        "compliance_total": 14,
+        "compliance_failed_checks": [
+          "eip712_domain_extra"
+        ],
+        "compliance_staleness": {
+          "probe_failing": false,
+          "last_success_at": "2026-08-18T14:37:05.898Z",
+          "envelope_captured_at": "2026-08-17T08:47:00.867Z"
+        },
+        "reliability_uptime_30d": 100,
+        "response_p95_ms": 2268,
+        "price_usd": 7.8,
+        "category_percentile": 97,
+        "price_stability": 1,
+        "price_max_usd": 7.8,
+        "category_percentile_max": 94,
+        "endpoint_count": 1,
+        "distinct_price_count": 1,
+        "risk_level": "clean",
+        "capability_tags": null,
+        "summary": null,
+        "traction": {
+          "status": "measured",
+          "volume_usd_30d": 0,
+          "tx_count_30d": 0,
+          "unique_buyers_30d": 0,
+          "last_settlement_at": null,
+          "top_buyer_share_30d": null,
+          "trend_7d_vs_30d": null,
+          "shared_payout": false,
+          "shared_with": 0,
+          "measured_networks": [
+            "eip155:8453"
+          ],
+          "first_settlement_at": null,
+          "volume_usd_all_time": 0,
+          "tx_count_all_time": 0,
+          "median_settlement_usd_30d": null,
+          "max_settlement_usd_30d": null,
+          "settled_via": [],
+          "settled_via_detail": [],
+          "shared_with_services": [],
+          "pro_quota_share": 1,
+          "caveat": "Conservative undercount: only USDC settlements via facilitators we measure are counted. A measured floor, not an estimate.",
+          "all_time_caveat": "All-time is floored at the start of our harvest window, not the service full history."
+        },
+        "updated_at": "2026-08-18T09:33:05.057Z"
+      }
+    },
+    {
+      "slug": "agentbiz",
+      "name": "AgentBiz",
+      "description": "Three keyless pay-per-call services for AI agents on Base mainnet. Verify: signed attestations that a site was reachable, a file is unchanged, a TLS certificate says what it claims, or JSON matches a schema \u2014 each with an Ed25519 receipt a third party can check. Ledger: wallet reputation before transacting with a stranger, reporting honest low confidence for unseen wallets rather than a misleading zero. Memory: namespaced key-value and vector memory for stateless agents, with tenant isolation enforced at the query level. From $0.0002 per call in USDC via the Coinbase CDP facilitator. Every 402 carries full x402 v2 Bazaar discovery metadata including per-route input and output schemas.",
+      "base_url": "https://api.mysterio.cloud",
+      "website_url": "https://agentbiz.mysterio.cloud",
+      "category": "Verification",
+      "source": "submitted",
+      "status": "online",
+      "verified": false,
+      "payment_ready": true,
+      "endpoint_count": 2,
+      "min_price_usd": 0.003,
+      "networks": [
+        "BSE"
+      ],
+      "networks_caip2": [
+        "eip155:8453"
+      ],
+      "uptime_24h": 100,
+      "avg_response_time_ms": 742,
+      "last_checked_at": "2026-08-18T14:37:06.678Z",
+      "created_at": "2026-08-17T08:46:47.993Z",
+      "assessment": {
+        "compliance_grade": "A",
+        "compliance_passed": 13,
+        "compliance_total": 14,
+        "compliance_failed_checks": [
+          "version_channel_coherent"
+        ],
+        "compliance_staleness": {
+          "probe_failing": false,
+          "last_success_at": "2026-08-18T14:37:06.685Z",
+          "envelope_captured_at": "2026-08-17T09:03:01.931Z"
+        },
+        "reliability_uptime_30d": 98.9,
+        "response_p95_ms": 988,
+        "price_usd": 0.003,
+        "category_percentile": 10,
+        "price_stability": 1,
+        "price_max_usd": 0.003,
+        "category_percentile_max": 4,
+        "endpoint_count": 2,
+        "distinct_price_count": 1,
+        "risk_level": "clean",
+        "capability_tags": null,
+        "summary": null,
+        "traction": {
+          "status": "measured",
+          "volume_usd_30d": 0,
+          "tx_count_30d": 0,
+          "unique_buyers_30d": 0,
+          "last_settlement_at": null,
+          "top_buyer_share_30d": null,
+          "trend_7d_vs_30d": null,
+          "shared_payout": false,
+          "shared_with": 0,
+          "measured_networks": [
+            "eip155:8453"
+          ],
+          "first_settlement_at": null,
+          "volume_usd_all_time": 0,
+          "tx_count_all_time": 0,
+          "median_settlement_usd_30d": null,
+          "max_settlement_usd_30d": null,
+          "settled_via": [],
+          "settled_via_detail": [],
+          "shared_with_services": [],
+          "pro_quota_share": 1,
+          "caveat": "Conservative undercount: only USDC settlements via facilitators we measure are counted. A measured floor, not an estimate.",
+          "all_time_caveat": "All-time is floored at the start of our harvest window, not the service full history."
+        },
+        "updated_at": "2026-08-18T09:33:04.628Z"
+      }
+    },
+    {
+      "slug": "rc-quantum-data-oracle",
+      "name": "RC Quantum Data Oracle",
+      "description": "Signed, verifiable BTC performance data from the RC Quantum BTC algorithm \u2014 a live-parallel shadow of a production system that's been live for two years, filled on a real exchange (realized, no modeled slippage). Every payload is Ed25519-signed, so agents verify authenticity against a published public key instead of trusting a claim. Pay per fetch in USDC on Base (x402 v2, live on mainnet via the CDP facilitator). Free discovery + signed sample data, plus a live in-browser signature verifier.",
+      "base_url": "https://data.rcqsignals.com",
+      "website_url": "https://data.rcqsignals.com",
+      "category": "Data",
+      "source": "submitted",
+      "status": "online",
+      "verified": false,
+      "payment_ready": true,
+      "endpoint_count": 1,
+      "min_price_usd": 2,
+      "networks": [
+        "BSE"
+      ],
+      "networks_caip2": [
+        "eip155:8453"
+      ],
+      "uptime_24h": 100,
+      "avg_response_time_ms": 883,
+      "last_checked_at": "2026-08-18T14:37:02.851Z",
+      "created_at": "2026-08-17T08:46:45.252Z",
+      "assessment": {
+        "compliance_grade": "A",
+        "compliance_passed": 14,
+        "compliance_total": 14,
+        "compliance_failed_checks": [],
+        "compliance_staleness": {
+          "probe_failing": false,
+          "last_success_at": "2026-08-18T14:37:02.857Z",
+          "envelope_captured_at": "2026-08-17T08:47:01.448Z"
+        },
+        "reliability_uptime_30d": 100,
+        "response_p95_ms": 1427,
+        "price_usd": 2,
+        "category_percentile": 99,
+        "price_stability": 1,
+        "price_max_usd": 2,
+        "category_percentile_max": 96,
+        "endpoint_count": 1,
+        "distinct_price_count": 1,
+        "risk_level": "clean",
+        "capability_tags": null,
+        "summary": null,
+        "traction": {
+          "status": "measured",
+          "volume_usd_30d": 0,
+          "tx_count_30d": 0,
+          "unique_buyers_30d": 0,
+          "last_settlement_at": null,
+          "top_buyer_share_30d": null,
+          "trend_7d_vs_30d": null,
+          "shared_payout": false,
+          "shared_with": 0,
+          "measured_networks": [
+            "eip155:8453"
+          ],
+          "first_settlement_at": null,
+          "volume_usd_all_time": 0,
+          "tx_count_all_time": 0,
+          "median_settlement_usd_30d": null,
+          "max_settlement_usd_30d": null,
+          "settled_via": [],
+          "settled_via_detail": [],
+          "shared_with_services": [],
+          "pro_quota_share": 1,
+          "caveat": "Conservative undercount: only USDC settlements via facilitators we measure are counted. A measured floor, not an estimate.",
+          "all_time_caveat": "All-time is floored at the start of our harvest window, not the service full history."
+        },
+        "updated_at": "2026-08-18T09:33:02.480Z"
+      }
+    },
+    {
+      "slug": "uhadev-pdf-data-inspection-api",
+      "name": "UHADEV PDF & Data Inspection API",
+      "description": "Pay-per-call inspection APIs for AI agents: PDF page count/title/text preview (5MB), CSV structure inspection, image inspection, and URL probing. Pay in USDT on Arbitrum via x402; no API key, no signup.",
+      "base_url": "https://x402.uhadev.com",
+      "website_url": "https://uminda.dev",
+      "category": "Data",
+      "source": "submitted",
+      "status": "offline",
+      "verified": false,
+      "payment_ready": false,
+      "endpoint_count": 6,
+      "min_price_usd": null,
+      "networks": [],
+      "networks_caip2": [],
+      "uptime_24h": 0,
+      "avg_response_time_ms": null,
+      "last_checked_at": "2026-08-18T12:00:01.225Z",
+      "created_at": "2026-08-17T08:46:42.812Z",
+      "assessment": {
+        "compliance_grade": "unknown",
+        "compliance_passed": 0,
+        "compliance_total": 0,
+        "compliance_failed_checks": [],
+        "compliance_staleness": {
+          "probe_failing": true,
+          "last_success_at": null,
+          "envelope_captured_at": null
+        },
+        "reliability_uptime_30d": 0,
+        "response_p95_ms": null,
+        "price_usd": null,
+        "category_percentile": null,
+        "price_stability": null,
+        "price_max_usd": null,
+        "category_percentile_max": null,
+        "endpoint_count": 0,
+        "distinct_price_count": 0,
+        "risk_level": "clean",
+        "capability_tags": null,
+        "summary": null,
+        "traction": {
+          "status": "no-payto",
+          "volume_usd_30d": null,
+          "tx_count_30d": null,
+          "unique_buyers_30d": null,
+          "last_settlement_at": null,
+          "top_buyer_share_30d": null,
+          "trend_7d_vs_30d": null,
+          "shared_payout": false,
+          "shared_with": 0,
+          "measured_networks": [],
+          "first_settlement_at": null,
+          "volume_usd_all_time": null,
+          "tx_count_all_time": null,
+          "median_settlement_usd_30d": null,
+          "max_settlement_usd_30d": null,
+          "settled_via": [],
+          "settled_via_detail": [],
+          "shared_with_services": [],
+          "pro_quota_share": null,
+          "caveat": "Conservative undercount: only USDC settlements via facilitators we measure are counted. A measured floor, not an estimate.",
+          "all_time_caveat": "All-time is floored at the start of our harvest window, not the service full history."
+        },
+        "updated_at": "2026-08-18T09:33:02.327Z"
+      }
+    },
+    {
+      "slug": "brs-signals",
+      "name": "BRS Signals",
+      "description": "Live Bitcoin market-regime API for AI agents. Three independent sensors (on-chain, off-chain, absence) read the market every 30 seconds and reject almost everything \u2014 when they converge, a directional call is emitted with the evidence attached. Free public endpoints (regime, sensor agreement, full auditable track record) need no key; Pro endpoints settle via x402 in USDC on Solana \u2014 an agent with a wallet pays and receives data in the same flow, no signup. Also available as an MCP server (pip install brs-signals-mcp).",
+      "base_url": "https://brs-signals.com",
+      "website_url": "https://brs-signals.com",
+      "category": "Finance",
+      "source": "submitted",
+      "status": "online",
+      "verified": false,
+      "payment_ready": true,
+      "endpoint_count": 6,
+      "min_price_usd": 50,
+      "networks": [
+        "SOL"
+      ],
+      "networks_caip2": [
+        "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp"
+      ],
+      "uptime_24h": 100,
+      "avg_response_time_ms": 329,
+      "last_checked_at": "2026-08-18T14:37:05.165Z",
+      "created_at": "2026-08-17T08:46:40.169Z",
+      "assessment": {
+        "compliance_grade": "A",
+        "compliance_passed": 12,
+        "compliance_total": 13,
+        "compliance_failed_checks": [
+          "x402_version_current"
+        ],
+        "compliance_staleness": {
+          "probe_failing": false,
+          "last_success_at": "2026-08-18T14:37:05.167Z",
+          "envelope_captured_at": "2026-08-17T08:47:01.270Z"
+        },
+        "reliability_uptime_30d": 100,
+        "response_p95_ms": 482,
+        "price_usd": 50,
+        "category_percentile": 99,
+        "price_stability": 1,
+        "price_max_usd": 50,
+        "category_percentile_max": 99,
+        "endpoint_count": 6,
+        "distinct_price_count": 1,
+        "risk_level": "clean",
+        "capability_tags": null,
+        "summary": null,
+        "traction": {
+          "status": "measured",
+          "volume_usd_30d": 0,
+          "tx_count_30d": 0,
+          "unique_buyers_30d": 0,
+          "last_settlement_at": null,
+          "top_buyer_share_30d": null,
+          "trend_7d_vs_30d": null,
+          "shared_payout": false,
+          "shared_with": 0,
+          "measured_networks": [
+            "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdpKuc147dw2N9d"
+          ],
+          "first_settlement_at": null,
+          "volume_usd_all_time": 0,
+          "tx_count_all_time": 0,
+          "median_settlement_usd_30d": null,
+          "max_settlement_usd_30d": null,
+          "settled_via": [],
+          "settled_via_detail": [],
+          "shared_with_services": [],
+          "pro_quota_share": 1,
+          "caveat": "Conservative undercount: only USDC settlements via facilitators we measure are counted. A measured floor, not an estimate.",
+          "all_time_caveat": "All-time is floored at the start of our harvest window, not the service full history."
+        },
+        "updated_at": "2026-08-18T09:33:03.374Z"
+      }
+    },
+    {
+      "slug": "signal-sprint",
+      "name": "Signal Sprint",
+      "description": "API x402 de pago por uso para convertir contexto de posicionamiento proporcionado por el cliente en una biograf\u00eda profesional breve y estructurada.",
+      "base_url": "https://signalsprint-mqysbksh.manus.space",
+      "website_url": "https://signalsprint-mqysbksh.manus.space",
+      "category": "Content",
+      "source": "submitted",
+      "status": "offline",
+      "verified": false,
+      "payment_ready": false,
+      "endpoint_count": 1,
+      "min_price_usd": null,
+      "networks": [],
+      "networks_caip2": [],
+      "uptime_24h": 0,
+      "avg_response_time_ms": null,
+      "last_checked_at": "2026-08-18T12:00:00.957Z",
+      "created_at": "2026-08-17T08:46:37.729Z",
+      "assessment": {
+        "compliance_grade": "unknown",
+        "compliance_passed": 0,
+        "compliance_total": 0,
+        "compliance_failed_checks": [],
+        "compliance_staleness": {
+          "probe_failing": true,
+          "last_success_at": null,
+          "envelope_captured_at": null
+        },
+        "reliability_uptime_30d": 0,
+        "response_p95_ms": null,
+        "price_usd": null,
+        "category_percentile": null,
+        "price_stability": null,
+        "price_max_usd": null,
+        "category_percentile_max": null,
+        "endpoint_count": 0,
+        "distinct_price_count": 0,
+        "risk_level": "clean",
+        "capability_tags": null,
+        "summary": null,
+        "traction": {
+          "status": "no-payto",
+          "volume_usd_30d": null,
+          "tx_count_30d": null,
+          "unique_buyers_30d": null,
+          "last_settlement_at": null,
+          "top_buyer_share_30d": null,
+          "trend_7d_vs_30d": null,
+          "shared_payout": false,
+          "shared_with": 0,
+          "measured_networks": [],
+          "first_settlement_at": null,
+          "volume_usd_all_time": null,
+          "tx_count_all_time": null,
+          "median_settlement_usd_30d": null,
+          "max_settlement_usd_30d": null,
+          "settled_via": [],
+          "settled_via_detail": [],
+          "shared_with_services": [],
+          "pro_quota_share": null,
+          "caveat": "Conservative undercount: only USDC settlements via facilitators we measure are counted. A measured floor, not an estimate.",
+          "all_time_caveat": "All-time is floored at the start of our harvest window, not the service full history."
+        },
+        "updated_at": "2026-08-18T09:33:03.729Z"
+      }
+    },
+    {
+      "slug": "lucid-text-stats",
+      "name": "Lucid Text Stats",
+      "description": "Deterministic UTF-8 text statistics: word, character, and byte counts. No input retention and no paid upstream. Testnet-only: 0.001 test-USDC per call on Base Sepolia (eip155:84532).",
+      "base_url": "https://x402.gammapilot.com",
+      "website_url": "https://x402.gammapilot.com",
+      "category": "Data",
+      "source": "submitted",
+      "status": "online",
+      "verified": false,
+      "payment_ready": true,
+      "endpoint_count": 1,
+      "min_price_usd": 0.001,
+      "networks": [
+        "BSP"
+      ],
+      "networks_caip2": [
+        "eip155:84532"
+      ],
+      "uptime_24h": 100,
+      "avg_response_time_ms": 637,
+      "last_checked_at": "2026-08-18T14:37:01.504Z",
+      "created_at": "2026-08-17T08:46:34.913Z",
+      "assessment": {
+        "compliance_grade": "A",
+        "compliance_passed": 14,
+        "compliance_total": 14,
+        "compliance_failed_checks": [],
+        "compliance_staleness": {
+          "probe_failing": false,
+          "last_success_at": "2026-08-18T14:37:01.508Z",
+          "envelope_captured_at": "2026-08-17T08:47:00.890Z"
+        },
+        "reliability_uptime_30d": 100,
+        "response_p95_ms": 1175,
+        "price_usd": 0.001,
+        "category_percentile": 10,
+        "price_stability": 1,
+        "price_max_usd": 0.001,
+        "category_percentile_max": 3,
+        "endpoint_count": 1,
+        "distinct_price_count": 1,
+        "risk_level": "clean",
+        "capability_tags": null,
+        "summary": null,
+        "traction": {
+          "status": "no-payto",
+          "volume_usd_30d": null,
+          "tx_count_30d": null,
+          "unique_buyers_30d": null,
+          "last_settlement_at": null,
+          "top_buyer_share_30d": null,
+          "trend_7d_vs_30d": null,
+          "shared_payout": false,
+          "shared_with": 0,
+          "measured_networks": [],
+          "first_settlement_at": null,
+          "volume_usd_all_time": null,
+          "tx_count_all_time": null,
+          "median_settlement_usd_30d": null,
+          "max_settlement_usd_30d": null,
+          "settled_via": [],
+          "settled_via_detail": [],
+          "shared_with_services": [],
+          "pro_quota_share": null,
+          "caveat": "Conservative undercount: only USDC settlements via facilitators we measure are counted. A measured floor, not an estimate.",
+          "all_time_caveat": "All-time is floored at the start of our harvest window, not the service full history."
+        },
+        "updated_at": "2026-08-18T09:33:04.776Z"
+      }
+    },
+    {
+      "slug": "treat-rocks",
+      "name": "Treat.rocks",
+      "description": "Treat.rocks sells a $2 USDC novelty digital rock over x402 on Base. Each rock is deterministically generated from the payment and delivered as a signed certificate plus image, independently verifiable at /verify/:id against a published signing key. Fixed price forever, no token, nothing to trade, not an investment \u2014 a small, honest hello-world of x402, built for agent buyers (MCP at /mcp, /llms.txt, /.well-known/x402.json).",
+      "base_url": "https://treat.rocks",
+      "website_url": "https://treat.rocks",
+      "category": "Other",
+      "source": "submitted",
+      "status": "online",
+      "verified": false,
+      "payment_ready": true,
+      "endpoint_count": 1,
+      "min_price_usd": 2,
+      "networks": [
+        "BSE"
+      ],
+      "networks_caip2": [
+        "eip155:8453"
+      ],
+      "uptime_24h": 100,
+      "avg_response_time_ms": 786,
+      "last_checked_at": "2026-08-18T14:37:00.807Z",
+      "created_at": "2026-08-17T08:46:32.134Z",
+      "assessment": {
+        "compliance_grade": "A",
+        "compliance_passed": 14,
+        "compliance_total": 14,
+        "compliance_failed_checks": [],
+        "compliance_staleness": {
+          "probe_failing": false,
+          "last_success_at": "2026-08-18T14:37:00.811Z",
+          "envelope_captured_at": "2026-08-17T08:47:01.107Z"
+        },
+        "reliability_uptime_30d": 100,
+        "response_p95_ms": 1300,
+        "price_usd": 2,
+        "category_percentile": 97,
+        "price_stability": 1,
+        "price_max_usd": 2,
+        "category_percentile_max": 87,
+        "endpoint_count": 1,
+        "distinct_price_count": 1,
+        "risk_level": "clean",
+        "capability_tags": null,
+        "summary": null,
+        "traction": {
+          "status": "measured",
+          "volume_usd_30d": 0,
+          "tx_count_30d": 0,
+          "unique_buyers_30d": 0,
+          "last_settlement_at": null,
+          "top_buyer_share_30d": null,
+          "trend_7d_vs_30d": null,
+          "shared_payout": false,
+          "shared_with": 0,
+          "measured_networks": [
+            "eip155:8453"
+          ],
+          "first_settlement_at": null,
+          "volume_usd_all_time": 0,
+          "tx_count_all_time": 0,
+          "median_settlement_usd_30d": null,
+          "max_settlement_usd_30d": null,
+          "settled_via": [],
+          "settled_via_detail": [],
+          "shared_with_services": [],
+          "pro_quota_share": 1,
+          "caveat": "Conservative undercount: only USDC settlements via facilitators we measure are counted. A measured floor, not an estimate.",
+          "all_time_caveat": "All-time is floored at the start of our harvest window, not the service full history."
+        },
+        "updated_at": "2026-08-18T09:33:03.552Z"
+      }
+    },
+    {
+      "slug": "agentfund-us-economic-sec-on-chain-data",
+      "name": "AgentFund US Economic, SEC & On-Chain Data",
+      "description": "21 pay-per-call data tools for AI agents, settled in USDC on Base via x402. US macro indicators (Treasury yield curve, BLS CPI, jobs, PCE, GDP, retail sales, housing starts, EIA energy, release calendar), SEC EDGAR filings (insider Form 4, XBRL financials, 13F holdings, filing feeds, full-text search), and on-chain EVM reads (token balances, portfolios, cross-chain balances, Chainlink oracle prices, gas). Every source is free public-domain US government data or direct on-chain reads, so there is no upstream vendor licence to lapse. Also available over MCP at /mcp. Prices run $0.001-$0.03 per call; failed upstream calls are never charged.",
+      "base_url": "https://x402.agentfund.net",
+      "website_url": "https://agentfund.net",
+      "category": "Data",
+      "source": "submitted",
+      "status": "online",
+      "verified": false,
+      "payment_ready": true,
+      "endpoint_count": 21,
+      "min_price_usd": 0.001,
+      "networks": [
+        "BSE"
+      ],
+      "networks_caip2": [
+        "eip155:8453"
+      ],
+      "uptime_24h": 100,
+      "avg_response_time_ms": 82,
+      "last_checked_at": "2026-08-18T14:37:10.602Z",
+      "created_at": "2026-08-17T08:46:29.555Z",
+      "assessment": {
+        "compliance_grade": "A",
+        "compliance_passed": 14,
+        "compliance_total": 14,
+        "compliance_failed_checks": [],
+        "compliance_staleness": {
+          "probe_failing": false,
+          "last_success_at": "2026-08-18T14:37:10.605Z",
+          "envelope_captured_at": "2026-08-17T08:47:05.167Z"
+        },
+        "reliability_uptime_30d": 100,
+        "response_p95_ms": 175,
+        "price_usd": 0.001,
+        "category_percentile": 10,
+        "price_stability": 1,
+        "price_max_usd": 0.03,
+        "category_percentile_max": 50,
+        "endpoint_count": 21,
+        "distinct_price_count": 8,
+        "risk_level": "clean",
+        "capability_tags": null,
+        "summary": null,
+        "traction": {
+          "status": "measured",
+          "volume_usd_30d": 0.001,
+          "tx_count_30d": 1,
+          "unique_buyers_30d": 1,
+          "last_settlement_at": "2026-08-17T18:20:03Z",
+          "top_buyer_share_30d": 1,
+          "trend_7d_vs_30d": 4.285714285714286,
+          "shared_payout": false,
+          "shared_with": 0,
+          "measured_networks": [
+            "eip155:8453"
+          ],
+          "first_settlement_at": "2026-08-17T18:20:03Z",
+          "volume_usd_all_time": 0,
+          "tx_count_all_time": 1,
+          "median_settlement_usd_30d": 0.001,
+          "max_settlement_usd_30d": 0.001,
+          "settled_via": [
+            "coinbase"
+          ],
+          "settled_via_detail": [
+            {
+              "id": "coinbase",
+              "volume_usd_30d": 0.001,
+              "tx_count_30d": 1
+            }
+          ],
+          "shared_with_services": [],
+          "pro_quota_share": 1,
+          "caveat": "Conservative undercount: only USDC settlements via facilitators we measure are counted. A measured floor, not an estimate.",
+          "all_time_caveat": "All-time is floored at the start of our harvest window, not the service full history."
+        },
+        "updated_at": "2026-08-18T09:33:05.029Z"
+      }
+    },
+    {
+      "slug": "fastscrape-microservice-node",
+      "name": "FastScrape Microservice Node",
+      "description": "Web Scraping, PDF Extraction, Data Processing",
+      "base_url": "https://fastscrape.benlab.download/",
+      "website_url": "https://fastscrape.benlab.download/",
+      "category": "AI",
+      "source": "submitted",
+      "status": "online",
+      "verified": false,
+      "payment_ready": true,
+      "endpoint_count": 3,
+      "min_price_usd": 0.005,
+      "networks": [
+        "BSE"
+      ],
+      "networks_caip2": [
+        "eip155:8453"
+      ],
+      "uptime_24h": 100,
+      "avg_response_time_ms": 552,
+      "last_checked_at": "2026-08-18T14:37:04.414Z",
+      "created_at": "2026-08-17T08:46:26.983Z",
+      "assessment": {
+        "compliance_grade": "A",
+        "compliance_passed": 14,
+        "compliance_total": 14,
+        "compliance_failed_checks": [],
+        "compliance_staleness": {
+          "probe_failing": false,
+          "last_success_at": "2026-08-18T14:37:04.423Z",
+          "envelope_captured_at": "2026-08-17T08:47:01.467Z"
+        },
+        "reliability_uptime_30d": 100,
+        "response_p95_ms": 1300,
+        "price_usd": 0.005,
+        "category_percentile": 29,
+        "price_stability": 1,
+        "price_max_usd": 0.02,
+        "category_percentile_max": 30,
+        "endpoint_count": 3,
+        "distinct_price_count": 3,
+        "risk_level": "clean",
+        "capability_tags": null,
+        "summary": null,
+        "traction": {
+          "status": "measured",
+          "volume_usd_30d": 0,
+          "tx_count_30d": 0,
+          "unique_buyers_30d": 0,
+          "last_settlement_at": null,
+          "top_buyer_share_30d": null,
+          "trend_7d_vs_30d": null,
+          "shared_payout": false,
+          "shared_with": 0,
+          "measured_networks": [
+            "eip155:8453"
+          ],
+          "first_settlement_at": null,
+          "volume_usd_all_time": 0,
+          "tx_count_all_time": 0,
+          "median_settlement_usd_30d": null,
+          "max_settlement_usd_30d": null,
+          "settled_via": [],
+          "settled_via_detail": [],
+          "shared_with_services": [],
+          "pro_quota_share": 1,
+          "caveat": "Conservative undercount: only USDC settlements via facilitators we measure are counted. A measured floor, not an estimate.",
+          "all_time_caveat": "All-time is floored at the start of our harvest window, not the service full history."
+        },
+        "updated_at": "2026-08-18T09:33:04.525Z"
+      }
+    },
+    {
+      "slug": "zinin-m2m-hub",
+      "name": "Zinin M2M Hub",
+      "description": "98 pay-per-call data APIs behind x402 on Base. Company registry lookups and enrichment, sanctions and litigation screening, real-estate and job listings across 15 countries, SEC/EDGAR and funding trackers, crypto wallet and token analytics, plus web utilities (URL to markdown, structured extraction, domain and email checks). Every endpoint is a single POST returning JSON, priced 0.01-0.15 USDC. The same catalogue is also exposed as 9 MCP bundles over streamable-http at /mcp/{bundle}.",
+      "base_url": "https://api.timzinin.com",
+      "website_url": "https://api.timzinin.com",
+      "category": "Data",
+      "source": "submitted",
+      "status": "online",
+      "verified": false,
+      "payment_ready": true,
+      "endpoint_count": 12,
+      "min_price_usd": 0.01,
+      "networks": [
+        "BSE"
+      ],
+      "networks_caip2": [
+        "eip155:8453"
+      ],
+      "uptime_24h": 100,
+      "avg_response_time_ms": 172,
+      "last_checked_at": "2026-08-18T14:37:04.801Z",
+      "created_at": "2026-08-17T08:46:24.498Z",
+      "assessment": {
+        "compliance_grade": "A",
+        "compliance_passed": 14,
+        "compliance_total": 14,
+        "compliance_failed_checks": [],
+        "compliance_staleness": {
+          "probe_failing": false,
+          "last_success_at": "2026-08-18T14:37:04.805Z",
+          "envelope_captured_at": "2026-08-17T08:47:02.406Z"
+        },
+        "reliability_uptime_30d": 100,
+        "response_p95_ms": 293,
+        "price_usd": 0.01,
+        "category_percentile": 56,
+        "price_stability": 1,
+        "price_max_usd": 0.02,
+        "category_percentile_max": 39,
+        "endpoint_count": 12,
+        "distinct_price_count": 2,
+        "risk_level": "clean",
+        "capability_tags": null,
+        "summary": null,
+        "traction": {
+          "status": "measured",
+          "volume_usd_30d": 0,
+          "tx_count_30d": 0,
+          "unique_buyers_30d": 0,
+          "last_settlement_at": null,
+          "top_buyer_share_30d": null,
+          "trend_7d_vs_30d": null,
+          "shared_payout": false,
+          "shared_with": 0,
+          "measured_networks": [
+            "eip155:8453"
+          ],
+          "first_settlement_at": null,
+          "volume_usd_all_time": 0,
+          "tx_count_all_time": 0,
+          "median_settlement_usd_30d": null,
+          "max_settlement_usd_30d": null,
+          "settled_via": [],
+          "settled_via_detail": [],
+          "shared_with_services": [],
+          "pro_quota_share": 1,
+          "caveat": "Conservative undercount: only USDC settlements via facilitators we measure are counted. A measured floor, not an estimate.",
+          "all_time_caveat": "All-time is floored at the start of our harvest window, not the service full history."
+        },
+        "updated_at": "2026-08-18T09:33:05.651Z"
+      }
+    },
+    {
+      "slug": "sleepfix",
+      "name": "sleepfix",
+      "description": "One sleepfix, 58 seconds. Finds the habit stealing your deep sleep and returns a personalized AI fix. Settles in USDC on Base Sepolia and returns a licence plus a play link.",
+      "base_url": "https://x402-lane-144561044326.us-central1.run.app",
+      "website_url": "https://agentbuyer-144561044326.us-central1.run.app/",
+      "category": "AI",
+      "source": "submitted",
+      "status": "online",
+      "verified": false,
+      "payment_ready": true,
+      "endpoint_count": 2,
+      "min_price_usd": 0.88,
+      "networks": [
+        "BSP"
+      ],
+      "networks_caip2": [
+        "eip155:84532"
+      ],
+      "uptime_24h": 98.11,
+      "avg_response_time_ms": 1979,
+      "last_checked_at": "2026-08-18T14:37:13.129Z",
+      "created_at": "2026-08-17T08:46:21.928Z",
+      "assessment": {
+        "compliance_grade": "A",
+        "compliance_passed": 13,
+        "compliance_total": 14,
+        "compliance_failed_checks": [
+          "x402_version_current"
+        ],
+        "compliance_staleness": {
+          "probe_failing": false,
+          "last_success_at": "2026-08-18T14:37:13.133Z",
+          "envelope_captured_at": "2026-08-17T08:47:08.256Z"
+        },
+        "reliability_uptime_30d": 97.8,
+        "response_p95_ms": 3320,
+        "price_usd": 0.88,
+        "category_percentile": 85,
+        "price_stability": 1,
+        "price_max_usd": 0.88,
+        "category_percentile_max": 73,
+        "endpoint_count": 2,
+        "distinct_price_count": 1,
+        "risk_level": "clean",
+        "capability_tags": null,
+        "summary": null,
+        "traction": {
+          "status": "no-payto",
+          "volume_usd_30d": null,
+          "tx_count_30d": null,
+          "unique_buyers_30d": null,
+          "last_settlement_at": null,
+          "top_buyer_share_30d": null,
+          "trend_7d_vs_30d": null,
+          "shared_payout": false,
+          "shared_with": 0,
+          "measured_networks": [],
+          "first_settlement_at": null,
+          "volume_usd_all_time": null,
+          "tx_count_all_time": null,
+          "median_settlement_usd_30d": null,
+          "max_settlement_usd_30d": null,
+          "settled_via": [],
+          "settled_via_detail": [],
+          "shared_with_services": [],
+          "pro_quota_share": null,
+          "caveat": "Conservative undercount: only USDC settlements via facilitators we measure are counted. A measured floor, not an estimate.",
+          "all_time_caveat": "All-time is floored at the start of our harvest window, not the service full history."
+        },
+        "updated_at": "2026-08-18T09:33:03.570Z"
+      }
+    }
+  ],
+  "meta": {
+    "total": 502,
+    "page": 1,
+    "per_page": 25,
+    "total_pages": 21
+  },
+  "provenance": {
+    "license": "CC-BY-4.0",
+    "attribution_required": true,
+    "attribution": "Data: x402-list.com (CC BY 4.0)",
+    "cite_as": "https://x402-list.com/api/v1/services",
+    "source": "https://x402-list.com"
+  }
+}

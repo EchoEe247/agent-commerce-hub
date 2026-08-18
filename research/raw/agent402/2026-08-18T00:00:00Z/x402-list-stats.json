@@ -1,0 +1,121 @@
+{
+  "data": {
+    "computed_at": "2026-08-18T14:45:48.834Z",
+    "total_services": 502,
+    "total_endpoints": 2958,
+    "total_networks": 24,
+    "total_networks_note": "mainnet networks only; networks[] includes testnets flagged by is_mainnet",
+    "avg_uptime_24h": 87.6,
+    "avg_uptime_7d": 89.2,
+    "avg_uptime_method": "per-service mean of the latest daily uptime rollup",
+    "avg_response_time_ms": 569,
+    "checks_per_hour": 1795,
+    "pricing": {
+      "avg_price_usd": 0.484,
+      "min_price_usd": 0,
+      "max_price_usd": 50,
+      "median_price_usd": 0.01
+    },
+    "networks": [
+      {
+        "abbreviation": "BSE",
+        "is_mainnet": true,
+        "service_count": 469,
+        "avg_uptime": 88.7
+      },
+      {
+        "abbreviation": "SOL",
+        "is_mainnet": true,
+        "service_count": 194,
+        "avg_uptime": 95
+      },
+      {
+        "abbreviation": "POL",
+        "is_mainnet": true,
+        "service_count": 48,
+        "avg_uptime": 89.5
+      },
+      {
+        "abbreviation": "ARB",
+        "is_mainnet": true,
+        "service_count": 33,
+        "avg_uptime": 90.9
+      },
+      {
+        "abbreviation": "AVX",
+        "is_mainnet": true,
+        "service_count": 7,
+        "avg_uptime": 99.5
+      },
+      {
+        "abbreviation": "BSP",
+        "is_mainnet": false,
+        "service_count": 7,
+        "avg_uptime": 99.7
+      },
+      {
+        "abbreviation": "SOLD",
+        "is_mainnet": false,
+        "service_count": 1,
+        "avg_uptime": 100
+      },
+      {
+        "abbreviation": "ARCT",
+        "is_mainnet": false,
+        "service_count": 1,
+        "avg_uptime": 100
+      },
+      {
+        "abbreviation": "XLYT",
+        "is_mainnet": false,
+        "service_count": 1,
+        "avg_uptime": 100
+      },
+      {
+        "abbreviation": "AMOY",
+        "is_mainnet": false,
+        "service_count": 1,
+        "avg_uptime": 100
+      }
+    ],
+    "traction": {
+      "unique_buyers_30d": 5651,
+      "volume_usd_30d": 223577.030142,
+      "settlement_count_30d": 7545083,
+      "measured_services": 364,
+      "measured_networks": [
+        "BSE",
+        "POL",
+        "SOL"
+      ],
+      "coverage_of_measured_flow_pct": 17.3,
+      "top_10_services_share_pct": 98.1,
+      "top_1_service_share_pct": 87.4,
+      "top_1_service_top_buyer_share_pct": 98.8,
+      "top_1_service_imported": true,
+      "as_of": "2026-08-18T14:16:23.736Z",
+      "method": "dedup on settlement identity (network,tx_hash,log_index); do not sum per-service figures; measured_networks are network abbreviations, the per-service traction block uses CAIP-2 ids; coverage_of_measured_flow_pct is the listed dedup volume as a share of the flow measurable by our tracked settlers (the facilitator daily volume we measure, not the whole ecosystem); top_10_services_share_pct is the top 10 services' share of the same 30d dedup volume; both are precomputed hourly and null until the first refresh",
+      "caveat": "measured across listed services, a measured floor over 30d, not an ecosystem total; USDC via measured facilitators only"
+    },
+    "on_chain_measurement": {
+      "measured_since": "2026-01-01T00:00:00.000Z",
+      "all_networks_measured_since": "2026-02-09T00:00:00.000Z",
+      "note": "On-chain settlement is measured from a harvest floor and networks began on different dates; measured_since is the earliest measured network and all_networks_measured_since is the date from which every measured network contributes. Aggregates over windows starting before these dates are partial."
+    },
+    "verified_count": 1,
+    "payment_ready_count": 454,
+    "listing_growth": {
+      "new_7d": 49,
+      "new_30d": 357
+    },
+    "facilitator_volume_usd_30d": 1271382.47,
+    "facilitator_volume_note": "Aggregate facilitator settlement volume over 30 days across measured facilitators; a superset of the listed-services flow, not de-duplicated on settlement identity."
+  },
+  "provenance": {
+    "license": "CC-BY-4.0",
+    "attribution_required": true,
+    "attribution": "Data: x402-list.com (CC BY 4.0)",
+    "cite_as": "https://x402-list.com/api/v1/stats",
+    "source": "https://x402-list.com"
+  }
+}

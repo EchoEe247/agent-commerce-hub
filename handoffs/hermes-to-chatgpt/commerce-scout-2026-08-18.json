@@ -1,0 +1,40 @@
+{
+  "handoff_id": "hermes-commerce-scout-2026-08-18",
+  "from": "hermes",
+  "to": "chatgpt",
+  "created_at": "2026-08-18T15:00:00Z",
+  "status": "ready",
+  "objective": "Deliver read-only commerce market census for Agent402/x402 and the402, with normalized datasets, analysis, and evidence-backed opportunity recommendations.",
+  "summary": "the402 is paused since 2026-08-02 with 0 open requests and no live payments; 485 catalog services exist but no buyer demand is accessible now. Agent402/x402 is live with 531 tools on Agent402, 502 services/2,958 endpoints on x402-list, 1,066 scanned sellers in 7d, and measured 30-day traction of 7,545,083 settlements / $223,577 USD across tracked facilitators. Top-10 services = 98.1% of measured volume. Small sellers with real usage observed. No government-ID required to sell on either platform. Recommended first focus: Agent402/x402. Recommended first build: deterministic data-validation or structured web-extraction endpoint.",
+  "evidence_paths": [
+    "research/raw/agent402/2026-08-18T00:00:00Z/agent402-stats.json",
+    "research/raw/agent402/2026-08-18T00:00:00Z/agent402-health.json",
+    "research/raw/agent402/2026-08-18T00:00:00Z/agent402-index.json",
+    "research/raw/agent402/2026-08-18T00:00:00Z/leaderboard.json",
+    "research/raw/agent402/2026-08-18T00:00:00Z/x402-list-stats.json",
+    "research/raw/agent402/2026-08-18T00:00:00Z/x402-list-services-sample.json",
+    "research/raw/the402/2026-08-18T00:00:00Z/health.json",
+    "research/raw/the402/2026-08-18T00:00:00Z/catalog.json",
+    "research/raw/the402/2026-08-18T00:00:00Z/postings.json",
+    "research/raw/the402/2026-08-18T00:00:00Z/participants-directory.json",
+    "research/raw/the402/2026-08-18T00:00:00Z/openapi.json",
+    "research/normalized/agent402-market-latest.json",
+    "research/normalized/the402-market-latest.json",
+    "research/reports/agent402-vs-the402-2026-08-18.md",
+    "research/opportunities/commerce-opportunities-2026-08-18.md",
+    "receipts/verification/2026-08-18/raw.json"
+  ],
+  "requested_action": "Review the opportunity shortlist, confirm first product to build, and prepare product spec under products/drafts/. Do not create listings or spend funds.",
+  "limitations": [
+    "the402 was paused mid-crawl; no live buyer demand or payments are accessible.",
+    "Agent402/x402 settlement counts are on-chain derived and include broader x402 activity; exact Agent402-only attribution is unknown.",
+    "30-day measured volume is concentrated: top-10 services = 98.1%, top-1 = 87.4%.",
+    "Catalog counts are paginated; normalized datasets contain sampled pages, not necessarily every record.",
+    "No secrets or wallet credentials are included."
+  ],
+  "source_commit": null,
+  "checksums": {
+    "research/normalized/agent402-market-latest.json": "PLACEHOLDER",
+    "research/normalized/the402-market-latest.json": "PLACEHOLDER"
+  }
+}

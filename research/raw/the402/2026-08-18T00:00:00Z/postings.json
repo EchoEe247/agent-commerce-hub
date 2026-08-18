@@ -1,0 +1,7 @@
+{
+  "postings": [],
+  "total": 0,
+  "limit": 20,
+  "offset": 0,
+  "bid_url_template": "/v1/postings/{posting_id}/bids"
+}

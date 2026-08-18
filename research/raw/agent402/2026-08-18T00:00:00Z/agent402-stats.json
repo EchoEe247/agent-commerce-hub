@@ -1,0 +1,215 @@
+{
+  "service": "Agent402.Tools",
+  "summary": "A live node in the machine-to-machine economy: autonomous agents pay per call in USDC (or with compute) and get the result - no human, no signup.",
+  "tools": 531,
+  "payment": {
+    "protocol": "x402",
+    "network": "base",
+    "currency": "USDC"
+  },
+  "wallet": "0xaBF4FAbd7c416fB67202E5f9002389Fc75e2a9D0",
+  "walletName": "agent402.base.eth",
+  "onchainRevenueProof": "https://basescan.org/address/0xaBF4FAbd7c416fB67202E5f9002389Fc75e2a9D0#tokentxns",
+  "onchainNote": "Settled revenue is verifiable on-chain at the wallet above - that is the trustless source of truth, not this counter.",
+  "toolCallsServed": {
+    "total": 40793,
+    "viaUSDC": 29025,
+    "viaUSDCByNetwork": {
+      "base": 7927,
+      "solana": 3033,
+      "algorand": 3031,
+      "polygon": 159,
+      "arbitrum": 125,
+      "robinhood (USDG)": 121,
+      "stellar": 106,
+      "celo": 104,
+      "monad": 83,
+      "avalanche": 55,
+      "sei": 38,
+      "optimism": 37,
+      "unknown": 33,
+      "tempo": 3
+    },
+    "viaProofOfWork": 8596,
+    "viaTrial": 22,
+    "viaHeartbeat": 3150,
+    "viaMPPWire": 100,
+    "viaRouter": 9
+  },
+  "chargedButFailed": 1726,
+  "chargedButFailedGenuine": 0,
+  "chargedButFailedNote": "chargedButFailed is a LIFETIME counter containing a since-fixed miscount: settlement REJECTIONS (buyer keeps their money) were recorded as charged failures. Use chargedButFailedGenuine, which excludes them, for current quality.",
+  "topTools": [
+    {
+      "slug": "hash",
+      "n": 7030
+    },
+    {
+      "slug": "base64",
+      "n": 2362
+    },
+    {
+      "slug": "unit-convert",
+      "n": 1621
+    },
+    {
+      "slug": "convert-kilometers-to-miles",
+      "n": 863
+    },
+    {
+      "slug": "timezone-convert",
+      "n": 582
+    },
+    {
+      "slug": "v1-chat-nano",
+      "n": 285
+    },
+    {
+      "slug": "stock-quote",
+      "n": 282
+    },
+    {
+      "slug": "transcribe",
+      "n": 274
+    },
+    {
+      "slug": "search",
+      "n": 197
+    },
+    {
+      "slug": "uuid",
+      "n": 187
+    }
+  ],
+  "estimatedRevenueUsd": 277.57,
+  "recentCalls": [
+    {
+      "slug": "hash",
+      "paidWith": "heartbeat",
+      "at": "2026-08-18T14:44:50.149Z"
+    },
+    {
+      "slug": "hash",
+      "paidWith": "proof-of-work",
+      "at": "2026-08-18T14:43:37.506Z"
+    },
+    {
+      "slug": "unit-convert",
+      "paidWith": "proof-of-work",
+      "at": "2026-08-18T14:43:37.006Z"
+    },
+    {
+      "slug": "unit-convert",
+      "paidWith": "proof-of-work",
+      "at": "2026-08-18T14:43:36.981Z"
+    },
+    {
+      "slug": "base64",
+      "paidWith": "proof-of-work",
+      "at": "2026-08-18T14:43:36.563Z"
+    },
+    {
+      "slug": "base64",
+      "paidWith": "proof-of-work",
+      "at": "2026-08-18T14:43:36.532Z"
+    },
+    {
+      "slug": "base64",
+      "paidWith": "proof-of-work",
+      "at": "2026-08-18T14:43:36.500Z"
+    },
+    {
+      "slug": "hash",
+      "paidWith": "proof-of-work",
+      "at": "2026-08-18T14:43:36.190Z"
+    },
+    {
+      "slug": "hash",
+      "paidWith": "heartbeat",
+      "at": "2026-08-18T14:32:47.353Z"
+    },
+    {
+      "slug": "hash",
+      "paidWith": "heartbeat",
+      "at": "2026-08-18T14:20:44.611Z"
+    },
+    {
+      "slug": "hash",
+      "paidWith": "heartbeat",
+      "at": "2026-08-18T14:18:50.963Z"
+    },
+    {
+      "slug": "hash",
+      "paidWith": "proof-of-work",
+      "at": "2026-08-18T14:18:36.317Z"
+    },
+    {
+      "slug": "unit-convert",
+      "paidWith": "proof-of-work",
+      "at": "2026-08-18T14:18:34.964Z"
+    },
+    {
+      "slug": "unit-convert",
+      "paidWith": "proof-of-work",
+      "at": "2026-08-18T14:18:34.882Z"
+    },
+    {
+      "slug": "base64",
+      "paidWith": "proof-of-work",
+      "at": "2026-08-18T14:18:34.063Z"
+    },
+    {
+      "slug": "base64",
+      "paidWith": "proof-of-work",
+      "at": "2026-08-18T14:18:33.979Z"
+    },
+    {
+      "slug": "base64",
+      "paidWith": "proof-of-work",
+      "at": "2026-08-18T14:18:33.898Z"
+    },
+    {
+      "slug": "hash",
+      "paidWith": "proof-of-work",
+      "at": "2026-08-18T14:18:33.313Z"
+    },
+    {
+      "slug": "hash",
+      "paidWith": "heartbeat",
+      "at": "2026-08-18T14:18:30.171Z"
+    },
+    {
+      "slug": "hash",
+      "paidWith": "proof-of-work",
+      "at": "2026-08-18T14:16:06.794Z"
+    },
+    {
+      "slug": "unit-convert",
+      "paidWith": "proof-of-work",
+      "at": "2026-08-18T14:16:05.798Z"
+    },
+    {
+      "slug": "unit-convert",
+      "paidWith": "proof-of-work",
+      "at": "2026-08-18T14:16:05.747Z"
+    },
+    {
+      "slug": "base64",
+      "paidWith": "proof-of-work",
+      "at": "2026-08-18T14:16:05.214Z"
+    },
+    {
+      "slug": "base64",
+      "paidWith": "proof-of-work",
+      "at": "2026-08-18T14:16:05.166Z"
+    },
+    {
+      "slug": "base64",
+      "paidWith": "proof-of-work",
+      "at": "2026-08-18T14:16:05.110Z"
+    }
+  ],
+  "servingSince": "2026-06-12T15:59:04.549Z",
+  "processUptimeSeconds": 1541,
+  "runTheDemo": "https://agent402.tools/llms.txt"
+}

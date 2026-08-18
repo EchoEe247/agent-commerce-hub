@@ -1,0 +1,568 @@
+{
+  "spec": "x402-leaderboard/1",
+  "asOf": "2026-08-18T14:28:43.716Z",
+  "scannedBlocks": 302400,
+  "windowLabel": "7d",
+  "maxCallUsd": 0.75,
+  "scannedSellers": 1066,
+  "walletsQueried": 1066,
+  "bazaarTotal": 15119,
+  "leaderboard": [
+    {
+      "rank": 1,
+      "name": "BlockRun.AI",
+      "origins": [
+        "https://blockrun.ai",
+        "https://blockrun-web-vbsbhh7lea-uc.a.run.app",
+        "https://api.aidress.ai"
+      ],
+      "homepage": "https://blockrun.ai",
+      "endpoints": 123,
+      "wallet": "0xe9030014f5dae217d0a152f02a043567b16c1abf",
+      "wallets": [
+        "0xe9030014f5dae217d0a152f02a043567b16c1abf",
+        "0x6e007731870ede419cfb31889cd5c4493cecb04c",
+        "0x058a5961fbe8cd8e4b47c69d3d82e159cb5d8f17"
+      ],
+      "walletCount": 3,
+      "network": "base",
+      "callsSettled": 3094118,
+      "totalUsd": 30897.613773,
+      "uniqueBuyers": 165
+    },
+    {
+      "rank": 2,
+      "name": "api.botpay.network",
+      "origins": [
+        "https://api.botpay.network"
+      ],
+      "homepage": "https://api.botpay.network",
+      "endpoints": 2,
+      "wallet": "0x159be9e316bc5fac8ce05aec4eaae46e8f8a4908",
+      "wallets": [
+        "0x159be9e316bc5fac8ce05aec4eaae46e8f8a4908"
+      ],
+      "walletCount": 1,
+      "network": "base",
+      "callsSettled": 16342,
+      "totalUsd": 1199.101867,
+      "uniqueBuyers": 2236
+    },
+    {
+      "rank": 3,
+      "name": "StableEnrich",
+      "origins": [
+        "https://stableenrich.dev",
+        "https://enrichx402.com",
+        "https://api.aidress.ai",
+        "https://stable-enrich-git-shafu-stableenrich-nearb-74cfdf-merit-systems.vercel.app",
+        "https://stable-enrich-git-fix-stableenrich-exa-api-schema-merit-systems.vercel.app",
+        "https://stable-enrich-git-shafu-stableenrich-exa-b-f22424-merit-systems.vercel.app",
+        "https://stable-enrich-git-shafu-stabledomains-pork-25b57c-merit-systems.vercel.app"
+      ],
+      "homepage": "https://stableenrich.dev",
+      "endpoints": 22,
+      "wallet": "0x325bdf6f7efab24a2210c48c1b64cab2eae1d430",
+      "wallets": [
+        "0x325bdf6f7efab24a2210c48c1b64cab2eae1d430"
+      ],
+      "walletCount": 1,
+      "network": "base",
+      "callsSettled": 23874,
+      "totalUsd": 679.2068,
+      "uniqueBuyers": 175
+    },
+    {
+      "rank": 4,
+      "name": "api.m2mcent.com",
+      "origins": [
+        "https://api.m2mcent.com"
+      ],
+      "homepage": "https://api.m2mcent.com",
+      "endpoints": 965,
+      "wallet": "0xb04994fbca786ae03ce3354fed2435c2e04020ec",
+      "wallets": [
+        "0xb04994fbca786ae03ce3354fed2435c2e04020ec"
+      ],
+      "walletCount": 1,
+      "network": "base",
+      "callsSettled": 1034,
+      "totalUsd": 188.2464,
+      "uniqueBuyers": 2
+    },
+    {
+      "rank": 5,
+      "name": "x402.twit.sh",
+      "origins": [
+        "https://x402.twit.sh",
+        "https://api.aidress.ai"
+      ],
+      "homepage": "https://x402.twit.sh",
+      "endpoints": 14,
+      "wallet": "0x9dba414637c611a16bea6f0796bfcbcbdc410df8",
+      "wallets": [
+        "0x9dba414637c611a16bea6f0796bfcbcbdc410df8"
+      ],
+      "walletCount": 1,
+      "network": "base",
+      "callsSettled": 30192,
+      "totalUsd": 181.971,
+      "uniqueBuyers": 43
+    },
+    {
+      "rank": 6,
+      "name": "agents.chain.link",
+      "origins": [
+        "https://agents.chain.link"
+      ],
+      "homepage": "https://agents.chain.link",
+      "endpoints": 3,
+      "wallet": "0x158e90dd58fbe897ed8c244f472febee37283d00",
+      "wallets": [
+        "0x158e90dd58fbe897ed8c244f472febee37283d00"
+      ],
+      "walletCount": 1,
+      "network": "base",
+      "callsSettled": 12428,
+      "totalUsd": 131.995,
+      "uniqueBuyers": 2
+    },
+    {
+      "rank": 7,
+      "name": "AgentUtility.ai",
+      "origins": [
+        "https://x402.agentutility.ai"
+      ],
+      "homepage": "https://x402.agentutility.ai",
+      "endpoints": 74,
+      "wallet": "0x6c0752c09e7f6fa6526fcdf40e456a159ebb5621",
+      "wallets": [
+        "0x6c0752c09e7f6fa6526fcdf40e456a159ebb5621"
+      ],
+      "walletCount": 1,
+      "network": "base",
+      "callsSettled": 4465,
+      "totalUsd": 119.822,
+      "uniqueBuyers": 23
+    },
+    {
+      "rank": 8,
+      "name": "Add-on, historical placement",
+      "origins": [
+        "https://aeml-x402.zeabur.app"
+      ],
+      "homepage": "https://aeml-x402.zeabur.app",
+      "endpoints": 61,
+      "wallet": "0x2d16a243ba9facc6ac85519d5efad2149dc4c6c3",
+      "wallets": [
+        "0x2d16a243ba9facc6ac85519d5efad2149dc4c6c3"
+      ],
+      "walletCount": 1,
+      "network": "base",
+      "callsSettled": 531,
+      "totalUsd": 78.325,
+      "uniqueBuyers": 2
+    },
+    {
+      "rank": 9,
+      "name": "Deepline GTM API",
+      "origins": [
+        "https://stable-deepline.dev"
+      ],
+      "homepage": "https://stable-deepline.dev",
+      "endpoints": 2,
+      "wallet": "0xade02dff58b0316f04cd59806e3fdb4690fe89ab",
+      "wallets": [
+        "0xade02dff58b0316f04cd59806e3fdb4690fe89ab"
+      ],
+      "walletCount": 1,
+      "network": "base",
+      "callsSettled": 536,
+      "totalUsd": 77.49,
+      "uniqueBuyers": 31
+    },
+    {
+      "rank": 10,
+      "name": "StableSocial",
+      "origins": [
+        "https://stablesocial.dev",
+        "https://socialx402.com"
+      ],
+      "homepage": "https://stablesocial.dev",
+      "endpoints": 41,
+      "wallet": "0xcfa26f13c6c18307033ece13bbb8f470da5b4dbe",
+      "wallets": [
+        "0xcfa26f13c6c18307033ece13bbb8f470da5b4dbe"
+      ],
+      "walletCount": 1,
+      "network": "base",
+      "callsSettled": 1015,
+      "totalUsd": 60.9,
+      "uniqueBuyers": 43
+    },
+    {
+      "rank": 11,
+      "name": "api.strale.io",
+      "origins": [
+        "https://api.strale.io"
+      ],
+      "homepage": "https://api.strale.io",
+      "endpoints": 1,
+      "wallet": "0x66d7c2f952362bfb24fd7f02a9bec9c754ea83bc",
+      "wallets": [
+        "0x66d7c2f952362bfb24fd7f02a9bec9c754ea83bc"
+      ],
+      "walletCount": 1,
+      "network": "base",
+      "callsSettled": 759,
+      "totalUsd": 52.909233,
+      "uniqueBuyers": 5
+    },
+    {
+      "rank": 12,
+      "name": "StableStudio",
+      "origins": [
+        "https://stablestudio.dev",
+        "https://stablestudio.io",
+        "https://api.aidress.ai"
+      ],
+      "homepage": "https://stablestudio.dev",
+      "endpoints": 3,
+      "wallet": "0x07f067959297767c887dbfa3c72379c66e82a045",
+      "wallets": [
+        "0x07f067959297767c887dbfa3c72379c66e82a045"
+      ],
+      "walletCount": 1,
+      "network": "base",
+      "callsSettled": 356,
+      "totalUsd": 46.06,
+      "uniqueBuyers": 21
+    },
+    {
+      "rank": 13,
+      "name": "SignalPulse",
+      "origins": [
+        "https://gridpulse.theaslangroupllc.com",
+        "https://macropulse.theaslangroupllc.com",
+        "https://riskpulse.theaslangroupllc.com",
+        "https://stablecoinpulse.theaslangroupllc.com",
+        "https://onchainpulse.theaslangroupllc.com",
+        "https://clinicalintelpulse.theaslangroupllc.com",
+        "https://waterpulse.theaslangroupllc.com",
+        "https://racingpulse.theaslangroupllc.com",
+        "https://arbipulse.theaslangroupllc.com",
+        "https://pulse.theaslangroupllc.com",
+        "https://filingspulse.theaslangroupllc.com",
+        "https://prospectpulse.theaslangroupllc.com",
+        "https://patentpulse.theaslangroupllc.com",
+        "https://careerpulse.theaslangroupllc.com",
+        "https://marketpulse.theaslangroupllc.com",
+        "https://geopoliticalpulse.theaslangroupllc.com",
+        "https://cryptopulse.theaslangroupllc.com",
+        "https://compliancepulse.theaslangroupllc.com",
+        "https://citepulse.theaslangroupllc.com",
+        "https://longevitypulse.theaslangroupllc.com",
+        "https://truthpulse.theaslangroupllc.com",
+        "https://govspendpulse.theaslangroupllc.com",
+        "https://gamepulse.theaslangroupllc.com",
+        "https://alphapulse.theaslangroupllc.com",
+        "https://travelpulse.theaslangroupllc.com",
+        "https://remittancepulse.theaslangroupllc.com",
+        "https://footballpulse.theaslangroupllc.com",
+        "https://findpulse.theaslangroupllc.com",
+        "https://dealpulse.theaslangroupllc.com",
+        "https://autopulse.theaslangroupllc.com",
+        "https://taxpulse.theaslangroupllc.com",
+        "https://airdroppulse.theaslangroupllc.com",
+        "https://edupulse.theaslangroupllc.com",
+        "https://esgpulse.theaslangroupllc.com",
+        "https://shopperpulse.theaslangroupllc.com",
+        "https://signalpulse.theaslangroupllc.com",
+        "https://api.vetpulse.theaslangroupllc.com",
+        "https://tradepulse.theaslangroupllc.com",
+        "https://safepulse.theaslangroupllc.com",
+        "https://nutripulse.theaslangroupllc.com",
+        "https://transitpulse.theaslangroupllc.com",
+        "https://seniorpulse.theaslangroupllc.com",
+        "https://petpulse.theaslangroupllc.com",
+        "https://herbapulse.theaslangroupllc.com",
+        "https://harvestpulse.theaslangroupllc.com",
+        "https://grantpulse.theaslangroupllc.com",
+        "https://franchisepulse.theaslangroupllc.com",
+        "https://fitpulse.theaslangroupllc.com",
+        "https://fanpulse.theaslangroupllc.com",
+        "https://debtpulse.theaslangroupllc.com",
+        "https://cyberpulse.theaslangroupllc.com",
+        "https://collectablespulse.theaslangroupllc.com",
+        "https://clearcarepulse.theaslangroupllc.com",
+        "https://chronicapulse.theaslangroupllc.com",
+        "https://biopulse.theaslangroupllc.com",
+        "https://giftpulse.theaslangroupllc.com",
+        "https://tablepulse.theaslangroupllc.com",
+        "https://scholarpulse.theaslangroupllc.com",
+        "https://talentpulse.theaslangroupllc.com",
+        "https://wealthpulse.theaslangroupllc.com",
+        "https://venturepulse.theaslangroupllc.com",
+        "https://proppulse.theaslangroupllc.com",
+        "https://policypulse.theaslangroupllc.com",
+        "https://parentpulse.theaslangroupllc.com",
+        "https://mindpulse.theaslangroupllc.com",
+        "https://mealpulse.theaslangroupllc.com",
+        "https://legalpulse.theaslangroupllc.com",
+        "https://insurepulse.theaslangroupllc.com",
+        "https://immigrationpulse.theaslangroupllc.com",
+        "https://homepulse.theaslangroupllc.com",
+        "https://econsignalpulse.theaslangroupllc.com",
+        "https://fieldpulse.theaslangroupllc.com",
+        "https://scentpulse.theaslangroupllc.com",
+        "https://climatepulse.theaslangroupllc.com",
+        "https://buildpulse.theaslangroupllc.com",
+        "https://glowpulse.theaslangroupllc.com",
+        "https://stateedge.theaslangroupllc.com"
+      ],
+      "homepage": "https://gridpulse.theaslangroupllc.com",
+      "endpoints": 980,
+      "wallet": "0x50ab2018c06c6e4eaa9ba52057eb55ed284912fc",
+      "wallets": [
+        "0x50ab2018c06c6e4eaa9ba52057eb55ed284912fc"
+      ],
+      "walletCount": 1,
+      "network": "base",
+      "callsSettled": 365,
+      "totalUsd": 43.6,
+      "uniqueBuyers": 15
+    },
+    {
+      "rank": 14,
+      "name": "api.loyalspark.online",
+      "origins": [
+        "https://api.loyalspark.online"
+      ],
+      "homepage": "https://api.loyalspark.online",
+      "endpoints": 31,
+      "wallet": "0x40a8cdd6a10ec1a8cb3dfb2834675e7a2cf4ad8b",
+      "wallets": [
+        "0x40a8cdd6a10ec1a8cb3dfb2834675e7a2cf4ad8b"
+      ],
+      "walletCount": 1,
+      "network": "base",
+      "callsSettled": 4511,
+      "totalUsd": 31.824,
+      "uniqueBuyers": 72
+    },
+    {
+      "rank": 15,
+      "name": "Google Trends SEO Keyword Data",
+      "origins": [
+        "https://google-trends.use.x402atlas.com"
+      ],
+      "homepage": "https://google-trends.use.x402atlas.com",
+      "endpoints": 4,
+      "wallet": "0x9aaceabad8e1858b72fcea1665381b168841b2fa",
+      "wallets": [
+        "0x9aaceabad8e1858b72fcea1665381b168841b2fa"
+      ],
+      "walletCount": 1,
+      "network": "base",
+      "callsSettled": 736,
+      "totalUsd": 31.14,
+      "uniqueBuyers": 4
+    },
+    {
+      "rank": 16,
+      "name": "StableTravel",
+      "origins": [
+        "https://stabletravel.dev",
+        "https://stable-travel-git-migrate-stabletravel-router-140-merit-systems.vercel.app"
+      ],
+      "homepage": "https://stabletravel.dev",
+      "endpoints": 61,
+      "wallet": "0xdd257723b86b4947483905cdacbbbc70facf2ec0",
+      "wallets": [
+        "0xdd257723b86b4947483905cdacbbbc70facf2ec0"
+      ],
+      "walletCount": 1,
+      "network": "base",
+      "callsSettled": 1351,
+      "totalUsd": 28.958,
+      "uniqueBuyers": 16
+    },
+    {
+      "rank": 17,
+      "name": "peerlytics.xyz",
+      "origins": [
+        "https://peerlytics.xyz"
+      ],
+      "homepage": "https://peerlytics.xyz",
+      "endpoints": 1,
+      "wallet": "0xc141cbe4f4a9cabc3cc78159a9268a4e008922cd",
+      "wallets": [
+        "0xc141cbe4f4a9cabc3cc78159a9268a4e008922cd"
+      ],
+      "walletCount": 1,
+      "network": "base",
+      "callsSettled": 84,
+      "totalUsd": 26.530538,
+      "uniqueBuyers": 2
+    },
+    {
+      "rank": 18,
+      "name": "Sirenic",
+      "origins": [
+        "https://api.sirenic.eu"
+      ],
+      "homepage": "https://api.sirenic.eu",
+      "endpoints": 79,
+      "wallet": "0x76a672eee56d29d475b0715cc03b8c99d70ec8a2",
+      "wallets": [
+        "0x76a672eee56d29d475b0715cc03b8c99d70ec8a2"
+      ],
+      "walletCount": 1,
+      "network": "base",
+      "callsSettled": 290,
+      "totalUsd": 20.73947,
+      "uniqueBuyers": 5
+    },
+    {
+      "rank": 19,
+      "name": "Linked Panda",
+      "origins": [
+        "https://api.linkedpanda.com"
+      ],
+      "homepage": "https://api.linkedpanda.com",
+      "endpoints": 11,
+      "wallet": "0xe740d5701749d262da5e4fcb9f814c5b6d91cf46",
+      "wallets": [
+        "0xe740d5701749d262da5e4fcb9f814c5b6d91cf46"
+      ],
+      "walletCount": 1,
+      "network": "base",
+      "callsSettled": 150,
+      "totalUsd": 17.13,
+      "uniqueBuyers": 18
+    },
+    {
+      "rank": 20,
+      "name": "Arkham x402",
+      "origins": [
+        "https://api.arkm.com"
+      ],
+      "homepage": "https://api.arkm.com",
+      "endpoints": 84,
+      "wallet": "0x942bd3e3073543c674efc0c378d5bce20f9120c1",
+      "wallets": [
+        "0x942bd3e3073543c674efc0c378d5bce20f9120c1",
+        "0x5e2e9bd1878d2089bc718e47f7a762895ffc5c9c"
+      ],
+      "walletCount": 2,
+      "network": "base",
+      "callsSettled": 80,
+      "totalUsd": 17,
+      "uniqueBuyers": 6
+    },
+    {
+      "rank": 21,
+      "name": "Company Domain Enrichment",
+      "origins": [
+        "https://api.kadec0.xyz"
+      ],
+      "homepage": "https://api.kadec0.xyz",
+      "endpoints": 16,
+      "wallet": "0x4df66b6c140778fe0717880a7c6dde5ea53acdea",
+      "wallets": [
+        "0x4df66b6c140778fe0717880a7c6dde5ea53acdea"
+      ],
+      "walletCount": 1,
+      "network": "base",
+      "callsSettled": 450,
+      "totalUsd": 16.21,
+      "uniqueBuyers": 4
+    },
+    {
+      "rank": 22,
+      "name": "Nansen",
+      "origins": [
+        "https://api.nansen.ai"
+      ],
+      "homepage": "https://api.nansen.ai",
+      "endpoints": 46,
+      "wallet": "0x93053f1e7a5efeda532fe69cbbe43cbec3a0f13f",
+      "wallets": [
+        "0x93053f1e7a5efeda532fe69cbbe43cbec3a0f13f"
+      ],
+      "walletCount": 1,
+      "network": "base",
+      "callsSettled": 750,
+      "totalUsd": 16.02,
+      "uniqueBuyers": 45
+    },
+    {
+      "rank": 23,
+      "name": "api.x402node.dev",
+      "origins": [
+        "https://api.x402node.dev",
+        "https://api.cn402.com"
+      ],
+      "homepage": "https://api.x402node.dev",
+      "endpoints": 371,
+      "wallet": "0x4466d4a84b7c49a6a094ec6eef4a0712d6dd125e",
+      "wallets": [
+        "0x4466d4a84b7c49a6a094ec6eef4a0712d6dd125e"
+      ],
+      "walletCount": 1,
+      "network": "base",
+      "callsSettled": 885,
+      "totalUsd": 16.00212,
+      "uniqueBuyers": 51
+    },
+    {
+      "rank": 24,
+      "name": "api.aitrailblazer.net",
+      "origins": [
+        "https://api.aitrailblazer.net"
+      ],
+      "homepage": "https://api.aitrailblazer.net",
+      "endpoints": 14,
+      "wallet": "0x6d91adf2c545047cbbc5b37a5f457cce081b48d3",
+      "wallets": [
+        "0x6d91adf2c545047cbbc5b37a5f457cce081b48d3"
+      ],
+      "walletCount": 1,
+      "network": "base",
+      "callsSettled": 104,
+      "totalUsd": 15.87,
+      "uniqueBuyers": 1
+    },
+    {
+      "rank": 25,
+      "name": "VAPE",
+      "origins": [
+        "https://vape-x402.vapex402.workers.dev"
+      ],
+      "homepage": "https://vape-x402.vapex402.workers.dev",
+      "endpoints": 18,
+      "wallet": "0x8aab9a6d28e9aba2a15a613c90f24f352f0cce15",
+      "wallets": [
+        "0x8aab9a6d28e9aba2a15a613c90f24f352f0cce15"
+      ],
+      "walletCount": 1,
+      "network": "base",
+      "callsSettled": 654,
+      "totalUsd": 14.882398,
+      "uniqueBuyers": 8
+    }
+  ],
+  "partial": true,
+  "windowNote": "7d scan, partial: 1 of 204 ranges unavailable",
+  "cache": {
+    "cachedAt": "2026-08-18T14:28:43.716Z",
+    "lastTriedAt": "2026-08-18T14:20:09.538Z",
+    "lastError": null,
+    "refreshIntervalMs": 3600000
+  },
+  "include": "all",
+  "sortServed": "usd",
+  "windowRequested": "24h",
+  "windowServed": "7d",
+  "totalSellers": 848
+}
