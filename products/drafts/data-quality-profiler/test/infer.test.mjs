@@ -41,3 +41,42 @@ test("detects mixed types and conflicts", () => {
   assert.equal(profile.inferred_type, "mixed");
   assert.deepEqual(profile.type_conflicts, { integer: 1, string: 1 });
 });
+
+test("near_constant requires dominant VALUE frequency >=95%, not dominant TYPE frequency", () => {
+  // 12 distinct strings — all same type "string" but different values → NOT near-constant
+  const manyDistinct = Array.from({ length: 12 }, (_, i) => ({ label: `value-${i}` }));
+  const profileDistinct = profileField(manyDistinct, "label");
+  assert.equal(profileDistinct.inferred_type, "string");
+  assert.equal(profileDistinct.near_constant, false, "12 distinct string values must not be near-constant");
+
+  // 19 of 20 rows share the same value → near-constant
+  const dominated = Array.from({ length: 20 }, (_, i) => ({ label: i < 19 ? "X" : "Y" }));
+  const profileDominated = profileField(dominated, "label");
+  assert.equal(profileDominated.near_constant, true, ">=95% repeated value must be near-constant");
+});
+
+test("near_constant requires >=10 non-missing rows", () => {
+  const few = Array.from({ length: 9 }, (_, i) => ({ label: "same" }));
+  const profileFew = profileField(few, "label");
+  assert.equal(profileFew.near_constant, false, "<10 rows must not be near-constant even if all identical");
+});
+
+test("distinct_count uses value canonicalization for objects, not reference identity", () => {
+  const records = [
+    { tag: { a: 1, b: 2 } },
+    { tag: { b: 2, a: 1 } },  // same value, different key order
+    { tag: { a: 1, b: 3 } },  // different value
+  ];
+  const profile = profileField(records, "tag");
+  assert.equal(profile.distinct_count, 2, "two equivalent objects should count as one distinct value");
+});
+
+test("distinct_count uses value canonicalization for arrays", () => {
+  const records = [
+    { items: [1, 2, 3] },
+    { items: [1, 2, 3] },  // same value
+    { items: [3, 2, 1] },  // different order → different value
+  ];
+  const profile = profileField(records, "items");
+  assert.equal(profile.distinct_count, 2, "two identical arrays should count as one distinct value");
+});

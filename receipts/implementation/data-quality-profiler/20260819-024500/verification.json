@@ -1,0 +1,79 @@
+{
+  "receipt_id": "dqp-review-fixes-20260819-024500",
+  "product": "data-quality-profiler",
+  "version": "0.1.0",
+  "phase": "review-fixes",
+  "agent": "hermes",
+  "timestamp": "2026-08-19T02:45:00Z",
+  "source_commit": "c7816cd617f228b487d06bdab5706c3689fb7074",
+  "branch": "fix/data-quality-profiler-review-findings",
+  "incoming_handoff": "handoffs/chatgpt-to-hermes/data-quality-profiler-review-fixes-2026-08-18.json",
+  "outgoing_handoff": "handoffs/hermes-to-chatgpt/data-quality-profiler-review-2026-08-18.json",
+  "test_evidence": {
+    "command": "node --test",
+    "run1": { "pass": 53, "fail": 0, "total": 53 },
+    "run2": { "pass": 53, "fail": 0, "total": 53 },
+    "deterministic": true
+  },
+  "smoke_evidence": {
+    "health": { "method": "GET", "url": "/health", "status": 200, "ok": true },
+    "json_profile": { "method": "POST", "url": "/v1/profile", "format": "json", "status": 200, "quality_score": 100, "scoring_version": "1.0" },
+    "csv_profile": { "method": "POST", "url": "/v1/profile", "format": "csv", "status": 200, "quality_score": 100, "scoring_version": "1.0" }
+  },
+  "per_invariant_evidence": [
+    {
+      "requirement": "near_constant uses VALUE frequency >=95%",
+      "assertion": "12 distinct strings → near_constant=false; 19/20 same value → near_constant=true; <10 rows → false",
+      "test_file": "test/infer.test.mjs",
+      "verdict": "PASS"
+    },
+    {
+      "requirement": "Recursive canonicalization for duplicates",
+      "assertion": "nested objects with permuted keys detected as duplicates; different nested values not false duplicates",
+      "test_file": "test/profile.test.mjs",
+      "verdict": "PASS"
+    },
+    {
+      "requirement": "Recursive canonicalization for distinct_count",
+      "assertion": "equivalent objects with permuted keys count as 1 distinct; identical arrays count as 1 distinct",
+      "test_file": "test/infer.test.mjs",
+      "verdict": "PASS"
+    },
+    {
+      "requirement": "CSV empty cells count as missing",
+      "assertion": "CSV format propagated; empty strings count as null_count; JSON empty strings do not",
+      "test_file": "test/csv-missing.test.mjs",
+      "verdict": "PASS"
+    },
+    {
+      "requirement": "scoring_version in public envelope",
+      "assertion": "body.scoring_version === '1.0'",
+      "test_file": "test/api.test.mjs",
+      "verdict": "PASS"
+    },
+    {
+      "requirement": "Config rejects arbitrary networks",
+      "assertion": "eip155:1 and eip155:137 throw; eip155:84532 allowed",
+      "test_file": "test/config.test.mjs",
+      "verdict": "PASS"
+    },
+    {
+      "requirement": "Official @x402/fastify middleware with fake facilitator",
+      "assertion": "unpaid POST returns 402 with base64 PAYMENT-REQUIRED header containing x402Version=2, scheme=exact, network=eip155:84532, payTo, amount=20000",
+      "test_file": "test/x402-plugin.test.mjs",
+      "verdict": "PASS"
+    },
+    {
+      "requirement": "No fabricated header unlocks 200",
+      "assertion": "Removed all tests treating arbitrary signature=0xabc as valid proof; only facilitator-verified payments grant access",
+      "test_file": "test/payments.test.mjs",
+      "verdict": "PASS (tests removed)"
+    }
+  ],
+  "side_effect_check": {
+    "skill_mutations": "none",
+    "config_mutations": "none",
+    "files_outside_product_repo": "none"
+  },
+  "status": "complete"
+}

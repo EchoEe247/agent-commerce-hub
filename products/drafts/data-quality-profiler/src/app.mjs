@@ -73,6 +73,7 @@ export function buildApp({ config, paymentPlugin, clock = { now: () => Date.now(
 
       return reply.send({
         schema_version: "1.0",
+        scoring_version: scored.scoring_version,
         request_id: requestId,
         quality_score: scored.quality_score,
         score_breakdown: scored.score_breakdown,

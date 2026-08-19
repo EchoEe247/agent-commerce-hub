@@ -4,11 +4,16 @@ export function loadConfig(env = process.env) {
   const allowMainnet = env.ALLOW_MAINNET === "true";
   const x402PayTo = env.X402_PAY_TO ?? "";
 
+  const ALLOWED_NETWORKS = new Set(["eip155:84532"]);
+
   if (x402Enabled && !x402PayTo) {
     throw new Error("X402_PAY_TO is required when X402_ENABLED=true");
   }
   if (x402Network === "eip155:8453" && !allowMainnet) {
     throw new Error("Base mainnet is disabled; ALLOW_MAINNET=true requires separate user authorization");
+  }
+  if (!ALLOWED_NETWORKS.has(x402Network)) {
+    throw new Error(`X402_NETWORK "${x402Network}" is not an allowed network; only Base Sepolia (eip155:84532) is permitted`);
   }
 
   return Object.freeze({

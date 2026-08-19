@@ -32,3 +32,30 @@ test("canonicalizes duplicate rows despite key order", () => {
   const profile = profileDataset({ records, fieldNames: ["a", "b"] });
   assert.equal(profile.duplicate_rows, 1);
 });
+
+test("recursive canonicalization: nested objects with different key order are duplicates", () => {
+  const records = [
+    { id: 1, meta: { x: 1, y: 2 } },
+    { id: 1, meta: { y: 2, x: 1 } },
+  ];
+  const profile = profileDataset({ records, fieldNames: ["id", "meta"] });
+  assert.equal(profile.duplicate_rows, 1, "nested objects with permuted keys should be detected as duplicates");
+});
+
+test("recursive canonicalization: nested objects with different values are NOT duplicates", () => {
+  const records = [
+    { id: 1, meta: { x: 1, y: 2 } },
+    { id: 1, meta: { x: 1, y: 3 } },
+  ];
+  const profile = profileDataset({ records, fieldNames: ["id", "meta"] });
+  assert.equal(profile.duplicate_rows, 0, "nested objects with different nested values must not be false duplicates");
+});
+
+test("recursive canonicalization: deeply nested key order is respected", () => {
+  const records = [
+    { id: 1, deep: { a: { z: 1, y: 2 }, b: 3 } },
+    { id: 1, deep: { b: 3, a: { y: 2, z: 1 } } },
+  ];
+  const profile = profileDataset({ records, fieldNames: ["id", "deep"] });
+  assert.equal(profile.duplicate_rows, 1, "deeply nested objects with permuted keys should be duplicates");
+});

@@ -1,12 +1,10 @@
 import { LIMITS, ERROR_CODES } from "./limits.mjs";
 import { profileField } from "./infer.mjs";
-
-function canonicalize(value) {
-  return JSON.stringify(value, Object.keys(value).sort());
-}
+import { canonicalize } from "./canonicalize.mjs";
 
 export function profileDataset(normalized, { now = () => Date.now(), deadlineMs = LIMITS.processingMs } = {}) {
-  const { records, fieldNames } = normalized;
+  const { records, fieldNames, format } = normalized;
+  const isCsv = format === "csv";
   const deadline = now() + deadlineMs;
 
   const duplicateRows = detectDuplicates(records);
@@ -20,7 +18,7 @@ export function profileDataset(normalized, { now = () => Date.now(), deadlineMs 
     if (now() > deadline) {
       throw new Error(`${ERROR_CODES.PROCESSING_TIMEOUT}: profiling exceeded deadline`);
     }
-    const profile = profileField(records, fieldName);
+    const profile = profileField(records, fieldName, { isCsv });
     fields[fieldName] = profile;
 
     if (profile.inferred_type === "mixed") {

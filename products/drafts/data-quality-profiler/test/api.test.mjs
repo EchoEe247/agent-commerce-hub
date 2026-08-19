@@ -34,6 +34,7 @@ test("POST /v1/profile returns the approved envelope", async () => {
   assert.equal(response.statusCode, 200);
   const body = response.json();
   assert.equal(body.schema_version, "1.0");
+  assert.equal(body.scoring_version, "1.0", "scoring_version must be in the public envelope");
   assert.match(body.request_id, /^prof_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
   assert.ok(Number.isInteger(body.quality_score) && body.quality_score >= 0 && body.quality_score <= 100);
   assert.ok(body.score_breakdown);

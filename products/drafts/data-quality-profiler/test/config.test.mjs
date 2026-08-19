@@ -28,3 +28,32 @@ test("refuses Base mainnet unless explicitly unlocked", () => {
     /mainnet is disabled/
   );
 });
+
+test("rejects arbitrary non-Sepolia, non-Base networks (fail-closed)", () => {
+  assert.throws(
+    () => loadConfig({
+      X402_ENABLED: "true",
+      X402_PAY_TO: "0x0000000000000000000000000000000000000001",
+      X402_NETWORK: "eip155:1",
+    }),
+    /not an allowed network/
+  );
+  assert.throws(
+    () => loadConfig({
+      X402_ENABLED: "true",
+      X402_PAY_TO: "0x0000000000000000000000000000000000000001",
+      X402_NETWORK: "eip155:137",
+    }),
+    /not an allowed network/
+  );
+});
+
+test("allows Base Sepolia (eip155:84532)", () => {
+  assert.doesNotThrow(() =>
+    loadConfig({
+      X402_ENABLED: "true",
+      X402_PAY_TO: "0x0000000000000000000000000000000000000001",
+      X402_NETWORK: "eip155:84532",
+    })
+  );
+});

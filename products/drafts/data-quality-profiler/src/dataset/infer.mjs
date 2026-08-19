@@ -1,3 +1,5 @@
+import { canonicalize } from "./canonicalize.mjs";
+
 export function classifyValue(value) {
   if (value === null) return "null";
   if (Array.isArray(value)) return "array";
@@ -38,7 +40,7 @@ export function profileField(records, fieldName, { isCsv = false } = {}) {
   const totalCount = records.length;
   const inferredType = deriveInferredType(typeCounts, nonMissingCount);
 
-  const distinctValues = new Set(nonMissing.map((item) => item.value));
+  const distinctValues = new Set(nonMissing.map((item) => canonicalize(item.value)));
   const distinctCount = distinctValues.size;
 
   const numericStats = isNumericType(inferredType)
@@ -46,7 +48,7 @@ export function profileField(records, fieldName, { isCsv = false } = {}) {
     : computeStringStats(nonMissing.map((item) => item.value));
 
   const constant = deriveConstant(typeCounts, nonMissingCount, distinctCount);
-  const nearConstant = deriveNearConstant(typeCounts, nonMissingCount);
+  const nearConstant = deriveNearConstant(nonMissing);
   const uniqueRatio = nonMissingCount ? distinctCount / nonMissingCount : 0;
   const candidateIdentifier = /^(id|.*_id|uuid|key)$/i.test(fieldName);
 
@@ -105,10 +107,15 @@ function deriveConstant(typeCounts, nonMissingCount, distinctCount) {
   return false;
 }
 
-function deriveNearConstant(typeCounts, nonMissingCount) {
-  if (nonMissingCount < 10) return false;
-  const dominant = Math.max(...Object.values(typeCounts));
-  return dominant / nonMissingCount >= 0.95;
+function deriveNearConstant(nonMissing) {
+  if (nonMissing.length < 10) return false;
+  const valueCounts = {};
+  for (const item of nonMissing) {
+    const key = String(item.value);
+    valueCounts[key] = (valueCounts[key] || 0) + 1;
+  }
+  const dominant = Math.max(...Object.values(valueCounts));
+  return dominant / nonMissing.length >= 0.95;
 }
 
 function round(value, decimals) {

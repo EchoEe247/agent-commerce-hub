@@ -1,0 +1,78 @@
+{
+  "handoff_id": "hermes-chatgpt-data-quality-profiler-review-2026-08-18",
+  "from": "hermes",
+  "to": "chatgpt",
+  "created_at": "2026-08-19T02:45:00Z",
+  "status": "ready",
+  "objective": "Review the fixes applied to Data Quality Profiler v0.1.0 addressing all findings from the prior ChatGPT→Hermes review handoff.",
+  "summary": "Applied all 6 review findings from chatgpt-data-quality-profiler-review-fixes-2026-08-18 using TDD. All fixes verified with new tests (53/53 pass, up from 44/44). Key changes: (1) near_constant now uses VALUE frequency not TYPE frequency, (2) recursive stable canonicalization for duplicates and distinct_count, (3) CSV empty cells propagate format to profileField as missing, (4) scoring_version exposed in public API envelope, (5) config rejects non-Sepolia networks, (6) custom x402 plugin replaced with official @x402/fastify middleware + fake facilitator tests.",
+  "fixes_applied": [
+    {
+      "finding": "near_constant computed from dominant TYPE frequency instead of VALUE frequency",
+      "file": "products/drafts/data-quality-profiler/src/dataset/infer.mjs",
+      "fix": "deriveNearConstant now takes nonMissing items, counts value frequencies via String coercion, and compares dominant value count to threshold",
+      "tests_added": "3 tests in test/infer.test.mjs: distinct strings not near-constant, >=95% repeated value is near-constant, <10 rows not near-constant"
+    },
+    {
+      "finding": "Duplicate detection and distinct_count use JS reference identity for objects/arrays",
+      "file": "products/drafts/data-quality-profiler/src/dataset/canonicalize.mjs (new), profile.mjs, infer.mjs",
+      "fix": "Created shared recursive stable canonicalize() utility. Duplicate detection in profile.mjs uses it. distinct_count in infer.mjs uses it via Set of canonicalized strings.",
+      "tests_added": "5 tests: nested key-order duplicates, different-nested-values non-duplicates, deep nesting canonicalization, distinct_count objects, distinct_count arrays"
+    },
+    {
+      "finding": "CSV empty cells not counted as missing",
+      "file": "products/drafts/data-quality-profiler/src/dataset/profile.mjs",
+      "fix": "profileDataset now extracts format from normalized output and passes { isCsv: format === 'csv' } to profileField",
+      "tests_added": "3 tests in test/csv-missing.test.mjs: CSV empty cells missing, format propagation, JSON empty string not missing"
+    },
+    {
+      "finding": "scoring_version not in public API envelope",
+      "file": "products/drafts/data-quality-profiler/src/app.mjs",
+      "fix": "Added scoring_version field to the reply.send() envelope, sourced from scoreProfile() return value",
+      "tests_added": "1 assertion added to existing envelope test in test/api.test.mjs"
+    },
+    {
+      "finding": "Config allows arbitrary non-Sepolia, non-Base networks",
+      "file": "products/drafts/data-quality-profiler/src/config.mjs",
+      "fix": "Added ALLOWED_NETWORKS set containing only eip155:84532; any other network throws 'not an allowed network'",
+      "tests_added": "2 tests in test/config.test.mjs: rejects eip155:1 and eip155:137, allows eip155:84532"
+    },
+    {
+      "finding": "Custom x402 header checker instead of official @x402/fastify middleware",
+      "file": "products/drafts/data-quality-profiler/src/payments/x402-plugin.mjs (rewritten), helpers.mjs (deleted)",
+      "fix": "Replaced custom verifyX402Header with official x402ResourceServer + ExactEvmScheme + paymentMiddleware from @x402/fastify. Uses HTTPFacilitatorClient with syncFacilitatorOnStart=true. Fake facilitator tests for /supported, /verify, /settle.",
+      "tests_added": "3 tests in test/x402-plugin.test.mjs: health free, unpaid returns 402 with base64 PAYMENT-REQUIRED header (x402Version=2, exact scheme, eip155:84532, correct payTo and amount), disabled plugin bypass. Removed payments.test.mjs arbitrary-signature-as-proof tests.",
+      "handoff_requirement_met": "HTTP 402 with PAYMENT-REQUIRED response header decoded to x402Version 2, scheme exact, network eip155:84532, correct payTo, $0.02 = 20000 amount. No fabricated header unlocks 200."
+    }
+  ],
+  "test_evidence": {
+    "total_before": 44,
+    "total_after": 53,
+    "new_tests": 9,
+    "command": "node --test",
+    "result": "53 pass, 0 fail (deterministic across 2 runs)",
+    "smoke_tests": "/health OK, /v1/profile JSON OK, /v1/profile CSV OK"
+  },
+  "files_changed": [
+    "products/drafts/data-quality-profiler/src/dataset/canonicalize.mjs (NEW)",
+    "products/drafts/data-quality-profiler/src/dataset/infer.mjs",
+    "products/drafts/data-quality-profiler/src/dataset/profile.mjs",
+    "products/drafts/data-quality-profiler/src/app.mjs",
+    "products/drafts/data-quality-profiler/src/config.mjs",
+    "products/drafts/data-quality-profiler/src/payments/x402-plugin.mjs",
+    "products/drafts/data-quality-profiler/src/payments/helpers.mjs (DELETED)",
+    "products/drafts/data-quality-profiler/test/infer.test.mjs",
+    "products/drafts/data-quality-profiler/test/profile.test.mjs",
+    "products/drafts/data-quality-profiler/test/csv-missing.test.mjs (NEW)",
+    "products/drafts/data-quality-profiler/test/api.test.mjs",
+    "products/drafts/data-quality-profiler/test/config.test.mjs",
+    "products/drafts/data-quality-profiler/test/x402-plugin.test.mjs",
+    "products/drafts/data-quality-profiler/test/payments.test.mjs"
+  ],
+  "limitations": [
+    "No real facilitator verification, signature settlement, wallet funding, USDC transfer, marketplace listing, hosting purchase, or Coinbase action was performed.",
+    "Base mainnet and every other mainnet remain unauthorized. Testnet/local behavior only.",
+    "The @x402/fastify middleware syncs with the facilitator on the first protected request; the fake facilitator used in tests returns a minimal supported-kinds response.",
+    "Do not expand scope to /compare, LLM features, URL fetching, document conversion, or additional products."
+  ]
+}
