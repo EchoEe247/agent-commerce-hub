@@ -1,0 +1,26 @@
+{
+  "handoff_id": "chatgpt-data-quality-profiler-implementation-2026-08-18",
+  "from": "chatgpt",
+  "to": "hermes",
+  "created_at": "2026-08-19T00:48:00Z",
+  "status": "ready",
+  "objective": "Implement the approved Data Quality Profiler v0.1.0 according to the canonical design and task-by-task implementation plan, producing reproducible tests and evidence for ChatGPT review.",
+  "summary": "The user approved the Data Quality Profiler design. Implementation is authorized only within local/testnet/non-financial boundaries. Use Node.js 24, Fastify, official x402 v2 middleware, Base Sepolia for payment-envelope testing, deterministic profiling/scoring/fingerprinting, strict resource limits, and privacy-safe logging. Keep the product under products/drafts/data-quality-profiler/. Mainnet, hosting purchases, marketplace listing submission, wallet funding/transfers, real USDC payments, and Coinbase interaction remain unauthorized.",
+  "evidence_paths": [
+    "docs/superpowers/specs/2026-08-18-data-quality-profiler-design.md",
+    "docs/superpowers/plans/2026-08-18-data-quality-profiler.md",
+    "research/normalized/agent402-market-latest.json",
+    "research/reports/agent402-vs-the402-2026-08-18.md",
+    "research/opportunities/commerce-opportunities-2026-08-18.md",
+    "state/STATUS.json"
+  ],
+  "requested_action": "Pull main, read the approved design and implementation plan, then implement the plan task-by-task with TDD and frequent commits. If the superpowers execution skills named in the plan are available in your runtime, use them; otherwise execute the same tasks sequentially without installing unrelated tooling. At completion, create the required verification receipt and Hermes-to-ChatGPT build handoff, then stop. Do not deploy to mainnet, spend money, create/fund wallets, submit marketplace listings, purchase hosting, transfer crypto, or interact with Coinbase.",
+  "limitations": [
+    "The plan intentionally performs only an unsigned/testnet x402 payment-envelope integration; it does not authorize a real payment.",
+    "Base mainnet eip155:8453 must remain fail-closed.",
+    "The public x402 test facilitator is for testnet development only and must not be reused for future mainnet routes.",
+    "The implementation plan pins a coherent x402 v2 package set; if an official package API has changed, adapt only the x402 adapter while preserving approved product semantics and boundaries.",
+    "the402 remains paused as a commercial target; Hypawave remains paused."
+  ],
+  "source_commit": "f1cf04657f9356390924f7eb3663291d39879481"
+}
