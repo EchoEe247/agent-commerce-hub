@@ -19,7 +19,8 @@
  */
 import { capabilities, type AdapterCapabilities } from "../../core/capabilities.js";
 import { CommerceError } from "../../core/errors.js";
-import { canonicalServiceId, normalizeResourceUrl } from "../../core/ids.js";
+import { canonicalServiceId } from "../../core/ids.js";
+import { normalizePublicResourceUrl } from "../resource-url.js";
 import { isAuthoritativeAmount, parseAuthoritativeAmount } from "../../core/money.js";
 import {
   modeAServiceActionability,
@@ -119,7 +120,8 @@ export function normalizeThe402Service(
   if (rawEndpoint === undefined) return null;
   let resourceUrl: string;
   try {
-    resourceUrl = normalizeResourceUrl(rawEndpoint);
+    // Catalogue-supplied endpoint: must pass the SSRF boundary.
+    resourceUrl = normalizePublicResourceUrl(rawEndpoint);
   } catch {
     return null;
   }

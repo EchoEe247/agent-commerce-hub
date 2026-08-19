@@ -15,6 +15,7 @@
 import { capabilities, type AdapterCapabilities } from "../../core/capabilities.js";
 import { CommerceError } from "../../core/errors.js";
 import { canonicalServiceId, normalizeResourceUrl } from "../../core/ids.js";
+import { normalizePublicResourceUrl } from "../resource-url.js";
 import {
   modeAServiceActionability,
   type ActivityMetrics,
@@ -85,7 +86,8 @@ export function normalizeBazaarItem(
 
   let resourceUrl: string;
   try {
-    resourceUrl = normalizeResourceUrl(rawResource);
+    // Marketplace-supplied: must pass the SSRF boundary, not just parse.
+    resourceUrl = normalizePublicResourceUrl(rawResource);
   } catch {
     // A resource URL we cannot parse (or a non-HTTP scheme) is unusable.
     return null;

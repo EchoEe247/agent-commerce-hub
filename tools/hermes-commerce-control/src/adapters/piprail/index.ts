@@ -27,6 +27,7 @@
 import { capabilities, type AdapterCapabilities } from "../../core/capabilities.js";
 import { CommerceError } from "../../core/errors.js";
 import { canonicalServiceId, normalizeResourceUrl } from "../../core/ids.js";
+import { normalizePublicResourceUrl } from "../resource-url.js";
 import {
   modeAServiceActionability,
   type ProbeResult,
@@ -111,7 +112,8 @@ export function normalizePipRailResource(
   if (rawResource === undefined) return null;
   let resourceUrl: string;
   try {
-    resourceUrl = normalizeResourceUrl(rawResource);
+    // Index-supplied: must pass the SSRF boundary, not just parse.
+    resourceUrl = normalizePublicResourceUrl(rawResource);
   } catch {
     return null;
   }

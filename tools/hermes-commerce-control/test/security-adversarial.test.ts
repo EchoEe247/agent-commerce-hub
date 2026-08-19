@@ -18,6 +18,190 @@ import {
 
 const cfg = loadConfig({});
 
+/**
+ * Private/local URLs a hostile listing might try to smuggle into canonical state.
+ * Drawn from the ranges the SSRF layer already blocks, so ingestion and
+ * connection-time enforcement are proven consistent rather than divergent.
+ */
+const PRIVATE_RESOURCE_URLS: readonly string[] = Object.freeze([
+  "http://127.0.0.1:8081/v1/x",
+  "http://localhost:9999/admin",
+  "http://192.168.1.1/claim",
+  "http://10.0.0.1/payload",
+  "http://172.16.0.5/x",
+  "http://169.254.169.254/latest/meta-data/",
+  "http://[::1]:8081/x",
+  "http://[::ffff:127.0.0.1]/x",
+  "http://[fc00::1]/x",
+  "http://[fe80::1]/x",
+  "http://2130706433/x",
+  "http://0x7f000001/x",
+  "http://metadata.google.internal/computeMetadata/v1/",
+  "http://svc.internal/x",
+  "http://printer.local/x",
+]);
+
+test("adversarial: ingestion refuses a private resource URL for every adapter", async () => {
+  const { normalizePublicResourceUrl, tryNormalizePublicResourceUrl } = await import(
+    "../src/adapters/resource-url.js"
+  );
+
+  // The shared ingestion boundary must reject every one of these outright.
+  for (const url of PRIVATE_RESOURCE_URLS) {
+    assert.throws(
+      () => normalizePublicResourceUrl(url),
+      /SSRF_BLOCKED|INVALID_URL/,
+      `ingestion must refuse ${url}`,
+    );
+    assert.equal(tryNormalizePublicResourceUrl(url), null, `batch variant must skip ${url}`);
+  }
+  // A genuinely public URL still passes, so the guard is not simply denying all.
+  assert.equal(
+    normalizePublicResourceUrl("HTTPS://API.Example.com:443/v1/profile"),
+    "https://api.example.com/v1/profile",
+  );
+});
+
+test("adversarial: no adapter admits a loopback listing into canonical state", async () => {
+  const clock = (): string => "2026-08-19T00:00:00.000Z";
+  const { normalizeBazaarItem } = await import("../src/adapters/cdp-bazaar/index.js");
+  const { normalizePipRailResource } = await import("../src/adapters/piprail/index.js");
+  const { normalizeThe402Service } = await import("../src/adapters/the402/index.js");
+  const { PayShAdapter } = await import("../src/adapters/paysh/index.js");
+  const { Agent402Adapter } = await import("../src/adapters/agent402/index.js");
+
+  const makeCtx = (platform: Parameters<typeof EvidenceCollector>[0] extends never ? never : "cdp_bazaar" | "piprail" | "the402" | "paysh" | "agent402") => ({
+    fetch: {
+      json: async () => {
+        throw new Error("no network in this test");
+      },
+      text: async () => {
+        throw new Error("no network in this test");
+      },
+    },
+    evidence: new EvidenceCollector(platform, clock),
+    clock,
+    signal: new AbortController().signal,
+    config: cfg,
+  });
+
+  for (const url of PRIVATE_RESOURCE_URLS) {
+    // CDP Bazaar: hostile `resource`.
+    assert.equal(
+      normalizeBazaarItem({ resource: url, accepts: [] }, makeCtx("cdp_bazaar") as never, "https://x/y"),
+      null,
+      `cdp_bazaar must skip ${url}`,
+    );
+
+    // PipRail: hostile index `resource`.
+    assert.equal(
+      normalizePipRailResource({ resource: url, rails: [] }, makeCtx("piprail") as never, "piprail:discover"),
+      null,
+      `piprail must skip ${url}`,
+    );
+
+    // the402: hostile `endpoint`.
+    assert.equal(
+      normalizeThe402Service({ id: "svc_x", endpoint: url }, makeCtx("the402") as never, "https://x/y"),
+      null,
+      `the402 must skip ${url}`,
+    );
+
+    // Pay.sh: hostile `service_url` in registry front matter.
+    const payMd = `---\nname: evil\ntitle: "Evil"\ncategory: data\nservice_url: ${url}\n---\n\nx402 USDC payment accepted on Solana mainnet.\n`;
+    assert.equal(
+      new PayShAdapter().normalize("evil/evil", payMd, makeCtx("paysh") as never, "https://x/y"),
+      null,
+      `paysh must skip ${url}`,
+    );
+  }
+
+  // Agent402 derives its URL from a catalogue baseUrl; a private baseUrl must
+  // yield no candidates rather than a loopback service.
+  const agent402 = new Agent402Adapter("http://127.0.0.1:8081");
+  const services = await agent402.discoverServices({}, {
+    ...makeCtx("agent402"),
+    fetch: {
+      json: async () => ({
+        baseUrl: "http://127.0.0.1:8081",
+        payment: { network: "base" },
+        endpoints: [{ method: "GET", path: "/api/x", name: "x", price: "$0.01", slug: "x" }],
+      }),
+      text: async () => {
+        throw new Error("unused");
+      },
+    },
+  } as never);
+  assert.deepEqual(services, [], "agent402 must not emit a loopback service");
+});
+
+test("adversarial: one hostile listing does not discard the valid rest of a page", async () => {
+  const clock = (): string => "2026-08-19T00:00:00.000Z";
+  const { CdpBazaarAdapter } = await import("../src/adapters/cdp-bazaar/index.js");
+  const ctx = {
+    fetch: {
+      json: async () => ({
+        x402Version: 2,
+        pagination: { limit: 3, offset: 0, total: 3 },
+        items: [
+          // Hostile entry first, so a naive implementation would abort here.
+          { resource: "http://127.0.0.1:8081/evil", accepts: [] },
+          {
+            resource: "https://api.good.example/v1/one",
+            accepts: [
+              {
+                scheme: "exact",
+                network: "eip155:8453",
+                amount: "3000",
+                asset: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+                payTo: "0x52E29e0d2Aa49bfBfC548C0A9F2196F4aa51f3ea",
+              },
+            ],
+          },
+          { resource: "https://api.good.example/v1/two", accepts: [] },
+        ],
+      }),
+      text: async () => {
+        throw new Error("unused");
+      },
+    },
+    evidence: new EvidenceCollector("cdp_bazaar", clock),
+    clock,
+    signal: new AbortController().signal,
+    config: cfg,
+  };
+
+  const services = await new CdpBazaarAdapter(
+    "https://api.cdp.coinbase.com/platform/v2/x402/discovery/",
+  ).discoverServices({}, ctx as never);
+
+  assert.equal(services.length, 2, "the two legitimate listings must survive");
+  for (const s of services) {
+    assert.ok(
+      s.resourceUrl.startsWith("https://api.good.example/"),
+      `unexpected canonical URL ${s.resourceUrl}`,
+    );
+  }
+});
+
+test("adversarial: connection-time validation remains authoritative after ingestion checks", async () => {
+  // Ingestion rejection is defense in depth, not a replacement. A URL whose host
+  // is public at parse time must still be validated when the socket opens, which
+  // is what defeats DNS rebinding. Assert the safe-fetch layer still refuses a
+  // literal private target and that its lookup guard is wired up.
+  const safeFetch = createSafeFetch(cfg);
+  await assert.rejects(() => safeFetch.json("http://127.0.0.1:9/x"), /SSRF_BLOCKED/);
+
+  const source = readFileSync(new URL("../src/network/safe-fetch.ts", import.meta.url), "utf8");
+  assert.ok(source.includes("lookup:"), "undici must be given a validating lookup");
+  assert.ok(
+    source.includes("connection-time check refused"),
+    "the lookup guard must reject at connection time",
+  );
+  // Redirects must be handled manually so every hop is revalidated.
+  assert.ok(source.includes("TOO_MANY_REDIRECTS"));
+});
+
 test("adversarial: the hostile prompt is preserved as inert text, not executed", () => {
   const collector = new EvidenceCollector("cdp_bazaar", () => "2026-08-19T00:00:00.000Z");
   const capture = collector.capture("hostile_listing", HOSTILE_SERVICE_PAYLOAD);

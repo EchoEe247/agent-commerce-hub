@@ -17,7 +17,8 @@
  */
 import { capabilities, type AdapterCapabilities } from "../../core/capabilities.js";
 import { CommerceError } from "../../core/errors.js";
-import { canonicalServiceId, normalizeMethod, normalizeResourceUrl } from "../../core/ids.js";
+import { canonicalServiceId, normalizeMethod } from "../../core/ids.js";
+import { normalizePublicResourceUrl } from "../resource-url.js";
 import { parseAuthoritativeAmount } from "../../core/money.js";
 import {
   modeAServiceActionability,
@@ -116,7 +117,8 @@ function normalizeEntry(
 ): ServiceCandidate | null {
   let resourceUrl: string;
   try {
-    resourceUrl = normalizeResourceUrl(new URL(input.path, input.baseUrl).toString());
+    // Catalogue-supplied baseUrl + path: must pass the SSRF boundary.
+    resourceUrl = normalizePublicResourceUrl(new URL(input.path, input.baseUrl).toString());
   } catch {
     return null;
   }
