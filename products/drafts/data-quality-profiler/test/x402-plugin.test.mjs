@@ -12,7 +12,6 @@ test("GET /health is payment-free", async () => {
 
 test("paid endpoints require x402 header when enabled", async () => {
   const app = buildApp({ config: { serviceVersion: "0.1.0" }, paymentPlugin: buildPaymentPlugin({ x402Enabled: true, x402Network: "eip155:84532", x402PayTo: "0x0000000000000000000000000000000000000001", x402Price: "$0.02" }) });
-  app.post("/profile", async () => ({ ok: true }));
   const response = await app.inject({ method: "POST", url: "/profile", payload: {} });
   assert.equal(response.statusCode, 402);
   await app.close();
@@ -21,7 +20,6 @@ test("paid endpoints require x402 header when enabled", async () => {
 test("paid endpoints accept valid x402 header", async () => {
   const plugin = buildPaymentPlugin({ x402Enabled: true, x402Network: "eip155:84532", x402PayTo: "0x0000000000000000000000000000000000000001", x402Price: "$0.02" });
   const app = buildApp({ config: { serviceVersion: "0.1.0" }, paymentPlugin: plugin });
-  app.post("/profile", async () => ({ ok: true }));
   const response = await app.inject({
     method: "POST",
     url: "/profile",
