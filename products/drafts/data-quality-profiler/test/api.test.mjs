@@ -142,3 +142,30 @@ test("legal maximum-size dataset is processed successfully", async () => {
   assert.equal(body.dataset.field_count, fieldNames.length);
   await app.close();
 });
+
+test("all-null field at API level returns no NaN/Infinity in profile", async () => {
+  const app = unpaidApp();
+  const response = await app.inject({
+    method: "POST",
+    url: "/v1/profile",
+    payload: {
+      format: "json",
+      records: [
+        { id: 1, empty: null },
+        { id: 2, empty: null },
+        { id: 3, empty: null },
+      ],
+    },
+  });
+  assert.equal(response.statusCode, 200);
+  const body = response.json();
+  const field = body.fields.empty;
+  assert.equal(field.null_count, 3);
+  assert.equal(field.null_pct, 100);
+  assert.equal(field.inferred_type, "null");
+  // Must not contain NaN or Infinity anywhere in the field profile
+  const json = JSON.stringify(field);
+  assert.ok(!json.includes("NaN"), "field profile must not contain NaN");
+  assert.ok(!json.includes("Infinity"), "field profile must not contain Infinity");
+  await app.close();
+});

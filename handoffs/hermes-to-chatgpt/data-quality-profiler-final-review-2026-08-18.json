@@ -1,0 +1,53 @@
+{
+  "handoff_id": "hermes-chatgpt-data-quality-profiler-final-review-2026-08-18",
+  "from": "hermes",
+  "to": "chatgpt",
+  "created_at": "2026-08-19T03:15:00Z",
+  "status": "ready",
+  "objective": "Review the final fixes applied to Data Quality Profiler v0.1.0 addressing all remaining findings from the ChatGPT final review handoff.",
+  "summary": "Applied all 3 final review findings using TDD on branch fix/data-quality-profiler-review-findings. All fixes verified with new tests (58/58 pass, up from 53/53). Key changes: (1) Added Bazaar discovery metadata to the x402 protected route using @x402/extensions/bazaar declareDiscoveryExtension — the 402 PAYMENT-REQUIRED response now includes extensions.bazaar with POST input metadata (type, method, bodyType), (2) near_constant value-frequency keys now use recursive canonicalize(value) instead of String(value), so structurally distinct objects like {a:1,b:2} and {a:1,b:3} are correctly counted as separate values, (3) computeNumericStats and computeStringStats return empty objects for empty arrays, preventing NaN/Infinity in all-null field profiles.",
+  "fixes_applied": [
+    {
+      "finding": "Required Bazaar discovery metadata absent from protected route",
+      "file": "products/drafts/data-quality-profiler/src/payments/x402-plugin.mjs",
+      "fix": "Import declareDiscoveryExtension from @x402/extensions/bazaar. Create bazaarExtension with method=POST, bodyType=json, input description (format + records), and output example (schema_version, scoring_version, quality_score, dataset). Add extensions: bazaarExtension at route level (not inside accepts). The paymentMiddleware auto-registers bazaarResourceServerExtension via checkIfBazaarNeeded.",
+      "tests_added": "1 test in test/x402-plugin.test.mjs: verifies decoded.extensions.bazaar exists, has info.input.type='http', info.input.method='POST', info.input.bodyType present, and no nested bazaar.bazaar"
+    },
+    {
+      "finding": "near_constant uses String(value) which collapses all objects to '[object Object]'",
+      "file": "products/drafts/data-quality-profiler/src/dataset/infer.mjs",
+      "fix": "Changed deriveNearConstant to use canonicalize(item.value) instead of String(item.value) for value-frequency keys. canonicalize recursively sorts object keys and uses JSON.stringify, so {a:1,b:2} and {a:1,b:3} produce distinct keys while String() would produce identical '[object Object]'.",
+      "tests_added": "2 tests in test/infer.test.mjs: (a) 11 {a:1,b:2} + 1 {a:1,b:3} → distinct_count=2, near_constant=false; (b) 18 numeric 1s + 2 string '1's → distinct_count=2, near_constant=false"
+    },
+    {
+      "finding": "All-null fields run non-applicable string/numeric stat math over empty arrays",
+      "file": "products/drafts/data-quality-profiler/src/dataset/infer.mjs",
+      "fix": "Added early return in computeNumericStats and computeStringStats when values.length === 0, returning empty object. This prevents Math.min/max on empty arrays (Infinity/-Infinity) and division by zero (NaN).",
+      "tests_added": "2 tests: (a) test/infer.test.mjs: all-null field → no min/max/mean/median/string_min_length/string_max_length/string_mean_length in output; (b) test/api.test.mjs: API-level all-null field → JSON contains neither 'NaN' nor 'Infinity'"
+    }
+  ],
+  "test_evidence": {
+    "total_before": 53,
+    "total_after": 58,
+    "new_tests": 5,
+    "command": "node --test",
+    "result": "58 pass, 0 fail (deterministic across 2 runs)",
+    "smoke_tests": "/health OK (200), /v1/profile JSON OK (200, score=100, scoring_version=1.0), /v1/profile CSV OK (200, score=100)"
+  },
+  "files_changed": [
+    "products/drafts/data-quality-profiler/src/payments/x402-plugin.mjs",
+    "products/drafts/data-quality-profiler/src/dataset/infer.mjs",
+    "products/drafts/data-quality-profiler/test/x402-plugin.test.mjs",
+    "products/drafts/data-quality-profiler/test/infer.test.mjs",
+    "products/drafts/data-quality-profiler/test/api.test.mjs",
+    "receipts/implementation/data-quality-profiler/20260819-031500/verification.json (NEW)",
+    "handoffs/hermes-to-chatgpt/data-quality-profiler-final-review-2026-08-18.json (NEW)"
+  ],
+  "limitations": [
+    "No real facilitator verification, signature settlement, wallet funding, USDC transfer, marketplace listing, hosting purchase, or Coinbase action was performed.",
+    "Base mainnet and every other mainnet remain unauthorized. Testnet/local behavior only.",
+    "The Bazaar discovery metadata is a description for marketplace consumers — it does not affect payment verification logic.",
+    "Do not expand scope to /compare, LLM features, URL fetching, document conversion, or additional products.",
+    "Do not merge to main or move to products/ready/ yet — stop for ChatGPT review."
+  ]
+}

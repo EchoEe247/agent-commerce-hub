@@ -76,6 +76,7 @@ function deriveInferredType(typeCounts, nonMissingCount) {
 }
 
 function computeNumericStats(values) {
+  if (values.length === 0) return {};
   const sorted = values.map((v) => Number(v)).sort((a, b) => a - b);
   const min = sorted[0];
   const max = sorted[sorted.length - 1];
@@ -94,6 +95,7 @@ function computeMedian(sorted) {
 }
 
 function computeStringStats(values) {
+  if (values.length === 0) return {};
   const lengths = values.map((v) => String(v).length);
   const min = Math.min(...lengths);
   const max = Math.max(...lengths);
@@ -111,7 +113,7 @@ function deriveNearConstant(nonMissing) {
   if (nonMissing.length < 10) return false;
   const valueCounts = {};
   for (const item of nonMissing) {
-    const key = String(item.value);
+    const key = canonicalize(item.value);
     valueCounts[key] = (valueCounts[key] || 0) + 1;
   }
   const dominant = Math.max(...Object.values(valueCounts));

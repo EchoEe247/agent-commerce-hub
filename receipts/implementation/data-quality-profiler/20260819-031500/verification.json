@@ -1,0 +1,97 @@
+{
+  "receipt_id": "dqp-final-review-fixes-20260819-031500",
+  "product": "data-quality-profiler",
+  "version": "0.1.0",
+  "phase": "final-review-fixes",
+  "agent": "hermes",
+  "timestamp": "2026-08-19T03:15:00Z",
+  "source_commit": "371acd3d",
+  "branch": "fix/data-quality-profiler-review-findings",
+  "incoming_handoff": "handoffs/chatgpt-to-hermes/data-quality-profiler-final-review-fixes-2026-08-18.json",
+  "outgoing_handoff": "handoffs/hermes-to-chatgpt/data-quality-profiler-final-review-2026-08-18.json",
+  "test_evidence": {
+    "command": "node --test",
+    "run1": { "pass": 58, "fail": 0, "total": 58 },
+    "run2": { "pass": 58, "fail": 0, "total": 58 },
+    "deterministic": true
+  },
+  "smoke_evidence": {
+    "health": { "method": "GET", "url": "/health", "status": 200, "ok": true },
+    "json_profile": { "method": "POST", "url": "/v1/profile", "format": "json", "status": 200, "quality_score": 100, "scoring_version": "1.0" },
+    "csv_profile": { "method": "POST", "url": "/v1/profile", "format": "csv", "status": 200, "quality_score": 100 }
+  },
+  "per_invariant_evidence": [
+    {
+      "requirement": "Bazaar discovery metadata in 402 PAYMENT-REQUIRED response",
+      "assertion": "decoded.extensions.bazaar.info.input.type === 'http', .method === 'POST', .bodyType present; no nested bazaar.bazaar",
+      "test_file": "test/x402-plugin.test.mjs",
+      "verdict": "PASS"
+    },
+    {
+      "requirement": "near_constant uses recursive canonicalize(value), not String(value)",
+      "assertion": "11 {a:1,b:2} + 1 {a:1,b:3} → distinct_count=2, near_constant=false (String() would collapse all to '[object Object]')",
+      "test_file": "test/infer.test.mjs",
+      "verdict": "PASS"
+    },
+    {
+      "requirement": "near_constant distinguishes numeric 1 from string \"1\"",
+      "assertion": "18 numeric 1s + 2 string '1's → distinct_count=2, near_constant=false (canonicalize('1') !== canonicalize('\"1\"'))",
+      "test_file": "test/infer.test.mjs",
+      "verdict": "PASS"
+    },
+    {
+      "requirement": "All-null field returns no NaN/Infinity stats",
+      "assertion": "3 null records → inferred_type='null', null_pct=100, no min/max/mean/median/string_min_length/string_max_length/string_mean_length in output",
+      "test_file": "test/infer.test.mjs",
+      "verdict": "PASS"
+    },
+    {
+      "requirement": "API-level all-null field has no NaN/Infinity in JSON",
+      "assertion": "JSON.stringify(field) contains neither 'NaN' nor 'Infinity'",
+      "test_file": "test/api.test.mjs",
+      "verdict": "PASS"
+    },
+    {
+      "requirement": "near_constant VALUE frequency (prior fix, still passing)",
+      "assertion": "12 distinct strings → false; 19/20 same value → true; <10 rows → false",
+      "test_file": "test/infer.test.mjs",
+      "verdict": "PASS"
+    },
+    {
+      "requirement": "Recursive canonicalization for duplicates (prior fix, still passing)",
+      "assertion": "nested objects with permuted keys detected as duplicates",
+      "test_file": "test/profile.test.mjs",
+      "verdict": "PASS"
+    },
+    {
+      "requirement": "CSV empty cells count as missing (prior fix, still passing)",
+      "assertion": "CSV format propagated; empty strings count as null_count",
+      "test_file": "test/csv-missing.test.mjs",
+      "verdict": "PASS"
+    },
+    {
+      "requirement": "scoring_version in public envelope (prior fix, still passing)",
+      "assertion": "body.scoring_version === '1.0'",
+      "test_file": "test/api.test.mjs",
+      "verdict": "PASS"
+    },
+    {
+      "requirement": "Config rejects arbitrary networks (prior fix, still passing)",
+      "assertion": "eip155:1 and eip155:137 throw; eip155:84532 allowed",
+      "test_file": "test/config.test.mjs",
+      "verdict": "PASS"
+    },
+    {
+      "requirement": "Official @x402/fastify middleware (prior fix, still passing)",
+      "assertion": "unpaid POST returns 402 with base64 PAYMENT-REQUIRED header",
+      "test_file": "test/x402-plugin.test.mjs",
+      "verdict": "PASS"
+    }
+  ],
+  "side_effect_check": {
+    "skill_mutations": "none",
+    "config_mutations": "none",
+    "files_outside_product_repo": "none"
+  },
+  "status": "complete"
+}

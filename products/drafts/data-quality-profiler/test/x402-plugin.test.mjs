@@ -106,3 +106,38 @@ test("disabled plugin leaves /v1/profile reachable without payment", async () =>
   await app.close();
   await fac.close();
 });
+
+test("402 PAYMENT-REQUIRED payload contains extensions.bazaar with POST input metadata", async () => {
+  const { app: fac, url: facUrl } = await createFakeFacilitator();
+  const plugin = buildPaymentPlugin(makePluginConfig(facUrl));
+  const app = buildApp({ config: { serviceVersion: "0.1.0" }, paymentPlugin: plugin });
+  const response = await app.inject({
+    method: "POST",
+    url: "/v1/profile",
+    payload: { format: "json", records: [{ id: 1 }] },
+  });
+  assert.equal(response.statusCode, 402);
+
+  const paymentHeader = response.headers["payment-required"];
+  assert.ok(paymentHeader, "PAYMENT-REQUIRED response header must be present");
+  const decoded = JSON.parse(Buffer.from(paymentHeader, "base64").toString("utf8"));
+
+  // Bazaar discovery extension must be present
+  // Extensions are at top level, not inside accepts
+  assert.ok(decoded.extensions, "decoded header must have extensions");
+  assert.ok(decoded.extensions.bazaar, "extensions must contain bazaar");
+
+  const bazaar = decoded.extensions.bazaar;
+  // Must describe the POST input
+  assert.ok(bazaar.info, "bazaar extension must have info");
+  assert.ok(bazaar.info.input, "bazaar.info must have input");
+  assert.equal(bazaar.info.input.type, "http", "input type must be http");
+  assert.equal(bazaar.info.input.method, "POST", "input method must be POST");
+  assert.ok(bazaar.info.input.bodyType, "input must declare bodyType");
+
+  // Must NOT double-wrap bazaar.bazaar
+  assert.ok(!bazaar.bazaar, "bazaar must not contain nested bazaar.bazaar");
+
+  await app.close();
+  await fac.close();
+});
