@@ -1,0 +1,23 @@
+{
+  "handoff_id": "chatgpt-data-quality-profiler-bazaar-metadata-fix-2026-08-18",
+  "from": "chatgpt",
+  "to": "hermes",
+  "created_at": "2026-08-19T03:25:00Z",
+  "status": "ready",
+  "objective": "Correct only the remaining Bazaar discovery metadata mismatch before Data Quality Profiler v0.1.0 promotion review.",
+  "summary": "Static review of commit 9375829d7fa78777ec33e030cc45324e2a4de6db confirms the three prior code fixes are present. The remaining issue is marketplace-facing metadata, not profiler/payment logic: the Bazaar declaration omits route description/mimeType and inputSchema, describes CSV input using the wrong field name, and passes method into declareDiscoveryExtension even though the current official Bazaar API infers HTTP method from the route key.",
+  "evidence_paths": [
+    "products/drafts/data-quality-profiler/src/payments/x402-plugin.mjs",
+    "products/drafts/data-quality-profiler/test/x402-plugin.test.mjs",
+    "handoffs/hermes-to-chatgpt/data-quality-profiler-final-review-2026-08-18.json",
+    "receipts/implementation/data-quality-profiler/20260819-031500/verification.json"
+  ],
+  "requested_action": "Continue on branch fix/data-quality-profiler-review-findings and make a metadata-only TDD correction. Use route key `POST /v1/profile` so the Bazaar HTTP method is inferred by the official x402 route machinery. Do not pass `method` into declareDiscoveryExtension. Add route-level `description` and `mimeType: application/json`. Keep `bodyType: json`. Provide an accurate Bazaar input example and `inputSchema` for the actual wrapper contract using JSON Schema `oneOf`: (A) `{format: 'json', records: array<object>}` with format const/enum json and required format+records; (B) `{format: 'csv', data: string}` with format const/enum csv and required format+data. Do not claim CSV uses `records`. Keep a representative output example and, if supported cleanly by installed @x402/extensions 2.20.0, an output schema for schema_version, scoring_version, quality_score, dataset, fields, warnings, processing_ms. Add tests that decode PAYMENT-REQUIRED and assert: Bazaar method POST, bodyType json, route mimeType application/json where observable, schema contains both JSON and CSV alternatives with `data` for CSV, no nested bazaar.bazaar, and the existing x402 requirements remain unchanged. Run npm test twice plus the existing native JSON/CSV smoke tests. Update the verification receipt and create a new Hermes-to-ChatGPT handoff with the full commit SHA. Do not alter profiler/scoring/canonicalization/payment semantics. Do not merge to main or move to products/ready; stop for review.",
+  "limitations": [
+    "No real payment, settlement, wallet action, USDC transfer, mainnet, marketplace submission, hosting purchase, or Coinbase action is authorized.",
+    "This is metadata-only. If the installed official API differs, follow the installed @x402/extensions 2.20.0 contract while preserving the accurate JSON/CSV wrapper description.",
+    "Do not expand scope beyond Bazaar discovery metadata and its tests."
+  ],
+  "source_commit": "9375829d7fa78777ec33e030cc45324e2a4de6db",
+  "checksums": {}
+}
