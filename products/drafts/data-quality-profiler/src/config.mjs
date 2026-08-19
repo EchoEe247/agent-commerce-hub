@@ -1,0 +1,25 @@
+export function loadConfig(env = process.env) {
+  const x402Enabled = env.X402_ENABLED === "true";
+  const x402Network = env.X402_NETWORK ?? "eip155:84532";
+  const allowMainnet = env.ALLOW_MAINNET === "true";
+  const x402PayTo = env.X402_PAY_TO ?? "";
+
+  if (x402Enabled && !x402PayTo) {
+    throw new Error("X402_PAY_TO is required when X402_ENABLED=true");
+  }
+  if (x402Network === "eip155:8453" && !allowMainnet) {
+    throw new Error("Base mainnet is disabled; ALLOW_MAINNET=true requires separate user authorization");
+  }
+
+  return Object.freeze({
+    serviceVersion: "0.1.0",
+    host: env.HOST ?? "0.0.0.0",
+    port: Number(env.PORT ?? "4021"),
+    x402Enabled,
+    x402Network,
+    x402Price: env.X402_PRICE ?? "$0.02",
+    x402PayTo,
+    x402FacilitatorUrl: env.X402_FACILITATOR_URL ?? "https://x402.org/facilitator",
+    allowMainnet,
+  });
+}

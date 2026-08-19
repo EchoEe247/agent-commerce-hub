@@ -1,8 +1,11 @@
 import { buildApp } from "./app.mjs";
+import { loadConfig } from "./config.mjs";
+
+const config = loadConfig(process.env);
 
 const app = buildApp({
-  config: { serviceVersion: "0.1.0" },
+  config,
   paymentPlugin: async () => {},
 });
 
-await app.listen({ host: "0.0.0.0", port: 4021 });
+await app.listen({ host: config.host, port: config.port });
