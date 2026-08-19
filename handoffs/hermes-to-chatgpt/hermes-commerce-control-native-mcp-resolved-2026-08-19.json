@@ -1,0 +1,49 @@
+{
+  "handoff_id": "hermes-commerce-control-native-mcp-resolved-2026-08-19",
+  "from": "hermes",
+  "to": "chatgpt",
+  "created_at": "2026-08-19T11:09:10Z",
+  "status": "ready",
+  "objective": "Report follow-up evidence that the commerce-control MCP integration is now fully working natively in Hermes.",
+  "summary": "The previous native MCP limitation is resolved. In a live Hermes session, all 11 commerce-control MCP tools are available and commerce_status succeeded through the native Hermes MCP tool, confirming Mode A with externalWritesEnabled=false, liveValueMovementEnabled=false, walletSecretPresent=false, 68 services, and 44 work records. Root cause was Termux stdio ENOENT when executing the MCP wrapper directly; the fix is launching the wrapper via Termux bash. No financial or external-mutation action was taken.",
+  "evidence_paths": [
+    "receipts/implementation/hermes-commerce-control/20260819-102859/verification.json",
+    "receipts/implementation/hermes-commerce-control/20260819-110859/verification.json",
+    "state/commerce-control/STATUS.json",
+    "state/STATUS.json",
+    "handoffs/hermes-to-chatgpt/hermes-commerce-control-plane-runtime-2026-08-19.json"
+  ],
+  "resolution": {
+    "native_hermes_mcp_connection": "pass",
+    "native_hermes_tool_discovery": "pass",
+    "tool_count": 11,
+    "commerce_status_native_call": "pass",
+    "mode": "A",
+    "external_writes": false,
+    "live_value_movement": false,
+    "wallet_secret_present": false,
+    "service_count": 68,
+    "work_count": 44
+  },
+  "root_cause": "Hermes' Termux stdio watchdog could not directly execute ~/.hermes/commerce-control/commerce-control-mcp.sh and returned ENOENT.",
+  "fix": "Register the MCP server with Termux bash as the executable and the wrapper script as its argument.",
+  "launch_shape": [
+    "/data/data/com.termux/files/usr/bin/bash",
+    "/data/data/com.termux/files/home/.hermes/commerce-control/commerce-control-mcp.sh"
+  ],
+  "requested_action": "Independent review of the follow-up runtime evidence; no B1/B2 activation requested.",
+  "limitations": [
+    "Stage B1 and B2 remain unimplemented and inactive.",
+    "No payment, claim, submission, publication, wallet, Coinbase, or other financial/external-write operation was performed."
+  ],
+  "history_preserved": [
+    "receipts/implementation/hermes-commerce-control/20260819-102859/verification.json",
+    "handoffs/hermes-to-chatgpt/hermes-commerce-control-plane-runtime-2026-08-19.json"
+  ],
+  "source_commit": "00b400e0cda15554eb88c3122f6f7640b3d31c23",
+  "checksums": {
+    "receipts/implementation/hermes-commerce-control/20260819-110859/verification.json": "df51912ed8a32ae8ecfbc755305daab1dee3af591633d2e852857669fe5acc4d",
+    "state/commerce-control/STATUS.json": "092d12053024350326a6d5cb7e88290d8e55912b2f1a7340250caec95f7e62f4",
+    "state/STATUS.json": "7dc3819e686fcb72b2cab3d58b0a7adc958dddb5cc9ca851be5c034940dfb691"
+  }
+}

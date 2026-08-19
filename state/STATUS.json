@@ -31,7 +31,7 @@
   "canonical_fiat_exit": "coinbase",
   "notes": [
     "Repository is the shared Hermes/ChatGPT coordination layer.",
-    "Hermes Commerce Control Plane runtime activation has been verified in Mode A with 11 MCP tools, enabled registration, safe read-only probes, and exported evidence.",
+    "Hermes Commerce Control Plane native MCP integration is verified in Mode A with 11 MCP tools, native Hermes tool discovery enabled, safe read-only probes, and exported evidence.",
     "No hosting purchase, mainnet deployment, wallet transfer, listing submission, or Coinbase action is authorized yet.",
     "No wallet credentials or secrets belong in this repository."
   ]
