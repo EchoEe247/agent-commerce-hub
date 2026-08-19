@@ -2,37 +2,37 @@
   "adapters": [
     {
       "enabled": true,
-      "lastStatus": null,
+      "lastStatus": "ok",
       "platform": "cdp_bazaar"
     },
     {
       "enabled": true,
-      "lastStatus": null,
+      "lastStatus": "ok",
       "platform": "agent402"
     },
     {
       "enabled": true,
-      "lastStatus": null,
+      "lastStatus": "ok",
       "platform": "piprail"
     },
     {
       "enabled": true,
-      "lastStatus": null,
+      "lastStatus": "ok",
       "platform": "agent_bounties"
     },
     {
       "enabled": true,
-      "lastStatus": null,
+      "lastStatus": "ok",
       "platform": "bountybook"
     },
     {
       "enabled": true,
-      "lastStatus": null,
+      "lastStatus": "ok",
       "platform": "the402"
     },
     {
       "enabled": true,
-      "lastStatus": null,
+      "lastStatus": "ok",
       "platform": "paysh"
     }
   ],
@@ -44,7 +44,7 @@
   "externalMutationExecuted": false,
   "externalWritesEnabled": false,
   "financialActionExecuted": false,
-  "generatedAt": "2026-08-19T10:07:08.372Z",
+  "generatedAt": "2026-08-19T10:28:34.318Z",
   "intentOutcomes": {},
   "liveValueMovementEnabled": false,
   "mode": "A",
