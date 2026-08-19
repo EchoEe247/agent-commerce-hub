@@ -131,20 +131,11 @@ export function evaluatePolicy(
           "and no external mutation",
         evaluatedAt,
       });
-    // These three are unreachable: handled above by attribute checks. Listed so
-    // the switch is exhaustive and a future class addition is a compile error.
-    case "EXTERNAL_WRITE":
-    case "VALUE_MOVEMENT":
-    case "SECRET_ACCESS":
-      return blockDecision({
-        operation,
-        class: cls,
-        rule: "A_MODE_DENY_BY_DEFAULT",
-        reason: "POLICY_BLOCKED",
-        requiredActivation: null,
-        detail: "denied by default",
-        evaluatedAt,
-      });
+    // EXTERNAL_WRITE, VALUE_MOVEMENT and SECRET_ACCESS are already handled by
+    // the attribute guards above, so TypeScript has narrowed them out of `cls`
+    // here. The exhaustive default below therefore deny-by-defaults anything
+    // new: adding a class to OPERATION_CLASSES without handling it explicitly
+    // is a compile error, not a silent allow.
     default: {
       const exhaustive: never = cls;
       return blockDecision({
