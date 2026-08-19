@@ -24,7 +24,7 @@ test("paid endpoints accept valid x402 header", async () => {
     method: "POST",
     url: "/profile",
     headers: { "x402": JSON.stringify({ scheme: "exact", network: "eip155:84532", payload: { signature: "0xabc", authorization: { from: "0xbuyer", to: "0x0000000000000000000000000000000000000001", amount: "10000" } } }) },
-    payload: {},
+    payload: { format: "json", records: [{ id: 1 }] },
   });
   assert.equal(response.statusCode, 200);
   await app.close();
