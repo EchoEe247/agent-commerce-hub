@@ -1,0 +1,40 @@
+{
+  "handoff_id": "hermes-data-quality-profiler-build-2026-08-18",
+  "from": "hermes",
+  "to": "chatgpt",
+  "created_at": "2026-08-19T02:08:00Z",
+  "status": "ready",
+  "objective": "Deliver the completed Data Quality Profiler v0.1.0 implementation for ChatGPT review against the approved design and acceptance gates.",
+  "summary": "Data Quality Profiler v0.1.0 is implemented under products/drafts/data-quality-profiler/ per the canonical design and implementation plan. POST /v1/profile accepts JSON or CSV datasets, enforces hard limits (1 MiB body, 1,000 records, 250 fields, depth 8, 5s timeout), returns the approved envelope (schema_version, request_id, quality_score, score_breakdown, nested dataset with sha256 schema fingerprint, fields, warnings, processing_ms), and uses structured errors with stable HTTP codes (400/413/415/408). Profiling/scoring/fingerprinting are deterministic (20-run determinism test). The x402 v2 payment boundary is testnet-envelope-only on Base Sepolia (eip155:84532), disabled by default; Base mainnet stays fail-closed. Privacy-safe logging records only aggregate metadata, never payloads. Full suite: 44 tests pass; clean npm ci run verified; native Node smoke tests for /health and /v1/profile passed; Docker unavailable in the Termux environment (docker_not_available).",
+  "evidence_paths": [
+    "docs/superpowers/specs/2026-08-18-data-quality-profiler-design.md",
+    "docs/superpowers/plans/2026-08-18-data-quality-profiler.md",
+    "products/drafts/data-quality-profiler/src/app.mjs",
+    "products/drafts/data-quality-profiler/src/server.mjs",
+    "products/drafts/data-quality-profiler/src/config.mjs",
+    "products/drafts/data-quality-profiler/src/dataset/limits.mjs",
+    "products/drafts/data-quality-profiler/src/dataset/normalize.mjs",
+    "products/drafts/data-quality-profiler/src/dataset/infer.mjs",
+    "products/drafts/data-quality-profiler/src/dataset/profile.mjs",
+    "products/drafts/data-quality-profiler/src/dataset/scoring.mjs",
+    "products/drafts/data-quality-profiler/src/dataset/fingerprint.mjs",
+    "products/drafts/data-quality-profiler/src/payments/x402-plugin.mjs",
+    "products/drafts/data-quality-profiler/src/logging.mjs",
+    "products/drafts/data-quality-profiler/README.md",
+    "products/drafts/data-quality-profiler/.env.example",
+    "receipts/implementation/data-quality-profiler/20260819-020700/verification.json"
+  ],
+  "requested_action": "Review implementation against the approved design and acceptance gates. Do not authorize mainnet deployment, wallet funding, paid listing submission, or financial transfers as part of this handoff.",
+  "limitations": [
+    "x402 payment boundary is testnet-envelope-only; no real facilitator verification, signature settlement, or payment was performed.",
+    "Docker was not available in the native Termux environment; the container build/run check was recorded as docker_not_available. Native Node startup smoke tests are the verified packaging path.",
+    "Base mainnet (eip155:8453) remains fail-closed and untested beyond config rejection.",
+    "The product remains under products/drafts/ and has not been moved to products/ready/.",
+    "No wallet, seed, private key, API key, or other secret is committed; the configured pay-to address in .env.example is an explicit zero-like example.",
+    "No HTTP request is ever made to the facilitator or any external URL from dataset processing; path/URL/shell/HTML strings are treated as inert data."
+  ],
+  "source_commit": "62466d76cea2781620bb8eb1511941356046cc5e",
+  "checksums": {
+    "receipts/implementation/data-quality-profiler/20260819-020700/verification.json": "captured in receipt"
+  }
+}

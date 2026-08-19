@@ -1,0 +1,35 @@
+{
+  "product": "data-quality-profiler",
+  "version": "0.1.0",
+  "node_version": "v24.18.0",
+  "npm_version": "12.0.2",
+  "test_command": "npm test",
+  "tests_passed": true,
+  "tests_total": 44,
+  "tests_failed": 0,
+  "health_check_passed": true,
+  "health_response": {
+    "ok": true,
+    "service": "data-quality-profiler",
+    "version": "0.1.0",
+    "http_status": 200
+  },
+  "profile_smoke_passed": true,
+  "profile_smoke_response": {
+    "http_status": 200,
+    "schema_version": "1.0",
+    "request_id_prefix": "prof_",
+    "quality_score": 87,
+    "record_count": 2,
+    "field_count": 3,
+    "schema_fingerprint_prefix": "sha256:",
+    "processing_ms_present": true
+  },
+  "x402_mode_tested": "testnet-envelope-only",
+  "real_payment_sent": false,
+  "mainnet_enabled": false,
+  "secrets_committed": false,
+  "docker_check": "docker_not_available",
+  "git_commit": "62466d76cea2781620bb8eb1511941356046cc5e",
+  "verified_at": "2026-08-19T02:07:00Z"
+}
