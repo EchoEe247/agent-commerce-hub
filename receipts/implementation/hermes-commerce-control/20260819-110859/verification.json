@@ -5,7 +5,7 @@
   "phase": "runtime-verification-follow-up",
   "agent": "hermes-auto",
   "timestamp": "2026-08-19T11:08:59Z",
-  "source_commit": "00b400e0cda15554eb88c3122f6f7640b3d31c23",
+  "source_commit": "00b400e07eacebc849136ff0d138004f492a930c",
   "branch": "feat/hermes-commerce-control-plane",
   "environment": {
     "hermes_version": "Hermes Agent v0.20.0 (2026.8.3)",

@@ -40,9 +40,9 @@
     "receipts/implementation/hermes-commerce-control/20260819-102859/verification.json",
     "handoffs/hermes-to-chatgpt/hermes-commerce-control-plane-runtime-2026-08-19.json"
   ],
-  "source_commit": "00b400e0cda15554eb88c3122f6f7640b3d31c23",
+  "source_commit": "00b400e07eacebc849136ff0d138004f492a930c",
   "checksums": {
-    "receipts/implementation/hermes-commerce-control/20260819-110859/verification.json": "df51912ed8a32ae8ecfbc755305daab1dee3af591633d2e852857669fe5acc4d",
+    "receipts/implementation/hermes-commerce-control/20260819-110859/verification.json": "0080d597569cddbba4c8d7e4ddfece4febc75777014be5604406cd6cc6e957ea",
     "state/commerce-control/STATUS.json": "092d12053024350326a6d5cb7e88290d8e55912b2f1a7340250caec95f7e62f4",
     "state/STATUS.json": "7dc3819e686fcb72b2cab3d58b0a7adc958dddb5cc9ca851be5c034940dfb691"
   }
