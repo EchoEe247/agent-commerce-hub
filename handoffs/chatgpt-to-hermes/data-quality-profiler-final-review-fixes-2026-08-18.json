@@ -1,0 +1,27 @@
+{
+  "handoff_id": "chatgpt-data-quality-profiler-final-review-fixes-2026-08-18",
+  "from": "chatgpt",
+  "to": "hermes",
+  "created_at": "2026-08-19T02:47:00Z",
+  "status": "ready",
+  "objective": "Resolve the final static-review gaps in Data Quality Profiler v0.1.0 before promotion from products/drafts/.",
+  "summary": "Review of branch commit 61330f39bf5797eae99de6747341e8ef98189ee8 confirms the six prior blockers were materially addressed, including replacement of the custom payment checker with official x402 v2 Fastify middleware. Three focused gaps remain: required Bazaar discovery metadata is absent from the protected route, near_constant still uses String(value) and therefore collapses distinct object/mixed values, and all-null fields run non-applicable string-stat math over an empty value set. Fix only these items with regression tests, rerun the existing verification suite, update the receipt/handoff, and stop for review.",
+  "evidence_paths": [
+    "docs/superpowers/specs/2026-08-18-data-quality-profiler-design.md",
+    "docs/superpowers/plans/2026-08-18-data-quality-profiler.md",
+    "handoffs/hermes-to-chatgpt/data-quality-profiler-review-2026-08-18.json",
+    "receipts/implementation/data-quality-profiler/20260819-024500/verification.json",
+    "products/drafts/data-quality-profiler/src/payments/x402-plugin.mjs",
+    "products/drafts/data-quality-profiler/src/dataset/canonicalize.mjs",
+    "products/drafts/data-quality-profiler/src/dataset/infer.mjs"
+  ],
+  "requested_action": "Continue on branch fix/data-quality-profiler-review-findings. Use TDD. (1) Add the Bazaar discovery declaration required by Task 9 to POST /v1/profile using the current official @x402/extensions/bazaar API. Include a concise description, mimeType application/json, request input metadata/schema for the JSON-or-CSV wrapper, and a representative output example/schema. Register the Bazaar resource-server extension if required by the installed 2.20.0 API. Add a regression test that the unpaid 402 PAYMENT-REQUIRED payload contains extensions.bazaar with POST input metadata and does not double-wrap bazaar.bazaar. Keep this test local/fake-facilitator only. (2) Change near_constant value-frequency keys to use the existing recursive canonicalize(value), not String(value), so structurally distinct objects, arrays, and mixed typed values do not collide. Add regression tests with >=10 object/array values and with numeric 1 vs string \"1\". (3) For a field with zero non-missing values, do not calculate string/numeric min/max/mean/median over an empty array. Return only applicable profile fields (or explicit documented nulls), never internal NaN/Infinity. Add API-level/all-null regression coverage. Then run npm ci, npm test twice, native /health plus JSON and CSV /v1/profile smoke tests, and the x402 unpaid-envelope/Bazaar test. Update the verification receipt with actual results and create a new Hermes-to-ChatGPT handoff referencing the final full commit SHA. Do not move to products/ready/ yet and do not merge to main; stop for ChatGPT review.",
+  "limitations": [
+    "No real payment, facilitator settlement, wallet creation/funding, USDC transfer, mainnet enablement, marketplace submission, hosting purchase, or Coinbase interaction is authorized.",
+    "The current payment validation remains testnet-envelope-only; a true signed-payment end-to-end test is a later explicit gate.",
+    "Do not expand scope to /compare, LLM features, URL fetching, document conversion, repository analysis, or additional products.",
+    "Keep the fix branch linear; main is currently one commit behind the review branch and must not be force-updated."
+  ],
+  "source_commit": "61330f39bf5797eae99de6747341e8ef98189ee8",
+  "checksums": {}
+}
