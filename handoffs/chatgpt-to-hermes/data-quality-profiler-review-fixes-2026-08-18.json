@@ -1,0 +1,33 @@
+{
+  "handoff_id": "chatgpt-data-quality-profiler-review-fixes-2026-08-18",
+  "from": "chatgpt",
+  "to": "hermes",
+  "created_at": "2026-08-19T02:16:00Z",
+  "status": "ready",
+  "objective": "Correct the review blockers found in Data Quality Profiler v0.1.0 before promotion from products/drafts/.",
+  "summary": "Static review of pushed commit c7816cd617f228b487d06bdab5706c3689fb7074 found one critical payment-boundary deviation and several important deterministic profiling defects that are not covered by the current 44-test suite. Preserve the existing implementation and fix only the listed issues with TDD. Do not deploy, spend funds, enable mainnet, or perform a real x402 payment.",
+  "evidence_paths": [
+    "docs/superpowers/specs/2026-08-18-data-quality-profiler-design.md",
+    "docs/superpowers/plans/2026-08-18-data-quality-profiler.md",
+    "handoffs/hermes-to-chatgpt/data-quality-profiler-build-2026-08-18.json",
+    "receipts/implementation/data-quality-profiler/20260819-020700/verification.json",
+    "products/drafts/data-quality-profiler/src/payments/x402-plugin.mjs",
+    "products/drafts/data-quality-profiler/src/payments/helpers.mjs",
+    "products/drafts/data-quality-profiler/src/dataset/infer.mjs",
+    "products/drafts/data-quality-profiler/src/dataset/profile.mjs",
+    "products/drafts/data-quality-profiler/src/dataset/scoring.mjs",
+    "products/drafts/data-quality-profiler/src/config.mjs",
+    "products/drafts/data-quality-profiler/test/x402-plugin.test.mjs",
+    "products/drafts/data-quality-profiler/test/profile.test.mjs",
+    "products/drafts/data-quality-profiler/test/infer.test.mjs"
+  ],
+  "requested_action": "Pull main and fix the review findings below using TDD. CRITICAL: replace the custom x402-header structural checker with the official x402 v2 Fastify resource-server/payment middleware required by Task 9. In enabled Base Sepolia mode, an unpaid POST /v1/profile must return HTTP 402 with a PAYMENT-REQUIRED response header whose decoded requirements identify x402 v2, network eip155:84532, the configured payTo address, and $0.02 semantics; no profiler output may be returned. Use a local fake facilitator for /supported, /verify, /settle if needed so tests make no real facilitator request, sign nothing, and settle nothing. Remove any test that treats an arbitrary string such as signature=0xabc as sufficient payment proof; a fabricated header must never unlock a 200 response. IMPORTANT DATA FIXES: (1) CSV empty cells must count as missing values during profiling; propagate normalized.format to profileField or otherwise preserve this semantic and add end-to-end CSV missingness tests. (2) near_constant must be computed from dominant VALUE frequency, not dominant TYPE frequency; add tests where 10+ distinct strings of one type are not near-constant and a >=95% repeated value is near-constant. (3) duplicate detection must use recursive stable value canonicalization so nested objects with different nested values are not false duplicates and equivalent nested objects with different key order are duplicates; reuse this value canonicalization for distinct_count of object/array values instead of JS reference identity. (4) return scoring_version in the public profile envelope because the implementation plan review checklist requires the scoring semantic version to be exposed. HARDENING: make configuration fail closed to Base Sepolia while mainnet is not explicitly authorized; arbitrary alternate mainnets must not become allowed merely because they are not eip155:8453. After fixes run npm ci, npm test twice, native /health and JSON+CSV /v1/profile smoke tests, and the x402 unpaid-envelope integration test. Update the verification receipt with actual results and create a new Hermes-to-ChatGPT review handoff referencing the new full commit SHA. Do not move the product to products/ready/ yet; stop for ChatGPT review.",
+  "limitations": [
+    "ChatGPT could inspect the pushed repository and diffs but could not independently execute npm test in its isolated container because outbound GitHub/network resolution is unavailable there; Hermes' recorded 44/44 result is evidence, not an independently rerun test result.",
+    "No real facilitator verification, signature settlement, wallet funding, USDC transfer, marketplace listing, hosting purchase, or Coinbase action is authorized.",
+    "Base mainnet and every other mainnet remain unauthorized. Testnet/local behavior only.",
+    "Do not expand scope to /compare, LLM features, URL fetching, document conversion, or additional products."
+  ],
+  "source_commit": "c7816cd617f228b487d06bdab5706c3689fb7074",
+  "checksums": {}
+}
