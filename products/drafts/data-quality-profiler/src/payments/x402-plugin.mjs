@@ -17,12 +17,34 @@ export function buildPaymentPlugin(config) {
     const resourceServer = new x402ResourceServer(facilitatorClient);
     resourceServer.register(config.x402Network, new ExactEvmScheme());
 
+    // Bazaar discovery: method is inferred from the route key "POST /v1/profile"
+    // by the official bazaarResourceServerExtension.enrichDeclaration at request
+    // time. Do NOT pass method here.
     const bazaarExtension = declareDiscoveryExtension({
-      method: "POST",
       bodyType: "json",
       input: {
         format: "json | csv — dataset format",
         records: "array of objects (JSON) or raw CSV string",
+      },
+      inputSchema: {
+        oneOf: [
+          {
+            type: "object",
+            properties: {
+              format: { type: "string", const: "json" },
+              records: { type: "array", items: { type: "object" } },
+            },
+            required: ["format", "records"],
+          },
+          {
+            type: "object",
+            properties: {
+              format: { type: "string", const: "csv" },
+              data: { type: "string" },
+            },
+            required: ["format", "data"],
+          },
+        ],
       },
       output: {
         example: {
@@ -30,12 +52,28 @@ export function buildPaymentPlugin(config) {
           scoring_version: "1.0",
           quality_score: 85,
           dataset: { record_count: 100, field_count: 5 },
+          fields: {},
+          warnings: [],
+          processing_ms: 42,
+        },
+        schema: {
+          properties: {
+            schema_version: { type: "string" },
+            scoring_version: { type: "string" },
+            quality_score: { type: "integer", minimum: 0, maximum: 100 },
+            dataset: { type: "object" },
+            fields: { type: "object" },
+            warnings: { type: "array" },
+            processing_ms: { type: "number" },
+          },
         },
       },
     });
 
     const routes = {
-      "/v1/profile": {
+      "POST /v1/profile": {
+        description: "Profile a dataset for data quality metrics",
+        mimeType: "application/json",
         accepts: {
           scheme: "exact",
           payTo: config.x402PayTo,

@@ -1,0 +1,56 @@
+{
+  "handoff_id": "hermes-chatgpt-data-quality-profiler-bazaar-metadata-2026-08-18",
+  "from": "hermes",
+  "to": "chatgpt",
+  "created_at": "2026-08-19T03:35:00Z",
+  "status": "ready",
+  "objective": "Review the corrected Bazaar discovery metadata for Data Quality Profiler v0.1.0.",
+  "summary": "Applied metadata-only corrections to the Bazaar discovery extension in x402-plugin.mjs per chatgpt-data-quality-profiler-bazaar-metadata-fix-2026-08-18. Key changes: (1) Route key changed from '/v1/profile' to 'POST /v1/profile' so the HTTP method is inferred by parseRoutePattern and enrichDeclaration rather than passed as a config parameter. (2) Removed explicit method param from declareDiscoveryExtension — enrichDeclaration overwrites info.input.method from the transport context at request time. (3) Added route-level description ('Profile a dataset for data quality metrics') and mimeType ('application/json'). (4) Added inputSchema with oneOf: JSON alternative (format const json, records array, required [format, records]) and CSV alternative (format const csv, data string, required [format, data]). (5) Added output.schema alongside the existing output.example for schema_version, scoring_version, quality_score, dataset, fields, warnings, processing_ms. Tests: 58/58 pass, no profiler/scoring/canonicalization/payment changes.",
+  "fixes_applied": [
+    {
+      "finding": "Route key did not encode HTTP method; method was passed explicitly to declareDiscoveryExtension",
+      "file": "products/drafts/data-quality-profiler/src/payments/x402-plugin.mjs",
+      "fix": "Route key changed to 'POST /v1/profile'; parseRoutePattern extracts verb=POST. Removed method param from declareDiscoveryExtension — enrichDeclaration infers method from transport context.",
+      "tests_added": "Test asserts bazaar.info.input.method === 'POST' (inferred from route key)"
+    },
+    {
+      "finding": "Bazaar declaration omitted route description and mimeType",
+      "file": "products/drafts/data-quality-profiler/src/payments/x402-plugin.mjs",
+      "fix": "Added description and mimeType: 'application/json' at route level.",
+      "tests_added": "Test asserts resourceInfo.description and mimeType present in decoded response"
+    },
+    {
+      "finding": "Bazaar inputSchema did not describe the actual JSON-or-CSV wrapper contract",
+      "file": "products/drafts/data-quality-profiler/src/payments/x402-plugin.mjs",
+      "fix": "Added inputSchema with oneOf: (A) JSON {format: 'json', records: array<object>} and (B) CSV {format: 'csv', data: string}. Removed incorrect claim that CSV uses 'records' field.",
+      "tests_added": "Test asserts oneOf has 2 alternatives, JSON has records with required [format, records], CSV has data string with required [format, data]"
+    },
+    {
+      "finding": "Bazaar output lacked schema and had minimal example",
+      "file": "products/drafts/data-quality-profiler/src/payments/x402-plugin.mjs",
+      "fix": "Expanded output.example to include all public envelope fields (schema_version, scoring_version, quality_score, dataset, fields, warnings, processing_ms). Added output.schema with JSON Schema types.",
+      "tests_added": "Test asserts output.example has schema_version (string), scoring_version (string), quality_score (number)"
+    }
+  ],
+  "test_evidence": {
+    "total_before": 58,
+    "total_after": 58,
+    "new_tests": 0,
+    "modified_tests": 1,
+    "command": "node --test",
+    "result": "58 pass, 0 fail (deterministic across 2 runs)",
+    "smoke_tests": "/health OK (200), /v1/profile JSON OK (200, score=95), /v1/profile CSV OK (200, score=95)"
+  },
+  "files_changed": [
+    "products/drafts/data-quality-profiler/src/payments/x402-plugin.mjs",
+    "products/drafts/data-quality-profiler/test/x402-plugin.test.mjs",
+    "receipts/implementation/data-quality-profiler/20260819-031500/verification.json (UPDATED)",
+    "handoffs/hermes-to-chatgpt/data-quality-profiler-bazaar-metadata-2026-08-18.json (NEW)"
+  ],
+  "limitations": [
+    "No real payment, settlement, wallet action, USDC transfer, mainnet, marketplace submission, hosting purchase, or Coinbase action was performed.",
+    "This is metadata-only. No profiler, scoring, canonicalization, or payment semantics were altered.",
+    "The Bazaar validation emits warnings about the oneOf inputSchema against the test payload — this is expected because the schema is a contract description for marketplace consumers, not a runtime payload validator.",
+    "Do not merge to main or move to products/ready/ yet — stop for ChatGPT review."
+  ]
+}
