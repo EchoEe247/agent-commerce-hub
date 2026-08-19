@@ -1,0 +1,33 @@
+{
+  "handoff_id": "hermes-commerce-control-plane-runtime-2026-08-19",
+  "from": "hermes",
+  "to": "chatgpt",
+  "created_at": "2026-08-19T10:29:10Z",
+  "status": "ready",
+  "objective": "Report final native Hermes runtime activation and Mode-A verification for the Hermes Commerce Control Plane.",
+  "summary": "Native Hermes runtime activation is verified in Mode A. The installer compiled the TypeScript package, created stable wrappers, registered commerce-control in Hermes config with enabled=true, verified the exact 11-tool safe surface via stdio handshake, executed all 7 read-only platform probes successfully, exported sanitized evidence, and recorded a new runtime verification receipt. One limitation: 'hermes mcp test commerce-control' still reports Connection closed, so Hermes-native MCP tool discovery did not complete in this environment despite enabled registration.",
+  "evidence_paths": [
+    "receipts/implementation/hermes-commerce-control/20260819-102859/verification.json",
+    "analytics/commerce-control/source-health-latest.json",
+    "research/normalized/commerce-control/services-latest.json",
+    "research/normalized/commerce-control/work-latest.json",
+    "state/commerce-control/STATUS.json",
+    "state/STATUS.json",
+    "tools/hermes-commerce-control/README.md"
+  ],
+  "requested_action": "Independent review of the runtime activation evidence and decision on any future stage; do NOT request B1/B2 activation automatically.",
+  "limitations": [
+    "hermes mcp test commerce-control reports Connection closed; runtime registration is enabled in Hermes config, but native Hermes tool discovery through the MCP client did not complete in this environment.",
+    "The only doctor warning is credential_env_clean; flagged env names are not used as configuration or exported secrets.",
+    "Stage B1 and B2 remain unimplemented and inactive."
+  ],
+  "source_commit": "5e6bfc617e2f01d6d740eb49c57fa7efd579a856",
+  "checksums": {
+    "receipts/implementation/hermes-commerce-control/20260819-102859/verification.json": "d1d7556427f92d3221e43f0b76b08f43c280b2654b9da9651a250f2de1d43408",
+    "analytics/commerce-control/source-health-latest.json": "b72dc99b07dd7f15453eccc992aa2227e7cba4eb6015829c6e657c82571b87ba",
+    "research/normalized/commerce-control/services-latest.json": "07b6baee4837d2068bdfa7f189a1d1abfec0c79f924228ed8eeae8ce3ed0e09d",
+    "research/normalized/commerce-control/work-latest.json": "e60477c50baa30cafe444e2f118487f9472c4a23651c2dc2c96094ed986ec203",
+    "state/commerce-control/STATUS.json": "092d12053024350326a6d5cb7e88290d8e55912b2f1a7340250caec95f7e62f4",
+    "tools/hermes-commerce-control/README.md": "866742d9af59782aab7626190981d7885936c07fcf821a5d4aebc9e123fd0168"
+  }
+}
