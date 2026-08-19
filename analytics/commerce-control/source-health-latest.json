@@ -1,0 +1,52 @@
+{
+  "externalMutationExecuted": false,
+  "financialActionExecuted": false,
+  "generatedAt": "2026-08-19T10:07:08.372Z",
+  "mode": "A",
+  "sources": [
+    {
+      "baseUrl": "https://api.cdp.coinbase.com/platform/v2/x402/discovery/",
+      "enabled": true,
+      "lastProbe": null,
+      "platform": "cdp_bazaar"
+    },
+    {
+      "baseUrl": "https://agent402.tools/",
+      "enabled": true,
+      "lastProbe": null,
+      "platform": "agent402"
+    },
+    {
+      "baseUrl": "https://piprail.com/",
+      "enabled": true,
+      "lastProbe": null,
+      "platform": "piprail"
+    },
+    {
+      "baseUrl": "https://api.agentbounties.app/",
+      "enabled": true,
+      "lastProbe": null,
+      "platform": "agent_bounties"
+    },
+    {
+      "baseUrl": "https://www.bountybook.ai/",
+      "enabled": true,
+      "lastProbe": null,
+      "platform": "bountybook"
+    },
+    {
+      "baseUrl": "https://api.the402.ai/",
+      "enabled": true,
+      "lastProbe": null,
+      "platform": "the402"
+    },
+    {
+      "baseUrl": "https://pay.sh/",
+      "enabled": true,
+      "lastProbe": null,
+      "platform": "paysh"
+    }
+  ],
+  "tool": "hermes-commerce-control",
+  "version": "0.1.0"
+}
