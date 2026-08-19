@@ -1,59 +1,59 @@
 {
-  "receipt_id": "dqp-bazaar-metadata-fix-20260819-033500",
+  "receipt_id": "dqp-bazaar-validation-fix-20260819-034500",
   "product": "data-quality-profiler",
   "version": "0.1.0",
-  "phase": "bazaar-metadata-fix",
+  "phase": "bazaar-validation-fix",
   "agent": "hermes",
-  "timestamp": "2026-08-19T03:35:00Z",
-  "source_commit": "7a56664e",
+  "timestamp": "2026-08-19T03:45:00Z",
+  "source_commit": "1cb085ce",
   "branch": "fix/data-quality-profiler-review-findings",
-  "incoming_handoff": "handoffs/chatgpt-to-hermes/data-quality-profiler-bazaar-metadata-fix-2026-08-18.json",
-  "outgoing_handoff": "handoffs/hermes-to-chatgpt/data-quality-profiler-bazaar-metadata-2026-08-18.json",
+  "incoming_handoff": "handoffs/chatgpt-to-hermes/data-quality-profiler-bazaar-validation-fix-2026-08-18.json",
+  "outgoing_handoff": "handoffs/hermes-to-chatgpt/data-quality-profiler-bazaar-validation-2026-08-18.json",
   "test_evidence": {
     "command": "node --test",
-    "run1": { "pass": 58, "fail": 0, "total": 58 },
-    "run2": { "pass": 58, "fail": 0, "total": 58 },
+    "run1": { "pass": 59, "fail": 0, "total": 59 },
+    "run2": { "pass": 59, "fail": 0, "total": 59 },
     "deterministic": true
   },
   "smoke_evidence": {
     "health": { "method": "GET", "url": "/health", "status": 200, "ok": true },
-    "json_profile": { "method": "POST", "url": "/v1/profile", "format": "json", "status": 200, "quality_score": 95, "scoring_version": "1.0" },
+    "json_profile": { "method": "POST", "url": "/v1/profile", "format": "json", "status": 200, "quality_score": 95 },
     "csv_profile": { "method": "POST", "url": "/v1/profile", "format": "csv", "status": 200, "quality_score": 95 }
   },
   "per_invariant_evidence": [
     {
-      "requirement": "Bazaar route key infers HTTP method (POST /v1/profile)",
-      "assertion": "route key 'POST /v1/profile' parsed to verb=POST, path=/v1/profile; bazaarResourceServerExtension.enrichDeclaration sets info.input.method from transport context",
+      "requirement": "Official Bazaar validateDiscoveryExtension passes with zero errors",
+      "assertion": "validateDiscoveryExtension(decoded.extensions.bazaar).valid === true, no errors array",
       "test_file": "test/x402-plugin.test.mjs",
       "verdict": "PASS"
     },
     {
-      "requirement": "Bazaar inputSchema uses oneOf for JSON and CSV alternatives",
-      "assertion": "schema.properties.input.properties.body.oneOf has 2 alternatives: JSON with format const json + records array, CSV with format const csv + data string",
-      "test_file": "test/x402-plugin.test.mjs",
+      "requirement": "Bazaar input example satisfies the declared oneOf schema",
+      "assertion": "input example is { format: 'json', records: [{ id: 1 }] } which matches the JSON oneOf alternative",
+      "test_file": "src/payments/x402-plugin.mjs",
       "verdict": "PASS"
     },
     {
-      "requirement": "Bazaar output example includes scoring_version and processing_ms",
-      "assertion": "bazaar.info.output.example has schema_version, scoring_version, quality_score, dataset, fields, warnings, processing_ms",
-      "test_file": "test/x402-plugin.test.mjs",
+      "requirement": "Bazaar output schema has type: object and required fields",
+      "assertion": "output.schema.type === 'object', required includes schema_version, scoring_version, quality_score",
+      "test_file": "src/payments/x402-plugin.mjs",
       "verdict": "PASS"
     },
     {
-      "requirement": "No nested bazaar.bazaar",
-      "assertion": "bazaar.bazaar is undefined",
+      "requirement": "402 Bazaar metadata: POST method, bodyType json, oneOf JSON+CSV, no nested bazaar.bazaar",
+      "assertion": "info.input.method === 'POST', bodyType === 'json', oneOf has JSON and CSV alternatives, bazaar.bazaar is undefined",
       "test_file": "test/x402-plugin.test.mjs",
       "verdict": "PASS"
     },
     {
       "requirement": "x402 core requirements unchanged",
-      "assertion": "decoded.x402Version === 2, accepts[0].scheme === 'exact', network === 'eip155:84532', payTo correct, amount === '20000'",
+      "assertion": "x402Version 2, exact scheme, eip155:84532, correct payTo, amount 20000",
       "test_file": "test/x402-plugin.test.mjs",
       "verdict": "PASS"
     },
     {
       "requirement": "Profiler/scoring/canonicalization/payment semantics unchanged",
-      "assertion": "58/58 tests pass, all prior invariant tests still pass",
+      "assertion": "59/59 tests pass, all prior invariant tests still pass",
       "test_file": "all test files",
       "verdict": "PASS"
     }

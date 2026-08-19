@@ -17,14 +17,17 @@ export function buildPaymentPlugin(config) {
     const resourceServer = new x402ResourceServer(facilitatorClient);
     resourceServer.register(config.x402Network, new ExactEvmScheme());
 
-    // Bazaar discovery: method is inferred from the route key "POST /v1/profile"
-    // by the official bazaarResourceServerExtension.enrichDeclaration at request
-    // time. Do NOT pass method here.
+    // Bazaar discovery declaration. The inputSchema describes the actual
+    // JSON-or-CSV wrapper contract. The input example must satisfy the
+    // oneOf schema (valid JSON-form request). method is passed here so
+    // the schema's required ['method'] is satisfied at build time; the
+    // official enrichDeclaration overwrites it from the transport context.
     const bazaarExtension = declareDiscoveryExtension({
+      method: "POST",
       bodyType: "json",
       input: {
-        format: "json | csv — dataset format",
-        records: "array of objects (JSON) or raw CSV string",
+        format: "json",
+        records: [{ id: 1 }],
       },
       inputSchema: {
         oneOf: [
@@ -57,6 +60,7 @@ export function buildPaymentPlugin(config) {
           processing_ms: 42,
         },
         schema: {
+          type: "object",
           properties: {
             schema_version: { type: "string" },
             scoring_version: { type: "string" },
@@ -66,6 +70,7 @@ export function buildPaymentPlugin(config) {
             warnings: { type: "array" },
             processing_ms: { type: "number" },
           },
+          required: ["schema_version", "scoring_version", "quality_score"],
         },
       },
     });

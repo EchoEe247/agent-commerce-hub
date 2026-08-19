@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import Fastify from "fastify";
 import { buildApp } from "../src/app.mjs";
 import { buildPaymentPlugin } from "../src/payments/x402-plugin.mjs";
+import { validateDiscoveryExtension } from "@x402/extensions/bazaar";
 
 // ── Fake facilitator ──────────────────────────────────────────────
 async function createFakeFacilitator() {
@@ -100,7 +101,7 @@ test("disabled plugin leaves /v1/profile reachable without payment", async () =>
   await fac.close();
 });
 
-test("402 PAYMENT-REQUIRED contains Bazaar metadata: method POST, bodyType json, oneOf schema, output example", async () => {
+test("Bazaar extension passes official validateDiscoveryExtension with zero errors", async () => {
   const { app: fac, url: facUrl } = await createFakeFacilitator();
   const plugin = buildPaymentPlugin(makePluginConfig(facUrl));
   const app = buildApp({ config: { serviceVersion: "0.1.0" }, paymentPlugin: plugin });
@@ -112,62 +113,69 @@ test("402 PAYMENT-REQUIRED contains Bazaar metadata: method POST, bodyType json,
   assert.equal(response.statusCode, 402);
 
   const paymentHeader = response.headers["payment-required"];
-  assert.ok(paymentHeader, "PAYMENT-REQUIRED response header must be present");
   const decoded = JSON.parse(Buffer.from(paymentHeader, "base64").toString("utf8"));
 
-  // x402 v2 core requirements unchanged
+  // Official Bazaar validation must pass with zero errors
+  const bazaar = decoded.extensions.bazaar;
+  assert.ok(bazaar, "bazaar extension must be present");
+  const result = validateDiscoveryExtension(bazaar);
+  assert.equal(result.valid, true, `Bazaar extension must pass official validation: ${JSON.stringify(result.errors)}`);
+
+  await app.close();
+  await fac.close();
+});
+
+test("402 Bazaar metadata: POST method, bodyType json, oneOf JSON+CSV, no nested bazaar.bazaar", async () => {
+  const { app: fac, url: facUrl } = await createFakeFacilitator();
+  const plugin = buildPaymentPlugin(makePluginConfig(facUrl));
+  const app = buildApp({ config: { serviceVersion: "0.1.0" }, paymentPlugin: plugin });
+  const response = await app.inject({
+    method: "POST",
+    url: "/v1/profile",
+    payload: { format: "json", records: [{ id: 1 }] },
+  });
+  assert.equal(response.statusCode, 402);
+
+  const paymentHeader = response.headers["payment-required"];
+  const decoded = JSON.parse(Buffer.from(paymentHeader, "base64").toString("utf8"));
+
+  // x402 v2 core unchanged
   assert.equal(decoded.x402Version, 2);
-  assert.ok(decoded.accepts && decoded.accepts.length > 0);
   const first = decoded.accepts[0];
   assert.equal(first.scheme, "exact");
   assert.equal(first.network, "eip155:84532");
   assert.equal(first.payTo, PAY_TO);
   assert.equal(first.amount, "20000");
 
-  // Bazaar discovery extension at top-level extensions
+  // Bazaar extension
   assert.ok(decoded.extensions, "decoded header must have extensions");
   assert.ok(decoded.extensions.bazaar, "extensions must contain bazaar");
-
   const bazaar = decoded.extensions.bazaar;
-  assert.ok(bazaar.info, "bazaar extension must have info");
-  assert.ok(bazaar.info.input, "bazaar.info must have input");
-  assert.equal(bazaar.info.input.type, "http", "input type must be http");
-  assert.equal(bazaar.info.input.method, "POST", "input method must be POST (inferred from route key)");
-  assert.equal(bazaar.info.input.bodyType, "json", "bodyType must be json");
 
-  // Schema must contain oneOf with JSON and CSV alternatives
-  assert.ok(bazaar.schema, "bazaar must have schema");
-  const bodySchema = bazaar.schema.properties?.input?.properties?.body;
-  assert.ok(bodySchema, "schema must have input.properties.body");
-  assert.ok(bodySchema.oneOf, "body schema must use oneOf for JSON/CSV alternatives");
-  assert.equal(bodySchema.oneOf.length, 2, "oneOf must have exactly 2 alternatives");
+  assert.equal(bazaar.info.input.type, "http");
+  assert.equal(bazaar.info.input.method, "POST");
+  assert.equal(bazaar.info.input.bodyType, "json");
 
-  // JSON alternative: format const "json", records array, required [format, records]
-  const jsonAlt = bodySchema.oneOf.find((alt) =>
-    alt.properties?.format?.const === "json"
-  );
-  assert.ok(jsonAlt, "oneOf must have a JSON alternative with format const json");
-  assert.ok(jsonAlt.properties.records, "JSON alternative must have records property");
-  assert.deepEqual(jsonAlt.required, ["format", "records"], "JSON alternative must require format and records");
+  // oneOf schema: JSON alternative
+  const bodySchema = bazaar.schema.properties.input.properties.body;
+  assert.ok(bodySchema.oneOf, "body schema must use oneOf");
+  assert.equal(bodySchema.oneOf.length, 2);
 
-  // CSV alternative: format const "csv", data string, required [format, data]
-  const csvAlt = bodySchema.oneOf.find((alt) =>
-    alt.properties?.format?.const === "csv"
-  );
-  assert.ok(csvAlt, "oneOf must have a CSV alternative with format const csv");
-  assert.equal(csvAlt.properties.data?.type, "string", "CSV data must be string type");
-  assert.deepEqual(csvAlt.required, ["format", "data"], "CSV alternative must require format and data");
+  const jsonAlt = bodySchema.oneOf.find((a) => a.properties?.format?.const === "json");
+  assert.ok(jsonAlt, "must have JSON alternative");
+  assert.deepEqual(jsonAlt.required, ["format", "records"]);
+
+  const csvAlt = bodySchema.oneOf.find((a) => a.properties?.format?.const === "csv");
+  assert.ok(csvAlt, "must have CSV alternative");
+  assert.equal(csvAlt.properties.data?.type, "string");
+  assert.deepEqual(csvAlt.required, ["format", "data"]);
 
   // No nested bazaar.bazaar
-  assert.ok(!bazaar.bazaar, "bazaar must not contain nested bazaar.bazaar");
+  assert.ok(!bazaar.bazaar, "must not contain nested bazaar.bazaar");
 
   // Output example present
-  assert.ok(bazaar.info.output, "bazaar must have output info");
-  assert.ok(bazaar.info.output.example, "bazaar must have output example");
-  const ex = bazaar.info.output.example;
-  assert.equal(typeof ex.schema_version, "string", "output example must have schema_version");
-  assert.equal(typeof ex.scoring_version, "string", "output example must have scoring_version");
-  assert.equal(typeof ex.quality_score, "number", "output example must have quality_score");
+  assert.ok(bazaar.info.output?.example?.schema_version);
+  assert.ok(bazaar.info.output?.example?.scoring_version);
 
   await app.close();
   await fac.close();

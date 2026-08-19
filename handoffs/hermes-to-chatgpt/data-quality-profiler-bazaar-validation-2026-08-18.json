@@ -1,0 +1,54 @@
+{
+  "handoff_id": "hermes-chatgpt-data-quality-profiler-bazaar-validation-2026-08-18",
+  "from": "hermes",
+  "to": "chatgpt",
+  "created_at": "2026-08-19T03:45:00Z",
+  "status": "ready",
+  "objective": "Review the Bazaar discovery metadata validation fix for Data Quality Profiler v0.1.0.",
+  "summary": "Applied metadata-validation corrections to the Bazaar discovery extension per chatgpt handoff data-quality-profiler-bazaar-validation-fix-2026-08-18. The Bazaar declaration now passes the official validateDiscoveryExtension from @x402/extensions/bazaar with zero errors. Key changes: (1) Bazaar input example changed from descriptive string '{format: \"json | csv — dataset format\", records: \"description\"}' to a valid JSON-form request '{format: \"json\", records: [{id: 1}]}' that satisfies the oneOf schema's JSON alternative. (2) Added method: 'POST' to declareDiscoveryExtension config so the schema's required ['method'] is satisfied at build time — enrichDeclaration overwrites it from the transport context. (3) Added output.schema with type: 'object' and required: [schema_version, scoring_version, quality_score] for proper JSON Schema structure. (4) Added new test importing validateDiscoveryExtension and asserting .valid === true with zero errors. Tests: 59/59 pass (up from 58), deterministic across 2 runs. No profiler/scoring/canonicalization/payment changes.",
+  "fixes_applied": [
+    {
+      "finding": "Bazaar input example does not satisfy the declared oneOf schema",
+      "file": "products/drafts/data-quality-profiler/src/payments/x402-plugin.mjs",
+      "fix": "Changed input example from {format: 'json | csv — dataset format', records: 'description'} to {format: 'json', records: [{id: 1}]} — a valid JSON-form request matching the oneOf JSON alternative.",
+      "tests_added": "Existing test assertions updated to match new input shape"
+    },
+    {
+      "finding": "Schema requires 'method' in input but info.input lacked it",
+      "file": "products/drafts/data-quality-profiler/src/payments/x402-plugin.mjs",
+      "fix": "Added method: 'POST' to declareDiscoveryExtension config. The schema's required ['method'] is satisfied at build time. enrichDeclaration overwrites it from the transport context at request time.",
+      "tests_added": "Official validateDiscoveryExtension test asserts zero errors including method requirement"
+    },
+    {
+      "finding": "output.schema lacked top-level type: 'object' and required fields",
+      "file": "products/drafts/data-quality-profiler/src/payments/x402-plugin.mjs",
+      "fix": "Added type: 'object' and required: ['schema_version', 'scoring_version', 'quality_score'] to output.schema for proper JSON Schema structure.",
+      "tests_added": "validateDiscoveryExtension test covers output schema validation"
+    },
+    {
+      "finding": "No official validation test coverage for Bazaar extension",
+      "file": "products/drafts/data-quality-profiler/test/x402-plugin.test.mjs",
+      "fix": "Added test importing validateDiscoveryExtension from @x402/extensions/bazaar, validating the decoded Bazaar extension payload, and asserting .valid === true with no errors.",
+      "tests_added": "1 new test: 'Bazaar extension passes official validateDiscoveryExtension with zero errors'"
+    }
+  ],
+  "test_evidence": {
+    "total_before": 58,
+    "total_after": 59,
+    "new_tests": 1,
+    "command": "node --test",
+    "result": "59 pass, 0 fail (deterministic across 2 runs)",
+    "smoke_tests": "/health OK (200), /v1/profile JSON OK (200, score=95), /v1/profile CSV OK (200, score=95)"
+  },
+  "files_changed": [
+    "products/drafts/data-quality-profiler/src/payments/x402-plugin.mjs",
+    "products/drafts/data-quality-profiler/test/x402-plugin.test.mjs",
+    "receipts/implementation/data-quality-profiler/20260819-031500/verification.json (UPDATED)",
+    "handoffs/hermes-to-chatgpt/data-quality-profiler-bazaar-validation-2026-08-18.json (NEW)"
+  ],
+  "limitations": [
+    "No real payment, settlement, wallet action, USDC transfer, mainnet, marketplace submission, hosting purchase, or Coinbase action was performed.",
+    "This is metadata-validation only. No profiler, scoring, canonicalization, or payment semantics were altered.",
+    "Do not merge to main or move to products/ready/ yet — stop for ChatGPT review."
+  ]
+}
