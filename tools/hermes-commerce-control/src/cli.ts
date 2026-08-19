@@ -90,8 +90,14 @@ export const CLI_COMMANDS: readonly string[] = Object.freeze([
   "doctor",
 ]);
 
-/** Publication targets, in deterministic order. */
-const PUBLISH_TARGETS: readonly PlatformId[] = Object.freeze(["agent402", "cdp_bazaar", "paysh"]);
+/**
+ * Publication targets, in deterministic order.
+ *
+ * Declared as a const tuple so the MCP layer can derive a strict enum schema
+ * from the same source of truth instead of restating the list.
+ */
+export const PUBLISH_TARGETS = Object.freeze(["agent402", "cdp_bazaar", "paysh"] as const) satisfies
+  readonly PlatformId[];
 
 export interface CliIo {
   stdout(chunk: string): void;
@@ -863,7 +869,7 @@ function commandPreparePublish(ctx: RunContext): CommandResult {
     targets = PUBLISH_TARGETS;
   } else {
     const platform = asPlatformId(requestedTarget);
-    if (platform === undefined || !PUBLISH_TARGETS.includes(platform)) {
+    if (platform === undefined || !(PUBLISH_TARGETS as readonly string[]).includes(platform)) {
       throw new CommerceError(
         "INVALID_INPUT",
         `--target must be one of ${PUBLISH_TARGETS.join(", ")}`,
