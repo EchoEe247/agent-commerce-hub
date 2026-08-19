@@ -18,6 +18,7 @@
  *     leaks one.
  */
 import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { homedir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { APP_MODE, APP_VERSION } from "./app.js";
@@ -264,6 +265,34 @@ export async function runDoctor(options: DoctorOptions): Promise<DoctorReport> {
       "build_artifact",
       "warn",
       `compiled CLI entrypoint missing at ${cliEntry}; run npm run build`,
+    );
+  }
+
+  // The MCP entrypoint is what Hermes launches. A missing one is a warning
+  // rather than a failure because the source still runs through tsx and the
+  // installer builds it before registering anything.
+  const mcpEntry = join(packageRoot, "dist", "mcp", "server.js");
+  if (existsSync(mcpEntry)) {
+    add("mcp_entrypoint", "pass", `compiled MCP entrypoint present at ${mcpEntry}`);
+  } else {
+    add(
+      "mcp_entrypoint",
+      "warn",
+      `compiled MCP entrypoint missing at ${mcpEntry}; run npm run build before registering with Hermes`,
+    );
+  }
+
+  // Filesystem-only observation. The doctor deliberately spawns no subprocess,
+  // so it reports whether a Hermes home exists rather than interrogating the
+  // Hermes CLI; the installer does that verification itself.
+  const hermesHome = join(homedir(), ".hermes");
+  if (existsSync(hermesHome)) {
+    add("hermes_home", "pass", `Hermes home found at ${hermesHome}`);
+  } else {
+    add(
+      "hermes_home",
+      "warn",
+      `no Hermes home at ${hermesHome}; MCP registration will be unavailable until Hermes is installed`,
     );
   }
 
