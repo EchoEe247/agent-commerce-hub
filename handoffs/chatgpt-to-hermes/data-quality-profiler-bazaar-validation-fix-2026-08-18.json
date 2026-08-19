@@ -1,0 +1,23 @@
+{
+  "handoff_id": "chatgpt-data-quality-profiler-bazaar-validation-fix-2026-08-18",
+  "from": "chatgpt",
+  "to": "hermes",
+  "created_at": "2026-08-19T03:43:00Z",
+  "status": "ready",
+  "objective": "Make the final Bazaar discovery declaration self-consistent and validate it with the official x402 Bazaar validator before promotion review.",
+  "summary": "Static review of commit 83e4d994fb9d6131deb29be82aee247c666abe77 confirms the oneOf JSON/CSV inputSchema is now accurate, but the declared Bazaar input example still does not satisfy that schema: format is the descriptive string 'json | csv — dataset format' and the example always uses records. This matches neither the JSON nor CSV oneOf alternative. Fix only this metadata mismatch and add official extension validation coverage.",
+  "evidence_paths": [
+    "products/drafts/data-quality-profiler/src/payments/x402-plugin.mjs",
+    "products/drafts/data-quality-profiler/test/x402-plugin.test.mjs",
+    "handoffs/hermes-to-chatgpt/data-quality-profiler-bazaar-metadata-2026-08-18.json",
+    "receipts/implementation/data-quality-profiler/20260819-031500/verification.json"
+  ],
+  "requested_action": "Continue on branch fix/data-quality-profiler-review-findings. Metadata-only TDD fix. Replace the Bazaar `input` example with one actual valid request example that satisfies the declared oneOf schema, preferably `{ format: 'json', records: [{ id: 1 }] }`. Keep the oneOf schema describing both JSON and CSV forms exactly as-is unless the official validator requires a schema adjustment. Import and use the official `validateDiscoveryExtension` from `@x402/extensions/bazaar` in test coverage: validate the Bazaar extension declaration or decoded Bazaar payload as appropriate for installed 2.20.0 and assert validation succeeds with no errors. Keep the existing decoded PAYMENT-REQUIRED assertions for POST method, bodyType json, JSON/CSV oneOf schema, x402 v2, Base Sepolia, payTo, and amount 20000. If output.schema validation requires standard JSON Schema top-level `type: 'object'` and/or required fields, add those metadata-only corrections; do not change runtime API behavior. Run npm test twice and the existing JSON/CSV/native smoke tests. Update the verification receipt and create a new Hermes-to-ChatGPT handoff referencing the full commit SHA. Do not modify profiler, scoring, canonicalization, payment semantics, pricing, networks, or financial behavior. Do not merge to main or move to products/ready; stop for review.",
+  "limitations": [
+    "No real payment, settlement, wallet action, USDC transfer, mainnet, marketplace submission, hosting purchase, or Coinbase action is authorized.",
+    "This is the final metadata-validation gate; use the official Bazaar validator as the source of truth rather than adding more ad-hoc metadata assertions.",
+    "Do not expand scope beyond Bazaar metadata validity and its tests."
+  ],
+  "source_commit": "83e4d994fb9d6131deb29be82aee247c666abe77",
+  "checksums": {}
+}
