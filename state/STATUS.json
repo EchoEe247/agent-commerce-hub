@@ -2,8 +2,8 @@
   "schema_version": 1,
   "project": "agent-commerce-hub",
   "status": "active",
-  "active_focus": "data-quality-profiler-implementation",
-  "current_research": ["agent402", "the402"],
+  "active_focus": "hermes-commerce-control-plane-activation-deferred",
+  "current_research": ["agent402", "the402", "cdp_bazaar", "piprail", "bountybook", "paysh", "agent_bounties"],
   "active_products": [
     {
       "name": "data-quality-profiler",
@@ -14,13 +14,23 @@
       "target": "agent402-x402",
       "payment_test_network": "base-sepolia",
       "mainnet_authorized": false
+    },
+    {
+      "name": "hermes-commerce-control",
+      "state": "implementation_complete_activation_deferred",
+      "path": "tools/hermes-commerce-control/",
+      "design": "docs/superpowers/specs/2026-08-18-hermes-commerce-control-plane-design.md",
+      "plan": "docs/superpowers/plans/2026-08-18-hermes-commerce-control-plane-headless.md",
+      "target": "multi-platform-discovery-ranking-and-preparation",
+      "payment_test_network": "none-read-only-mode-a",
+      "mainnet_authorized": false
     }
   ],
   "paused_channels": ["hypawave", "the402-commercial-target"],
   "canonical_fiat_exit": "coinbase",
   "notes": [
     "Repository is the shared Hermes/ChatGPT coordination layer.",
-    "Data Quality Profiler design and implementation plan are approved; implementation may proceed within non-financial/testnet boundaries.",
+    "Data Quality Profiler and Hermes Commerce Control Plane are implemented; the latter is awaiting deferred Hermes runtime activation.",
     "No hosting purchase, mainnet deployment, wallet transfer, listing submission, or Coinbase action is authorized yet.",
     "No wallet credentials or secrets belong in this repository."
   ]
