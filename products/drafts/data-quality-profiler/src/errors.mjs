@@ -1,3 +1,14 @@
+const HTTP_BY_CODE = Object.freeze({
+  UNSUPPORTED_FORMAT: 415,
+  INVALID_DATASET: 400,
+  INVALID_RECORD_SHAPE: 400,
+  MALFORMED_CSV: 400,
+  TOO_MANY_RECORDS: 413,
+  TOO_MANY_FIELDS: 413,
+  NESTING_TOO_DEEP: 413,
+  PROCESSING_TIMEOUT: 408,
+});
+
 export class ServiceError extends Error {
   constructor(code, message, statusCode = 400, details = {}) {
     super(message);
@@ -15,4 +26,30 @@ export class ServiceError extends Error {
       },
     };
   }
+}
+
+// Dataset modules throw plain Errors whose message begins with the stable
+// ERROR_CODES token (e.g. "TOO_MANY_RECORDS: max 1000 records allowed").
+// Classify such errors into a structured response with the approved HTTP code.
+export function classifyError(error) {
+  // Fastify rejects payloads exceeding bodyLimit with this code before routing.
+  if (error && error.code === "FST_ERR_CTP_BODY_TOO_LARGE") {
+    return {
+      statusCode: 413,
+      body: { error: { code: "REQUEST_TOO_LARGE", message: "request body exceeds the 1 MiB limit", details: {} } },
+    };
+  }
+  const message = (error && error.message) || "";
+  const match = message.match(/^([A-Z_]+):\s*([\s\S]*)$/);
+  if (match && HTTP_BY_CODE[match[1]]) {
+    return {
+      statusCode: HTTP_BY_CODE[match[1]],
+      body: { error: { code: match[1], message: match[2].trim(), details: {} } },
+    };
+  }
+  // Never leak stack traces or raw internals to the caller.
+  return {
+    statusCode: 500,
+    body: { error: { code: "INTERNAL_ERROR", message: "internal processing failure", details: {} } },
+  };
 }

@@ -1,9 +1,35 @@
 import Fastify from "fastify";
+import { randomUUID } from "node:crypto";
+import { LIMITS } from "./dataset/limits.mjs";
+import { classifyError } from "./errors.mjs";
 
-export function buildApp({ config, paymentPlugin }) {
+export function buildApp({ config, paymentPlugin, clock = { now: () => Date.now() }, deadlineMs = LIMITS.processingMs, logger = console }) {
   const app = Fastify({
     logger: false,
-    bodyLimit: 1_048_576,
+    bodyLimit: LIMITS.bodyBytes,
+  });
+
+  app.addHook("onResponse", async (request, reply) => {
+    if (!request.raw.profilerLog) return;
+    const { buildRequestLog } = await import("./logging.mjs");
+    const meta = request.raw.profilerLog;
+    const entry = buildRequestLog({
+      requestId: meta.request_id,
+      timestamp: meta.timestamp,
+      requestBytes: meta.request_bytes,
+      recordCount: meta.record_count,
+      fieldCount: meta.field_count,
+      processingMs: meta.processing_ms,
+      status: meta.status ?? reply.statusCode,
+      errorCode: meta.error_code,
+      paymentRef: meta.payment_ref,
+    });
+    logger.log(JSON.stringify(entry));
+  });
+
+  app.setErrorHandler((error, request, reply) => {
+    const { statusCode, body } = classifyError(error);
+    return reply.status(statusCode).send(body);
   });
 
   app.get("/health", async () => ({
@@ -12,31 +38,70 @@ export function buildApp({ config, paymentPlugin }) {
     version: config.serviceVersion,
   }));
 
-  app.post("/profile", async (request, reply) => {
+  app.post("/v1/profile", async (request, reply) => {
+    const { now } = clock;
+    const processingStart = now();
+    const requestId = `prof_${randomUUID()}`;
     const payload = request.body;
+
+    request.raw.profilerLog = { request_id: requestId, timestamp: new Date().toISOString(), request_bytes: appPresumedRequestBytes(request) };
+
     if (!payload || typeof payload !== "object") {
-      return reply.status(400).send({ error: { code: "INVALID_DATASET", message: "body must be a JSON object" } });
+      request.raw.profilerLog.status = 400;
+      request.raw.profilerLog.error_code = "INVALID_DATASET";
+      const { statusCode, body } = classifyError(new Error("INVALID_DATASET: body must be a JSON object"));
+      return reply.status(statusCode).send(body);
     }
-    const { normalizeDataset } = await import("./dataset/normalize.mjs");
-    const { profileDataset } = await import("./dataset/profile.mjs");
-    const { fingerprintSchema } = await import("./dataset/fingerprint.mjs");
-    const { scoreProfile } = await import("./dataset/scoring.mjs");
 
-    const normalized = normalizeDataset(payload);
-    const rawProfile = profileDataset(normalized);
-    const schemaFingerprint = fingerprintSchema(rawProfile.fields);
-    const scored = scoreProfile(rawProfile);
+    try {
+      const { normalizeDataset } = await import("./dataset/normalize.mjs");
+      const { profileDataset } = await import("./dataset/profile.mjs");
+      const { fingerprintSchema } = await import("./dataset/fingerprint.mjs");
+      const { scoreProfile } = await import("./dataset/scoring.mjs");
 
-    return reply.send({
-      ...rawProfile,
-      schema_fingerprint: schemaFingerprint,
-      quality_score: scored.quality_score,
-      scoring_version: scored.scoring_version,
-    });
+      const normalized = normalizeDataset(payload, { now, deadlineMs });
+      const rawProfile = profileDataset(normalized, { now, deadlineMs });
+      const schemaFingerprint = fingerprintSchema(rawProfile.fields);
+      const scored = scoreProfile(rawProfile);
+      const processingMs = Math.max(0, now() - processingStart);
+
+      request.raw.profilerLog.timestamp = new Date().toISOString();
+      request.raw.profilerLog.record_count = rawProfile.record_count;
+      request.raw.profilerLog.field_count = rawProfile.field_count;
+      request.raw.profilerLog.processing_ms = processingMs;
+      request.raw.profilerLog.status = 200;
+
+      return reply.send({
+        schema_version: "1.0",
+        request_id: requestId,
+        quality_score: scored.quality_score,
+        score_breakdown: scored.score_breakdown,
+        dataset: {
+          record_count: rawProfile.record_count,
+          field_count: rawProfile.field_count,
+          duplicate_rows: rawProfile.duplicate_rows,
+          schema_fingerprint: schemaFingerprint,
+        },
+        fields: rawProfile.fields,
+        warnings: rawProfile.warnings,
+        processing_ms: processingMs,
+      });
+    } catch (error) {
+      const { statusCode, body } = classifyError(error);
+      request.raw.profilerLog.status = statusCode;
+      request.raw.profilerLog.error_code = body.error.code;
+      return reply.status(statusCode).send(body);
+    }
   });
 
   if (paymentPlugin) {
     paymentPlugin(app);
   }
   return app;
+}
+
+function appPresumedRequestBytes(request) {
+  const header = request.headers["content-length"];
+  const length = header ? Number(header) : NaN;
+  return Number.isFinite(length) && length >= 0 ? length : 0;
 }

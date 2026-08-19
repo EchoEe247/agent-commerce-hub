@@ -1,7 +1,8 @@
 import { parse } from "csv-parse/sync";
 import { LIMITS, ERROR_CODES, assertMaxDepth, assertPlainObject } from "./limits.mjs";
 
-export function normalizeDataset(payload, { deadlineMs = LIMITS.processingMs } = {}) {
+export function normalizeDataset(payload, { deadlineMs = LIMITS.processingMs, now = () => Date.now() } = {}) {
+  const deadline = now() + deadlineMs;
   if (!payload || typeof payload !== "object") {
     throw new Error(`${ERROR_CODES.INVALID_DATASET}: payload must be an object`);
   }
@@ -41,6 +42,9 @@ export function normalizeDataset(payload, { deadlineMs = LIMITS.processingMs } =
   const normalized = [];
   const fieldSet = new Set();
   for (const record of records) {
+    if (now() > deadline) {
+      throw new Error(`${ERROR_CODES.PROCESSING_TIMEOUT}: normalization exceeded deadline`);
+    }
     if (format === "json") {
       assertPlainObject(record);
       assertMaxDepth(record, LIMITS.nestingDepth);

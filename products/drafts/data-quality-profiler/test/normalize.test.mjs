@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { normalizeDataset } from "../src/dataset/normalize.mjs";
+import { LIMITS } from "../src/dataset/limits.mjs";
 
 test("normalizes JSON records with sorted field union", () => {
   const result = normalizeDataset({
@@ -56,4 +57,20 @@ test("rejects malformed CSV quoting", () => {
     () => normalizeDataset({ format: "csv", data: "id,name\n1,\"unclosed" }),
     /MALFORMED_CSV/
   );
+});
+
+test("accepts legal maximum structure of 1000 records x 250 fields", () => {
+  const fieldNames = Array.from({ length: LIMITS.fieldsPerRecord }, (_, i) => `f${i}`);
+  const records = Array.from({ length: LIMITS.records }, (_, r) =>
+    Object.fromEntries(fieldNames.map((f, i) => [f, i === 0 ? r : r * 1000 + i]))
+  );
+  const result = normalizeDataset({ format: "json", records });
+  assert.equal(result.records.length, LIMITS.records);
+  assert.equal(result.fieldNames.length, LIMITS.fieldsPerRecord);
+});
+
+test("accepts repeated deep nesting at the legal depth", () => {
+  let record = { leaf: 1 };
+  for (let i = 0; i < LIMITS.nestingDepth - 1; i++) record = { next: record };
+  assert.doesNotThrow(() => normalizeDataset({ format: "json", records: [record] }));
 });
