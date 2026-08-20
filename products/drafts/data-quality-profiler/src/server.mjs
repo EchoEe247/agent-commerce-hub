@@ -10,3 +10,9 @@ const app = buildApp({
 });
 
 await app.listen({ host: config.host, port: config.port });
+
+// Deterministic startup order: initialize facilitator discovery (GET
+// /supported) only after the listener is ready. Fails loudly on error.
+if (typeof app.x402Ready === "function") {
+  await app.x402Ready();
+}
