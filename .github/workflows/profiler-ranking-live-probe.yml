@@ -6,6 +6,11 @@ on:
       - tdd/agent402-profiler-ranking-20260820
     paths:
       - .github/workflows/profiler-ranking-live-probe.yml
+  pull_request:
+    branches:
+      - feat/hermes-commerce-control-plane
+    paths:
+      - .github/workflows/profiler-ranking-live-probe.yml
 
 permissions:
   contents: write
