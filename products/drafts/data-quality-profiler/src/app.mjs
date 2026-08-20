@@ -5,6 +5,7 @@ import { classifyError } from "./errors.mjs";
 import { buildCounterpartyAvailability } from "./counterparty-availability.mjs";
 
 const SELLER_ORIGIN = "https://hermes-counterparty-api.onrender.com";
+const INDEX402_VERIFICATION_HASH = "38c7d63638e26a694fdf51fd1b213221e26d73044847c5dac48bf4aa19756605";
 
 export function buildApp({ config, paymentPlugin, clock = { now: () => Date.now() }, deadlineMs = LIMITS.processingMs, logger = console }) {
   const app = Fastify({
@@ -41,6 +42,10 @@ export function buildApp({ config, paymentPlugin, clock = { now: () => Date.now(
     service: "data-quality-profiler",
     version: config.serviceVersion,
   }));
+
+  app.get("/.well-known/402index-verify.txt", async (_request, reply) => (
+    reply.type("text/plain").send(INDEX402_VERIFICATION_HASH)
+  ));
 
   app.get("/.well-known/x402", async () => {
     const network = config.x402Network ?? "eip155:8453";
