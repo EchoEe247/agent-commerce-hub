@@ -14,6 +14,13 @@ on:
       - 'products/drafts/data-quality-profiler/test/counterparty-api.test.mjs'
       - 'products/drafts/data-quality-profiler/test/config.test.mjs'
       - '.github/workflows/counterparty-seller-ci.yml'
+  pull_request:
+    branches:
+      - ci/x402-https-test-base
+    paths:
+      - 'products/drafts/data-quality-profiler/src/app.mjs'
+      - 'products/drafts/data-quality-profiler/test/counterparty-api.test.mjs'
+      - '.github/workflows/counterparty-seller-ci.yml'
   workflow_dispatch:
 
 permissions:
