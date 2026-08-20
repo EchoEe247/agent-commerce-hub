@@ -615,16 +615,21 @@ async function run() {
     const verdict = validateQuoteAndBudget(mutated, expectedPayTo, networkKey);
     add(`policy-reject [${name}]: ${verdict.ok ? "SIGNED (BUG)" : `REJECTED (${verdict.reason})`}`);
     if (!verdict.ok) rejections += 1;
+  }
   // cumulative budget limit test
   const budgetNetworkKey = networkKey;
-  const savedInitial = ledgerData.budgets[budgetNetworkKey].initialBudget;
-  ledgerData.budgets[budgetNetworkKey].initialBudget = savedInitial;
-  const budgetVerdict = validateQuoteAndBudget(
-    { ...quote, amount: String(Number(savedInitial) + 1) },
-    PAY_TO,
-    budgetNetworkKey
-  );
-  ledgerData.budgets[budgetNetworkKey].initialBudget = savedInitial;
+  const savedRemaining = ledgerData.budgets[budgetNetworkKey].remainingBudget;
+  ledgerData.budgets[budgetNetworkKey].remainingBudget = 0;
+  ledgerData.budgets[budgetNetworkKey].purchases["__budget-test__"] = {
+    purchaseId: "__budget-test__",
+    stage: "SETTLED",
+    amount: 0,
+    payTo: PAY_TO,
+    updatedAt: new Date().toISOString(),
+  };
+  const budgetVerdict = validateQuoteAndBudget({ ...quote }, PAY_TO, budgetNetworkKey);
+  delete ledgerData.budgets[budgetNetworkKey].purchases["__budget-test__"];
+  ledgerData.budgets[budgetNetworkKey].remainingBudget = savedRemaining;
   add(
     `policy-reject [cumulative budget exceeded]: ${budgetVerdict.ok ? "SIGNED (BUG)" : `REJECTED (${budgetVerdict.reason})`}`
   );
