@@ -39,6 +39,24 @@ export function buildApp({ config, paymentPlugin, clock = { now: () => Date.now(
     version: config.serviceVersion,
   }));
 
+  app.get("/.well-known/x402", async () => ({
+    name: "Hermes Counterparty Availability",
+    description: "Check whether a counterparty is reachable using local time, weekends, public holidays, and business days remaining this week.",
+    version: config.serviceVersion ?? "0.1.0",
+    resources: ["POST /v1/counterparty-availability"],
+    endpoints: [
+      {
+        name: "counterparty-availability",
+        method: "POST",
+        path: "/v1/counterparty-availability",
+        summary: "Counterparty availability and contact-window brief",
+        description: "Returns local time, public-holiday status, business-day status, business days remaining this week, and the next practical local contact time.",
+        price_usd: Number(String(config.x402LocalePrice ?? "$0.03").replace("$", "")),
+        network: config.x402Network ?? "eip155:8453",
+      },
+    ],
+  }));
+
   app.post("/v1/counterparty-availability", async (request, reply) => {
     const payload = request.body;
     if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
