@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   AGENT402_ENDPOINTS,
+  AGENT402_PAY_TO,
   BASE_MAINNET,
   BASE_USDC,
   CUMULATIVE_BUDGET_RAW,
@@ -16,7 +17,7 @@ const goodQuote = (over = {}) => ({
   network: BASE_MAINNET,
   asset: BASE_USDC,
   amount: '5000',
-  payTo: '0x1111111111111111111111111111111111111111',
+  payTo: AGENT402_PAY_TO,
   maxTimeoutSeconds: 300,
   extra: {},
   ...over,
@@ -40,11 +41,11 @@ test('valid Base USDC Agent402 quote passes when budget remains', () => {
   assert.equal(verdict.amountRaw, 5000n);
 });
 
-test('quote policy rejects wrong chain, token, payTo, stale/huge timeout and recurring payment shapes', () => {
+test('quote policy rejects wrong chain, token, recipient, stale/huge timeout and recurring payment shapes', () => {
   const cases = [
     goodQuote({ network: 'eip155:84532' }),
     goodQuote({ asset: '0x2222222222222222222222222222222222222222' }),
-    goodQuote({ payTo: 'not-an-address' }),
+    goodQuote({ payTo: '0x1111111111111111111111111111111111111111' }),
     goodQuote({ maxTimeoutSeconds: 0 }),
     goodQuote({ maxTimeoutSeconds: 601 }),
     goodQuote({ extra: { recurring: true } }),
