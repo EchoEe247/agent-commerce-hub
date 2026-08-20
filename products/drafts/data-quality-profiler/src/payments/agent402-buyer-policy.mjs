@@ -1,4 +1,5 @@
 export const AGENT402_ORIGIN = 'https://agent402.tools';
+export const AGENT402_PAY_TO = '0xaBF4FAbd7c416fB67202E5f9002389Fc75e2a9D0';
 export const BASE_MAINNET = 'eip155:8453';
 export const BASE_USDC = '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913';
 export const CUMULATIVE_BUDGET_RAW = 2_380_000;
@@ -77,8 +78,8 @@ export function validateAgent402Quote(quote, endpointId, remainingBudgetRaw) {
   }
   if (remaining < amountRaw) return { ok: false, reason: 'cumulative budget exceeded' };
 
-  if (!/^0x[0-9a-fA-F]{40}$/.test(String(quote.payTo ?? ''))) {
-    return { ok: false, reason: 'invalid payTo' };
+  if (String(quote.payTo ?? '').toLowerCase() !== AGENT402_PAY_TO.toLowerCase()) {
+    return { ok: false, reason: 'unexpected payTo' };
   }
 
   const timeout = Number(quote.maxTimeoutSeconds ?? 0);
