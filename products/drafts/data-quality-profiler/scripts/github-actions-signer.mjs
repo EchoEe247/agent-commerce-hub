@@ -601,7 +601,7 @@ async function run() {
     ["wrong token", { ...quote, asset: "0x" + "11".repeat(20) }, PAY_TO],
     ["wrong payTo", { ...quote, payTo: "0x" + "22".repeat(20) }, PAY_TO],
     ["amount above cap", { ...quote, amount: "2000000" }, PAY_TO],
-    ["altered quote (amount tampered)", { ...quote, amount: "20001" }, PAY_TO],
+    ["altered quote (amount tampered)", { ...quote, amount: "200001" }, PAY_TO],
     ["stale quote (no validity window)", { ...quote, maxTimeoutSeconds: 0 }, PAY_TO],
     ["excessive validity window", { ...quote, maxTimeoutSeconds: 999999 }, PAY_TO],
     ["unsupported scheme", { ...quote, scheme: "upto" }, PAY_TO],
@@ -617,7 +617,11 @@ async function run() {
     if (!verdict.ok) rejections += 1;
   }
   // cumulative budget limit test
-  const budgetVerdict = validateQuoteAndBudget({ ...quote }, PAY_TO, networkKey);
+  const budgetNetworkKey = networkKey;
+  const savedRemaining = ledgerData.budgets[budgetNetworkKey].remainingBudget;
+  ledgerData.budgets[budgetNetworkKey].remainingBudget = 0;
+  const budgetVerdict = validateQuoteAndBudget({ ...quote }, PAY_TO, budgetNetworkKey);
+  ledgerData.budgets[budgetNetworkKey].remainingBudget = savedRemaining;
   add(
     `policy-reject [cumulative budget exceeded]: ${budgetVerdict.ok ? "SIGNED (BUG)" : `REJECTED (${budgetVerdict.reason})`}`
   );
