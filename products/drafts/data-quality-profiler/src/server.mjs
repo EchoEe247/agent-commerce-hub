@@ -45,7 +45,10 @@ async function runOneShotAgent402Bootstrap(config) {
     body: JSON.stringify({ country_code: "US", timezone: "America/Chicago" }),
     signal: AbortSignal.timeout(15_000),
   });
-  if (unpaid.status !== 402) throw new Error(`expected 402, got ${unpaid.status}`);
+  if (unpaid.status !== 402) {
+    const errorBody = (await unpaid.text()).slice(0, 1200).replace(/\s+/g, " ");
+    throw new Error(`expected 402, got ${unpaid.status}; body=${errorBody}`);
+  }
 
   const paymentRequired = unpaid.headers.get("payment-required");
   if (!paymentRequired) throw new Error("missing PAYMENT-REQUIRED header");
