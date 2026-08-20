@@ -2,6 +2,7 @@ import Fastify from "fastify";
 import { randomUUID } from "node:crypto";
 import { LIMITS } from "./dataset/limits.mjs";
 import { classifyError } from "./errors.mjs";
+import { buildCounterpartyAvailability } from "./counterparty-availability.mjs";
 
 export function buildApp({ config, paymentPlugin, clock = { now: () => Date.now() }, deadlineMs = LIMITS.processingMs, logger = console }) {
   const app = Fastify({
@@ -37,6 +38,26 @@ export function buildApp({ config, paymentPlugin, clock = { now: () => Date.now(
     service: "data-quality-profiler",
     version: config.serviceVersion,
   }));
+
+  app.post("/v1/counterparty-availability", async (request, reply) => {
+    const payload = request.body;
+    if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+      const { statusCode, body } = classifyError(new Error("INVALID_LOCALE_REQUEST: body must be a JSON object"));
+      return reply.status(statusCode).send(body);
+    }
+
+    try {
+      const result = buildCounterpartyAvailability({
+        countryCode: payload.country_code,
+        timezone: payload.timezone,
+        at: new Date(clock.now()).toISOString(),
+      });
+      return reply.send(result);
+    } catch (error) {
+      const { statusCode, body } = classifyError(error);
+      return reply.status(statusCode).send(body);
+    }
+  });
 
   app.post("/v1/profile", async (request, reply) => {
     const { now } = clock;
