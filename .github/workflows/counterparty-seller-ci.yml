@@ -15,6 +15,13 @@ on:
       - 'products/drafts/data-quality-profiler/test/counterparty-api.test.mjs'
       - 'products/drafts/data-quality-profiler/test/config.test.mjs'
       - '.github/workflows/counterparty-seller-ci.yml'
+  pull_request:
+    branches:
+      - feat/hermes-commerce-control-plane
+    paths:
+      - 'products/drafts/data-quality-profiler/src/app.mjs'
+      - 'products/drafts/data-quality-profiler/test/counterparty-api.test.mjs'
+      - '.github/workflows/counterparty-seller-ci.yml'
   workflow_dispatch:
 
 permissions:
