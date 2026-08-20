@@ -17,12 +17,7 @@ export function buildPaymentPlugin(config) {
     const resourceServer = new x402ResourceServer(facilitatorClient);
     resourceServer.register(config.x402Network, new ExactEvmScheme());
 
-    // Bazaar discovery declaration. The inputSchema describes the actual
-    // JSON-or-CSV wrapper contract. The input example must satisfy the
-    // oneOf schema (valid JSON-form request). method is passed here so
-    // the schema's required ['method'] is satisfied at build time; the
-    // official enrichDeclaration overwrites it from the transport context.
-    const bazaarExtension = declareDiscoveryExtension({
+    const profilerBazaarExtension = declareDiscoveryExtension({
       method: "POST",
       bodyType: "json",
       input: {
@@ -75,6 +70,61 @@ export function buildPaymentPlugin(config) {
       },
     });
 
+    const counterpartyBazaarExtension = declareDiscoveryExtension({
+      method: "POST",
+      bodyType: "json",
+      input: {
+        country_code: "US",
+        timezone: "America/Chicago",
+      },
+      inputSchema: {
+        type: "object",
+        properties: {
+          country_code: {
+            type: "string",
+            enum: ["US", "CA", "MX", "GB", "DE", "FR", "ES", "IT", "BR", "JP", "IN", "AU"],
+            description: "ISO 3166-1 alpha-2 country code",
+          },
+          timezone: {
+            type: "string",
+            description: "Optional IANA timezone; defaults to the country's primary business timezone",
+          },
+        },
+        required: ["country_code"],
+      },
+      output: {
+        example: {
+          country: { code: "US", name: "United States", currency: "USD", calling_code: "+1", holiday_scope: "US federal" },
+          timezone: "America/Chicago",
+          timezone_source: "request",
+          local: { date: "2026-08-20", time: "08:00", weekday: "Thu", iso: "2026-08-20T08:00" },
+          business: {
+            is_weekend: false,
+            is_public_holiday: false,
+            holiday_name: null,
+            is_business_day: true,
+            business_days_remaining_this_week: 2,
+            next_business_date: "2026-08-20",
+            contact_window: "closed",
+            next_contact_local: "2026-08-20T09:00",
+            assumed_business_hours: "09:00-17:00 local",
+          },
+        },
+        schema: {
+          type: "object",
+          properties: {
+            country: { type: "object" },
+            timezone: { type: "string" },
+            timezone_source: { type: "string" },
+            local: { type: "object" },
+            business: { type: "object" },
+            caveat: { type: "string" },
+          },
+          required: ["country", "timezone", "local", "business"],
+        },
+      },
+    });
+
     const routes = {
       "POST /v1/profile": {
         description: "Profile a dataset for data quality metrics",
@@ -85,30 +135,25 @@ export function buildPaymentPlugin(config) {
           price: config.x402Price,
           network: config.x402Network,
         },
-        extensions: bazaarExtension,
+        extensions: profilerBazaarExtension,
+      },
+      "POST /v1/counterparty-availability": {
+        description: "Check whether a counterparty is reachable now using local time, national holidays, weekends, and business days remaining this week",
+        mimeType: "application/json",
+        accepts: {
+          scheme: "exact",
+          payTo: config.x402PayTo,
+          price: config.x402LocalePrice,
+          network: config.x402Network,
+        },
+        extensions: counterpartyBazaarExtension,
       },
     };
 
-    // ── Startup-order fix ────────────────────────────────────────────
-    // @x402/fastify's paymentMiddleware default (syncFacilitatorOnStart=true)
-    // fires resourceServer.initialize() -> facilitator GET /supported EAGERLY
-    // at route-registration time, i.e. inside buildApp() and therefore BEFORE
-    // any HTTP listener is ready. If the facilitator is co-located with (or
-    // starts after) this process, that eager fetch fails with ECONNREFUSED
-    // and the rejected promise is unhandled until the first protected
-    // request, crashing the process.
-    //
-    // Fix: pass syncFacilitatorOnStart=false and expose an explicit,
-    // run-once readiness initializer (`app.x402Ready()`) that the server
-    // start path awaits AFTER `listen()` resolves. A protected request that
-    // arrives before the explicit call triggers the same awaited initializer
-    // (a request implies the listener is ready, so no ECONNREFUSED race).
-    // Initialization failures propagate loudly; they are never swallowed.
     let readyPromise = null;
     const ensureFacilitatorReady = () => {
       if (!readyPromise) {
         readyPromise = resourceServer.initialize().catch((error) => {
-          // Reset so a later call can retry; rethrow so the failure is loud.
           readyPromise = null;
           throw error;
         });
@@ -125,8 +170,6 @@ export function buildPaymentPlugin(config) {
       }
     });
 
-    // syncFacilitatorOnStart=false: facilitator discovery is driven solely by
-    // the readiness initializer above (post-listen), never at construction.
     paymentMiddleware(app, routes, resourceServer, undefined, undefined, false);
   };
 }
