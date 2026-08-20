@@ -9,6 +9,12 @@ const app = buildApp({
   paymentPlugin: buildPaymentPlugin(config),
 });
 
+if (process.env.DIAGNOSTIC_ERRORS === "true") {
+  app.addHook("onError", async (_request, _reply, error) => {
+    console.error(`DIAGNOSTIC_INTERNAL_ERROR ${error?.stack ?? error?.message ?? String(error)}`);
+  });
+}
+
 await app.listen({ host: config.host, port: config.port });
 
 // Deterministic startup order: initialize facilitator discovery (GET
