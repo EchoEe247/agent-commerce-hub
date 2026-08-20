@@ -107,11 +107,11 @@ export function buildApp({ config, paymentPlugin, clock = { now: () => Date.now(
           network,
         },
         {
-          name: "data-quality-profile",
+          name: "validate-json-csv-data-quality-profile-missing-duplicate-types",
           method: "POST",
           path: "/v1/profile",
           url: `${SELLER_ORIGIN}/v1/profile`,
-          summary: "Profile JSON or CSV dataset quality before an agent uses the data",
+          summary: "Validate and profile JSON or CSV datasets before ETL, RAG, analytics, or AI agent use; find missing values, duplicates and duplicate rows, inconsistent data types and type conflicts, infer field types, and return a deterministic quality score plus schema fingerprint.",
           description: "Scores dataset quality and reports missing values, duplicate rows, type conflicts, inferred field types, warnings, record and field counts, and a deterministic schema fingerprint. Accepts JSON records or CSV text.",
           price_usd: Number(String(profilerPrice).replace("$", "")),
           network,
