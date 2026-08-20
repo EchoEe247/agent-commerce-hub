@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: hermes-counterparty-api
+    runtime: docker
+    plan: free
+    branch: feat/hermes-commerce-control-plane
+    rootDir: products/drafts/data-quality-profiler
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    envVars:
+      - key: X402_ENABLED
+        value: "true"
+      - key: X402_NETWORK
+        value: eip155:8453
+      - key: ALLOW_MAINNET
+        value: "true"
+      - key: X402_PRICE
+        value: "$0.02"
+      - key: X402_LOCALE_PRICE
+        value: "$0.03"
+      - key: X402_PAY_TO
+        sync: false
+      - key: X402_FACILITATOR_URL
+        value: https://x402.org/facilitator
