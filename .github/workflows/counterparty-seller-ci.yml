@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - feat/hermes-commerce-control-plane
-      - tdd/agent402-profiler-ranking-20260820
     paths:
       - 'products/drafts/data-quality-profiler/src/counterparty-availability.mjs'
       - 'products/drafts/data-quality-profiler/src/app.mjs'
