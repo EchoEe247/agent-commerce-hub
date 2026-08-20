@@ -4,6 +4,7 @@ import { buildApp } from "../src/app.mjs";
 
 const EARNING_WALLET = "0x2BD7c4e294B09E9a853168a58712498D03A45B01";
 const PUBLIC_ORIGIN = "https://hermes-counterparty-api.onrender.com";
+const INDEX402_VERIFICATION_HASH = "38c7d63638e26a694fdf51fd1b213221e26d73044847c5dac48bf4aa19756605";
 
 function unpaidApp(options = {}) {
   return buildApp({
@@ -58,6 +59,15 @@ test("GET /.well-known/x402 publishes Agent402/x402scan-compatible seller metada
   assert.equal(profiler.network, "eip155:8453");
   assert.match(profiler.description, /missing values/);
   assert.match(profiler.description, /schema fingerprint/);
+  await app.close();
+});
+
+test("GET /.well-known/402index-verify.txt publishes the 402 Index verification hash", async () => {
+  const app = unpaidApp();
+  const response = await app.inject({ method: "GET", url: "/.well-known/402index-verify.txt" });
+  assert.equal(response.statusCode, 200);
+  assert.match(response.headers["content-type"], /^text\/plain/);
+  assert.equal(response.body, INDEX402_VERIFICATION_HASH);
   await app.close();
 });
 
