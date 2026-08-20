@@ -61,6 +61,34 @@ test("GET /.well-known/x402 publishes Agent402/x402scan-compatible seller metada
   await app.close();
 });
 
+test("forwarded HTTPS is preserved for payment resource URLs", async () => {
+  const app = unpaidApp({
+    paymentPlugin: (instance) => {
+      instance.addHook("onRequest", async (request, reply) => {
+        if (request.method === "POST" && request.url.split("?")[0] === "/v1/profile") {
+          return reply.status(402).send({
+            resource: {
+              url: `${request.protocol}://${request.host}${request.url}`,
+            },
+          });
+        }
+      });
+    },
+  });
+  const response = await app.inject({
+    method: "POST",
+    url: "/v1/profile",
+    headers: {
+      host: "hermes-counterparty-api.onrender.com",
+      "x-forwarded-proto": "https",
+    },
+    payload: { format: "json", records: [{ id: 1 }] },
+  });
+  assert.equal(response.statusCode, 402);
+  assert.equal(response.json().resource.url, `${PUBLIC_ORIGIN}/v1/profile`);
+  await app.close();
+});
+
 test("POST /v1/counterparty-availability returns deterministic availability brief", async () => {
   const fixed = Date.parse("2026-08-20T13:00:00.000Z");
   const app = unpaidApp({ clock: { now: () => fixed } });
