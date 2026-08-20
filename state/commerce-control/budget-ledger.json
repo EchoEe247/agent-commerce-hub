@@ -1,0 +1,49 @@
+{
+  "budgets": {
+    "testnet": {
+      "budgetId": "B2_COMMERCE_OPERATING_BUDGET_V1_TESTNET",
+      "wallet": "0xc6139957cf09F97718cA6b3c88fB3931aDC04ead",
+      "initialBudget": 2000000,
+      "spentBudget": 20000,
+      "remainingBudget": 1980000,
+      "purchases": {
+        "ext-signer-test-3": {
+          "purchaseId": "ext-signer-test-3",
+          "stage": "REPLAY_REJECTED",
+          "amount": 20000,
+          "payTo": "0x0000000000000000000000000000000000000001",
+          "updatedAt": "2026-08-20T12:00:46.769Z",
+          "nonce": "0x0cec3ba1848b5aa401e1c8336cf89d5d236f1017692ef045111091c40591c00e",
+          "validBefore": "1787227540",
+          "transaction": "0x075a551ee09b09872031f51ef208503aabfc63eb46f5367d0ea8e65e179d4155",
+          "replayStatus": 402
+        },
+        "ext-signer-test-3-fail": {
+          "purchaseId": "ext-signer-test-3-fail",
+          "stage": "FAILED",
+          "amount": 20000,
+          "payTo": "",
+          "updatedAt": "2026-08-20T12:00:57.363Z",
+          "nonce": "0x614f5d26ab55ba66fd410c4a6fb33b03902a7e9e0971b0f98533753fbb186ace",
+          "status": 500
+        },
+        "ext-signer-test-3-timeout": {
+          "purchaseId": "ext-signer-test-3-timeout",
+          "stage": "FAILED",
+          "amount": 20000,
+          "payTo": "",
+          "updatedAt": "2026-08-20T12:06:32.671Z",
+          "nonce": "0x3a7f495f85956f21838b9a3f61e78583b1c45d7eb942dabf094bc2114bbe3d69"
+        }
+      }
+    },
+    "mainnet": {
+      "budgetId": "B2_COMMERCE_OPERATING_BUDGET_V1",
+      "wallet": "",
+      "initialBudget": 2000000,
+      "spentBudget": 0,
+      "remainingBudget": 2000000,
+      "purchases": {}
+    }
+  }
+}
