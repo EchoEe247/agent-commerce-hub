@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - feat/hermes-commerce-control-plane
+      - fix/x402-https-resource-url
     paths:
       - 'products/drafts/data-quality-profiler/src/counterparty-availability.mjs'
       - 'products/drafts/data-quality-profiler/src/app.mjs'
