@@ -2,17 +2,43 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { buildApp } from "../src/app.mjs";
 
+const EARNING_WALLET = "0x2BD7c4e294B09E9a853168a58712498D03A45B01";
+const PUBLIC_ORIGIN = "https://hermes-counterparty-api.onrender.com";
+
 function unpaidApp(options = {}) {
-  return buildApp({ config: { serviceVersion: "0.1.0", x402LocalePrice: "$0.03", x402Network: "eip155:8453" }, paymentPlugin: async () => {}, ...options });
+  return buildApp({
+    config: {
+      serviceVersion: "0.1.0",
+      x402LocalePrice: "$0.03",
+      x402Network: "eip155:8453",
+      x402PayTo: EARNING_WALLET,
+    },
+    paymentPlugin: async () => {},
+    ...options,
+  });
 }
 
-test("GET /.well-known/x402 publishes the paid counterparty route", async () => {
+test("GET /.well-known/x402 publishes Agent402/x402scan-compatible seller metadata", async () => {
   const app = unpaidApp();
   const response = await app.inject({ method: "GET", url: "/.well-known/x402" });
   assert.equal(response.statusCode, 200);
   const body = response.json();
+
+  assert.equal(body.spec, "agent402-service-manifest/1");
+  assert.equal(body.version, 1);
+  assert.equal(body.serviceVersion, "0.1.0");
   assert.equal(body.name, "Hermes Counterparty Availability");
-  assert.deepEqual(body.resources, ["POST /v1/counterparty-availability"]);
+  assert.equal(body.homepage, PUBLIC_ORIGIN);
+  assert.deepEqual(body.resources, [`${PUBLIC_ORIGIN}/v1/counterparty-availability`]);
+
+  assert.deepEqual(body.payment.x402.networks, ["eip155:8453"]);
+  assert.equal(body.payment.x402.primaryNetwork, "eip155:8453");
+  assert.equal(body.payment.x402.version, 2);
+  assert.equal(body.payment.x402.currency, "USDC");
+  assert.equal(body.payment.x402.priceRange, "$0.03");
+  assert.equal(body.payment.x402.payTo, EARNING_WALLET);
+  assert.equal(body.payment.x402.nonCustodial, true);
+
   assert.equal(body.endpoints[0].path, "/v1/counterparty-availability");
   assert.equal(body.endpoints[0].method, "POST");
   assert.equal(body.endpoints[0].price_usd, 0.03);
