@@ -5,6 +5,8 @@ import { buildApp } from "../src/app.mjs";
 const EARNING_WALLET = "0x2BD7c4e294B09E9a853168a58712498D03A45B01";
 const PUBLIC_ORIGIN = "https://hermes-counterparty-api.onrender.com";
 const INDEX402_VERIFICATION_HASH = "38c7d63638e26a694fdf51fd1b213221e26d73044847c5dac48bf4aa19756605";
+const PROFILER_ROUTING_NAME = "validate-json-csv-data-quality-profile-missing-duplicate-types";
+const PROFILER_ROUTING_SUMMARY = "Validate and profile JSON or CSV datasets before ETL, RAG, analytics, or AI agent use; find missing values, duplicates and duplicate rows, inconsistent data types and type conflicts, infer field types, and return a deterministic quality score plus schema fingerprint.";
 
 function unpaidApp(options = {}) {
   return buildApp({
@@ -53,10 +55,17 @@ test("GET /.well-known/x402 publishes Agent402/x402scan-compatible seller metada
   assert.equal(counterparty.network, "eip155:8453");
 
   const profiler = body.endpoints.find((endpoint) => endpoint.path === "/v1/profile");
-  assert.equal(profiler.name, "data-quality-profile");
+  assert.equal(profiler.name, PROFILER_ROUTING_NAME);
+  assert.equal(profiler.summary, PROFILER_ROUTING_SUMMARY);
   assert.equal(profiler.method, "POST");
   assert.equal(profiler.price_usd, 0.02);
   assert.equal(profiler.network, "eip155:8453");
+  assert.match(profiler.summary, /JSON or CSV/);
+  assert.match(profiler.summary, /ETL/);
+  assert.match(profiler.summary, /AI agent/);
+  assert.match(profiler.summary, /missing values/);
+  assert.match(profiler.summary, /duplicate rows/);
+  assert.match(profiler.summary, /type conflicts/);
   assert.match(profiler.description, /missing values/);
   assert.match(profiler.description, /schema fingerprint/);
   await app.close();
