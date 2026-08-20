@@ -8,7 +8,7 @@ on:
       - .github/workflows/hermes-seller-live-check.yml
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   verify-and-register:
@@ -70,6 +70,7 @@ jobs:
           payment_required=$(tr -d '\r' < /tmp/quote-headers.txt | awk 'BEGIN{IGNORECASE=1} /^payment-required:/ {sub(/^[^:]*:[[:space:]]*/, ""); print; exit}')
           test -n "$payment_required"
           PAYMENT_REQUIRED="$payment_required" node <<'NODE'
+          const fs = require('node:fs');
           const raw = process.env.PAYMENT_REQUIRED;
           const required = JSON.parse(Buffer.from(raw, 'base64').toString('utf8'));
           const accepts = Array.isArray(required.accepts) ? required.accepts : [];
@@ -79,6 +80,16 @@ jobs:
           if (amount !== 30000n) throw new Error(`wrong amount: ${amount}`);
           if (String(q.asset ?? '').toLowerCase() !== '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913') throw new Error(`wrong asset: ${q.asset}`);
           if (String(q.payTo ?? '').toLowerCase() !== '0x2bd7c4e294b09e9a853168a58712498d03a45b01') throw new Error(`wrong payTo: ${q.payTo}`);
+          const summary = {
+            status: 402,
+            scheme: q.scheme,
+            network: q.network,
+            asset: q.asset,
+            amountRaw: amount.toString(),
+            priceUsd: Number(amount) / 1e6,
+            payTo: q.payTo,
+          };
+          fs.writeFileSync('/tmp/quote-summary.json', JSON.stringify(summary, null, 2));
           console.log(`LIVE_X402_QUOTE_OK amountRaw=${amount} network=${q.network} payTo=${q.payTo}`);
           NODE
 
@@ -92,8 +103,40 @@ jobs:
             --data '{"origin":"https://hermes-counterparty-api.onrender.com"}')
           echo "AGENT402_REGISTER_RESPONSE=$response"
           REGISTER_RESPONSE="$response" node <<'NODE'
+          const fs = require('node:fs');
           const result = JSON.parse(process.env.REGISTER_RESPONSE);
           if (result.listed !== true) throw new Error(`Agent402 did not list seller: ${JSON.stringify(result)}`);
           if (Number(result?.seller?.toolCount ?? 0) < 1) throw new Error(`Agent402 listed zero tools: ${JSON.stringify(result)}`);
+          fs.writeFileSync('/tmp/agent402-registration.json', JSON.stringify(result, null, 2));
           console.log(`AGENT402_LISTED origin=${result.origin} toolCount=${result.seller.toolCount} routable=${result.seller.routable}`);
           NODE
+
+      - name: Persist compact live evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p research/raw/agent402-seller-live
+          node <<'NODE'
+          const fs = require('node:fs');
+          const quote = JSON.parse(fs.readFileSync('/tmp/quote-summary.json', 'utf8'));
+          const registration = JSON.parse(fs.readFileSync('/tmp/agent402-registration.json', 'utf8'));
+          const evidence = {
+            observedAt: new Date().toISOString(),
+            origin: 'https://hermes-counterparty-api.onrender.com',
+            endpoint: '/v1/counterparty-availability',
+            focusedTests: 'PASS',
+            health: 'PASS',
+            quote,
+            agent402: {
+              listed: registration.listed,
+              origin: registration.origin,
+              seller: registration.seller,
+            },
+          };
+          fs.writeFileSync('research/raw/agent402-seller-live/latest.json', JSON.stringify(evidence, null, 2) + '\n');
+          NODE
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git add research/raw/agent402-seller-live/latest.json
+          git commit -m 'chore: record live Agent402 seller validation'
+          git push origin HEAD:feat/hermes-commerce-control-plane
