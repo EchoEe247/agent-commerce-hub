@@ -41,9 +41,24 @@
       "budgetId": "B2_COMMERCE_OPERATING_BUDGET_V1",
       "wallet": "0x2960a4b12A0cF133C738Bf8e768411152Ef8e5b5",
       "initialBudget": 2380000,
-      "spentBudget": 0,
-      "remainingBudget": 2380000,
-      "purchases": {}
+      "spentBudget": 5000,
+      "remainingBudget": 2375000,
+      "purchases": {
+        "agent402-demand-radar-1": {
+          "purchaseId": "agent402-demand-radar-1",
+          "stage": "SETTLED",
+          "updatedAt": "2026-08-20T12:54:11.394Z",
+          "endpointId": "demand-radar",
+          "amount": 5000,
+          "payTo": "0xaBF4FAbd7c416fB67202E5f9002389Fc75e2a9D0",
+          "resource": "https://agent402.tools/api/demand-radar?sort=count&limit=25&minCount=1",
+          "idempotencyKey": "agent402-demand-radar-1",
+          "nonce": "0xd78da753bf6ae96b1dcc12057d026b61806742b9d2a6e66cfd327d16318c91bb",
+          "validBefore": "1787230750",
+          "transaction": "0xbd0d477d434da963b88e801e5cbe12ec86e15c5cd1816c539bc318862c9224c4",
+          "httpStatus": 200
+        }
+      }
     }
   }
 }
