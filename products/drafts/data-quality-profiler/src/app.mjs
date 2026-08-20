@@ -44,7 +44,9 @@ export function buildApp({ config, paymentPlugin, clock = { now: () => Date.now(
   app.get("/.well-known/x402", async () => {
     const network = config.x402Network ?? "eip155:8453";
     const localePrice = config.x402LocalePrice ?? "$0.03";
-    const description = "Check whether a counterparty is reachable using local time, weekends, public holidays, and business days remaining this week.";
+    const profilerPrice = config.x402Price ?? "$0.02";
+    const priceRange = profilerPrice === localePrice ? profilerPrice : `${profilerPrice}-${localePrice}`;
+    const description = "Agent-ready utilities for dataset quality profiling and practical counterparty contact-window checks.";
 
     return {
       spec: "agent402-service-manifest/1",
@@ -54,27 +56,36 @@ export function buildApp({ config, paymentPlugin, clock = { now: () => Date.now(
       summary: description,
       description,
       homepage: SELLER_ORIGIN,
-      resources: [`${SELLER_ORIGIN}/v1/counterparty-availability`],
+      resources: [
+        `${SELLER_ORIGIN}/v1/counterparty-availability`,
+        `${SELLER_ORIGIN}/v1/profile`,
+      ],
       payment: {
         x402: {
           version: 2,
           currency: "USDC",
           networks: [network],
           primaryNetwork: network,
-          priceRange: localePrice,
+          priceRange,
           payTo: config.x402PayTo || null,
           payToName: "Hermes Commerce Earning Wallet",
           nonCustodial: true,
         },
       },
       capabilities: {
-        tools: 1,
+        tools: 2,
         categories: [
           {
             key: "business-intelligence",
             label: "Business Intelligence",
             tools: 1,
             priceRange: localePrice,
+          },
+          {
+            key: "data-quality",
+            label: "Data Quality",
+            tools: 1,
+            priceRange: profilerPrice,
           },
         ],
       },
@@ -87,6 +98,16 @@ export function buildApp({ config, paymentPlugin, clock = { now: () => Date.now(
           summary: "Counterparty availability and contact-window brief",
           description: "Returns local time, public-holiday status, business-day status, business days remaining this week, and the next practical local contact time.",
           price_usd: Number(String(localePrice).replace("$", "")),
+          network,
+        },
+        {
+          name: "data-quality-profile",
+          method: "POST",
+          path: "/v1/profile",
+          url: `${SELLER_ORIGIN}/v1/profile`,
+          summary: "Profile JSON or CSV dataset quality before an agent uses the data",
+          description: "Scores dataset quality and reports missing values, duplicate rows, type conflicts, inferred field types, warnings, record and field counts, and a deterministic schema fingerprint. Accepts JSON records or CSV text.",
+          price_usd: Number(String(profilerPrice).replace("$", "")),
           network,
         },
       ],

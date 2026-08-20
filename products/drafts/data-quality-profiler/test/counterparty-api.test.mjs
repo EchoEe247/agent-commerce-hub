@@ -9,6 +9,7 @@ function unpaidApp(options = {}) {
   return buildApp({
     config: {
       serviceVersion: "0.1.0",
+      x402Price: "$0.02",
       x402LocalePrice: "$0.03",
       x402Network: "eip155:8453",
       x402PayTo: EARNING_WALLET,
@@ -29,20 +30,34 @@ test("GET /.well-known/x402 publishes Agent402/x402scan-compatible seller metada
   assert.equal(body.serviceVersion, "0.1.0");
   assert.equal(body.name, "Hermes Counterparty Availability");
   assert.equal(body.homepage, PUBLIC_ORIGIN);
-  assert.deepEqual(body.resources, [`${PUBLIC_ORIGIN}/v1/counterparty-availability`]);
+  assert.deepEqual(body.resources, [
+    `${PUBLIC_ORIGIN}/v1/counterparty-availability`,
+    `${PUBLIC_ORIGIN}/v1/profile`,
+  ]);
 
   assert.deepEqual(body.payment.x402.networks, ["eip155:8453"]);
   assert.equal(body.payment.x402.primaryNetwork, "eip155:8453");
   assert.equal(body.payment.x402.version, 2);
   assert.equal(body.payment.x402.currency, "USDC");
-  assert.equal(body.payment.x402.priceRange, "$0.03");
+  assert.equal(body.payment.x402.priceRange, "$0.02-$0.03");
   assert.equal(body.payment.x402.payTo, EARNING_WALLET);
   assert.equal(body.payment.x402.nonCustodial, true);
 
-  assert.equal(body.endpoints[0].path, "/v1/counterparty-availability");
-  assert.equal(body.endpoints[0].method, "POST");
-  assert.equal(body.endpoints[0].price_usd, 0.03);
-  assert.equal(body.endpoints[0].network, "eip155:8453");
+  assert.equal(body.capabilities.tools, 2);
+  assert.deepEqual(body.capabilities.categories.map((category) => category.key), ["business-intelligence", "data-quality"]);
+
+  const counterparty = body.endpoints.find((endpoint) => endpoint.path === "/v1/counterparty-availability");
+  assert.equal(counterparty.method, "POST");
+  assert.equal(counterparty.price_usd, 0.03);
+  assert.equal(counterparty.network, "eip155:8453");
+
+  const profiler = body.endpoints.find((endpoint) => endpoint.path === "/v1/profile");
+  assert.equal(profiler.name, "data-quality-profile");
+  assert.equal(profiler.method, "POST");
+  assert.equal(profiler.price_usd, 0.02);
+  assert.equal(profiler.network, "eip155:8453");
+  assert.match(profiler.description, /missing values/);
+  assert.match(profiler.description, /schema fingerprint/);
   await app.close();
 });
 
