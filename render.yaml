@@ -5,8 +5,8 @@ services:
     plan: free
     branch: feat/hermes-commerce-control-plane
     rootDir: products/drafts/data-quality-profiler
-    dockerfilePath: ./Dockerfile
-    dockerContext: .
+    dockerfilePath: ./products/drafts/data-quality-profiler/Dockerfile
+    dockerContext: ./products/drafts/data-quality-profiler
     healthCheckPath: /health
     envVars:
       - key: X402_ENABLED
