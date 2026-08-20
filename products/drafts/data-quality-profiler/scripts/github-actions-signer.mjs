@@ -154,13 +154,25 @@ function saveLedger() {
 
 function recalculateBudget(networkKey) {
   const b = ledgerData.budgets[networkKey];
+
+  const budgetConsumingStages = new Set([
+    "PREPARED",
+    "SIGNED",
+    "AMBIGUOUS",
+    "SETTLED",
+    "REPLAY_REJECTED",
+  ]);
+
   let spent = 0;
+
   for (const pid of Object.keys(b.purchases)) {
     const p = b.purchases[pid];
-    if (p.stage === "PREPARED" || p.stage === "SIGNED" || p.stage === "SETTLED") {
+
+    if (budgetConsumingStages.has(p.stage) || p.transaction) {
       spent += Number(p.amount);
     }
   }
+
   b.spentBudget = spent;
   b.remainingBudget = b.initialBudget - spent;
 }
@@ -618,18 +630,39 @@ async function run() {
   }
   // cumulative budget limit test
   const budgetNetworkKey = networkKey;
-  const savedRemaining = ledgerData.budgets[budgetNetworkKey].remainingBudget;
-  ledgerData.budgets[budgetNetworkKey].remainingBudget = 0;
-  ledgerData.budgets[budgetNetworkKey].purchases["__budget-test__"] = {
+  const budgetForTest = ledgerData.budgets[budgetNetworkKey];
+
+  recalculateBudget(budgetNetworkKey);
+
+  const savedBudgetTestPurchase =
+    budgetForTest.purchases["__budget-test__"];
+
+  const amountToExhaust =
+    Math.max(0, budgetForTest.remainingBudget);
+
+  budgetForTest.purchases["__budget-test__"] = {
     purchaseId: "__budget-test__",
     stage: "SETTLED",
-    amount: 0,
+    amount: amountToExhaust,
     payTo: PAY_TO,
     updatedAt: new Date().toISOString(),
   };
-  const budgetVerdict = validateQuoteAndBudget({ ...quote }, PAY_TO, budgetNetworkKey);
-  delete ledgerData.budgets[budgetNetworkKey].purchases["__budget-test__"];
-  ledgerData.budgets[budgetNetworkKey].remainingBudget = savedRemaining;
+
+  const budgetVerdict =
+    validateQuoteAndBudget(
+      { ...quote },
+      PAY_TO,
+      budgetNetworkKey
+    );
+
+  if (savedBudgetTestPurchase) {
+    budgetForTest.purchases["__budget-test__"] =
+      savedBudgetTestPurchase;
+  } else {
+    delete budgetForTest.purchases["__budget-test__"];
+  }
+
+  recalculateBudget(budgetNetworkKey);
   add(
     `policy-reject [cumulative budget exceeded]: ${budgetVerdict.ok ? "SIGNED (BUG)" : `REJECTED (${budgetVerdict.reason})`}`
   );
