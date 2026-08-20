@@ -10,6 +10,7 @@ export function buildApp({ config, paymentPlugin, clock = { now: () => Date.now(
   const app = Fastify({
     logger: false,
     bodyLimit: LIMITS.bodyBytes,
+    trustProxy: true,
   });
 
   app.addHook("onResponse", async (request, reply) => {
