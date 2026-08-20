@@ -4,6 +4,8 @@ import { LIMITS } from "./dataset/limits.mjs";
 import { classifyError } from "./errors.mjs";
 import { buildCounterpartyAvailability } from "./counterparty-availability.mjs";
 
+const SELLER_ORIGIN = "https://hermes-counterparty-api.onrender.com";
+
 export function buildApp({ config, paymentPlugin, clock = { now: () => Date.now() }, deadlineMs = LIMITS.processingMs, logger = console }) {
   const app = Fastify({
     logger: false,
@@ -39,23 +41,57 @@ export function buildApp({ config, paymentPlugin, clock = { now: () => Date.now(
     version: config.serviceVersion,
   }));
 
-  app.get("/.well-known/x402", async () => ({
-    name: "Hermes Counterparty Availability",
-    description: "Check whether a counterparty is reachable using local time, weekends, public holidays, and business days remaining this week.",
-    version: config.serviceVersion ?? "0.1.0",
-    resources: ["POST /v1/counterparty-availability"],
-    endpoints: [
-      {
-        name: "counterparty-availability",
-        method: "POST",
-        path: "/v1/counterparty-availability",
-        summary: "Counterparty availability and contact-window brief",
-        description: "Returns local time, public-holiday status, business-day status, business days remaining this week, and the next practical local contact time.",
-        price_usd: Number(String(config.x402LocalePrice ?? "$0.03").replace("$", "")),
-        network: config.x402Network ?? "eip155:8453",
+  app.get("/.well-known/x402", async () => {
+    const network = config.x402Network ?? "eip155:8453";
+    const localePrice = config.x402LocalePrice ?? "$0.03";
+    const description = "Check whether a counterparty is reachable using local time, weekends, public holidays, and business days remaining this week.";
+
+    return {
+      spec: "agent402-service-manifest/1",
+      version: 1,
+      serviceVersion: config.serviceVersion ?? "0.1.0",
+      name: "Hermes Counterparty Availability",
+      summary: description,
+      description,
+      homepage: SELLER_ORIGIN,
+      resources: [`${SELLER_ORIGIN}/v1/counterparty-availability`],
+      payment: {
+        x402: {
+          version: 2,
+          currency: "USDC",
+          networks: [network],
+          primaryNetwork: network,
+          priceRange: localePrice,
+          payTo: config.x402PayTo || null,
+          payToName: "Hermes Commerce Earning Wallet",
+          nonCustodial: true,
+        },
       },
-    ],
-  }));
+      capabilities: {
+        tools: 1,
+        categories: [
+          {
+            key: "business-intelligence",
+            label: "Business Intelligence",
+            tools: 1,
+            priceRange: localePrice,
+          },
+        ],
+      },
+      endpoints: [
+        {
+          name: "counterparty-availability",
+          method: "POST",
+          path: "/v1/counterparty-availability",
+          url: `${SELLER_ORIGIN}/v1/counterparty-availability`,
+          summary: "Counterparty availability and contact-window brief",
+          description: "Returns local time, public-holiday status, business-day status, business days remaining this week, and the next practical local contact time.",
+          price_usd: Number(String(localePrice).replace("$", "")),
+          network,
+        },
+      ],
+    };
+  });
 
   app.post("/v1/counterparty-availability", async (request, reply) => {
     const payload = request.body;
