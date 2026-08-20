@@ -20,6 +20,6 @@ services:
       - key: X402_LOCALE_PRICE
         value: "$0.03"
       - key: X402_PAY_TO
-        sync: false
+        value: 0x2BD7c4e294B09E9a853168a58712498D03A45B01
       - key: X402_FACILITATOR_URL
         value: https://x402.org/facilitator
