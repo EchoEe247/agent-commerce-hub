@@ -1,0 +1,42 @@
+name: Counterparty Seller CI
+
+on:
+  push:
+    branches:
+      - feat/hermes-commerce-control-plane
+    paths:
+      - 'products/drafts/data-quality-profiler/src/counterparty-availability.mjs'
+      - 'products/drafts/data-quality-profiler/src/app.mjs'
+      - 'products/drafts/data-quality-profiler/src/config.mjs'
+      - 'products/drafts/data-quality-profiler/src/errors.mjs'
+      - 'products/drafts/data-quality-profiler/src/payments/x402-plugin.mjs'
+      - 'products/drafts/data-quality-profiler/test/counterparty-availability.test.mjs'
+      - 'products/drafts/data-quality-profiler/test/counterparty-api.test.mjs'
+      - 'products/drafts/data-quality-profiler/test/config.test.mjs'
+      - '.github/workflows/counterparty-seller-ci.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  focused-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install dependencies
+        working-directory: products/drafts/data-quality-profiler
+        run: npm ci
+      - name: Syntax check changed runtime
+        working-directory: products/drafts/data-quality-profiler
+        run: |
+          node --check src/counterparty-availability.mjs
+          node --check src/app.mjs
+          node --check src/config.mjs
+          node --check src/payments/x402-plugin.mjs
+      - name: Focused seller tests
+        working-directory: products/drafts/data-quality-profiler
+        run: node --test test/counterparty-availability.test.mjs test/counterparty-api.test.mjs test/config.test.mjs
