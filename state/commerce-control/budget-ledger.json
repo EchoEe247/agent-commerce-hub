@@ -40,9 +40,9 @@
     "mainnet": {
       "budgetId": "B2_COMMERCE_OPERATING_BUDGET_V1",
       "wallet": "",
-      "initialBudget": 2000000,
+      "initialBudget": 2380000,
       "spentBudget": 0,
-      "remainingBudget": 2000000,
+      "remainingBudget": 2380000,
       "purchases": {}
     }
   }
