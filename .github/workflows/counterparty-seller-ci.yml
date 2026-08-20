@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - feat/hermes-commerce-control-plane
-      - fix/x402-https-resource-url
     paths:
       - 'products/drafts/data-quality-profiler/src/counterparty-availability.mjs'
       - 'products/drafts/data-quality-profiler/src/app.mjs'
@@ -17,7 +16,7 @@ on:
       - '.github/workflows/counterparty-seller-ci.yml'
   pull_request:
     branches:
-      - feat/hermes-commerce-control-plane
+      - ci/x402-https-test-base
     paths:
       - 'products/drafts/data-quality-profiler/src/app.mjs'
       - 'products/drafts/data-quality-profiler/test/counterparty-api.test.mjs'
