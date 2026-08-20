@@ -7,6 +7,9 @@ const HTTP_BY_CODE = Object.freeze({
   TOO_MANY_FIELDS: 413,
   NESTING_TOO_DEEP: 413,
   PROCESSING_TIMEOUT: 408,
+  INVALID_LOCALE_REQUEST: 400,
+  INVALID_TIMEZONE: 400,
+  UNSUPPORTED_COUNTRY: 400,
 });
 
 export class ServiceError extends Error {
