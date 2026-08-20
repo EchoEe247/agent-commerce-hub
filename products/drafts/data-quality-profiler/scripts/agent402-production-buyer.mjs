@@ -24,7 +24,7 @@ const LEDGER_PATH = path.join(ROOT, 'state/commerce-control/budget-ledger.json')
 const RESULT_DIR = path.join(ROOT, 'state/commerce-control/private-results');
 
 if (!/^[A-Za-z0-9._:-]{1,80}$/.test(PURCHASE_ID)) throw new Error('invalid purchaseId');
-const URL = buildEndpointUrl(ENDPOINT_ID);
+const TARGET_URL = buildEndpointUrl(ENDPOINT_ID);
 
 function defaultLedger() {
   return {
@@ -82,7 +82,7 @@ function decodePaymentRequired(response) {
 function assertResourceBound(paymentRequired) {
   const raw = paymentRequired?.resource?.url ?? paymentRequired?.resource;
   if (typeof raw !== 'string' || !raw) return;
-  const expected = new URL(URL);
+  const expected = new URL(TARGET_URL);
   const actual = new URL(raw);
   if (actual.origin !== AGENT402_ORIGIN || actual.pathname !== expected.pathname) {
     throw new Error(`payment resource escaped allowlist: ${actual.origin}${actual.pathname}`);
@@ -101,7 +101,7 @@ async function run() {
   };
 
   const quoteStarted = Date.now();
-  const unpaid = await fetch(URL, {
+  const unpaid = await fetch(TARGET_URL, {
     method: 'GET', headers, redirect: 'error', signal: AbortSignal.timeout(30_000),
   });
   if (unpaid.status !== 402) throw new Error(`expected HTTP 402 from allowlisted Agent402 endpoint, got ${unpaid.status}`);
@@ -132,7 +132,7 @@ async function run() {
     endpointId: ENDPOINT_ID,
     amount: Number(verdict.amountRaw),
     payTo: verdict.payTo,
-    resource: URL,
+    resource: TARGET_URL,
     idempotencyKey: PURCHASE_ID,
   });
 
@@ -155,7 +155,7 @@ async function run() {
   const paymentHeaders = httpClient.encodePaymentSignatureHeader(payload);
   let paid;
   try {
-    paid = await fetch(URL, {
+    paid = await fetch(TARGET_URL, {
       method: 'GET',
       headers: { ...headers, ...paymentHeaders },
       redirect: 'error',
