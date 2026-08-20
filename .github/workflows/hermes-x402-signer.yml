@@ -1,0 +1,68 @@
+name: Hermes x402 External Signer
+
+on:
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: "Target Platform (e.g. Agent402)"
+        required: true
+        default: "Agent402"
+      purchaseId:
+        description: "Unique Purchase ID for tracking"
+        required: true
+      endpointId:
+        description: "Endpoint to query"
+        required: true
+        default: "demand-radar"
+      expectedMaximumAmount:
+        description: "Expected maximum amount (raw atomic USDC)"
+        required: true
+        default: "20000"
+      network:
+        description: "Network (eip155:84532 or eip155:8453)"
+        required: true
+        default: "eip155:84532"
+
+permissions:
+  contents: write  # Required to commit budget-ledger.json updates
+
+concurrency:
+  group: x402-signing
+  cancel-in-progress: false
+
+jobs:
+  sign-and-settle:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Install dependencies in profiler
+        working-directory: products/drafts/data-quality-profiler
+        run: npm ci || npm install
+
+      - name: Execute Signer & Live Testnet Purchase
+        working-directory: products/drafts/data-quality-profiler
+        env:
+          PLATFORM: ${{ inputs.platform }}
+          PURCHASE_ID: ${{ inputs.purchaseId }}
+          ENDPOINT_ID: ${{ inputs.endpointId }}
+          EXPECTED_MAXIMUM_AMOUNT: ${{ inputs.expectedMaximumAmount }}
+          NETWORK: ${{ inputs.network }}
+          HERMES_COMMERCE_SPEND_TEST_PRIVATE_KEY: ${{ secrets.HERMES_COMMERCE_SPEND_TEST_PRIVATE_KEY }}
+          WORKFLOW_DISPATCH_TIME: ${{ github.event.repository.pushed_at }}
+        run: |
+          node scripts/github-actions-signer.mjs
+
+      - name: Commit & Push Budget Ledger Updates
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add state/commerce-control/budget-ledger.json
+          git diff --quiet && git diff --staged --quiet || git commit -m "chore: update budget ledger for ${{ inputs.purchaseId }}"
+          git push origin HEAD:${{ github.ref_name }}
