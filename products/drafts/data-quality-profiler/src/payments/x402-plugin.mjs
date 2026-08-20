@@ -2,28 +2,20 @@ import { x402ResourceServer } from "@x402/core/server";
 import { HTTPFacilitatorClient } from "@x402/core/server";
 import { ExactEvmScheme } from "@x402/evm/exact/server";
 import { paymentMiddleware } from "@x402/fastify";
-import { declareDiscoveryExtension } from "@x402/extensions/bazaar";
+import { declareDiscoveryExtension, bazaarResourceServerExtension } from "@x402/extensions/bazaar";
 
 export function buildPaymentPlugin(config) {
   return function installPayment(app) {
-    if (!config.x402Enabled) {
-      return;
-    }
+    if (!config.x402Enabled) return;
 
-    const facilitatorClient = new HTTPFacilitatorClient({
-      url: config.x402FacilitatorUrl,
-    });
-
-    const resourceServer = new x402ResourceServer(facilitatorClient);
-    resourceServer.register(config.x402Network, new ExactEvmScheme());
+    const facilitatorClient = new HTTPFacilitatorClient({ url: config.x402FacilitatorUrl });
+    const resourceServer = new x402ResourceServer(facilitatorClient)
+      .register(config.x402Network, new ExactEvmScheme())
+      .registerExtension(bazaarResourceServerExtension);
 
     const profilerBazaarExtension = declareDiscoveryExtension({
-      method: "POST",
       bodyType: "json",
-      input: {
-        format: "json",
-        records: [{ id: 1 }],
-      },
+      input: { format: "json", records: [{ id: 1 }] },
       inputSchema: {
         oneOf: [
           {
@@ -50,33 +42,14 @@ export function buildPaymentPlugin(config) {
           scoring_version: "1.0",
           quality_score: 85,
           dataset: { record_count: 100, field_count: 5 },
-          fields: {},
-          warnings: [],
-          processing_ms: 42,
-        },
-        schema: {
-          type: "object",
-          properties: {
-            schema_version: { type: "string" },
-            scoring_version: { type: "string" },
-            quality_score: { type: "integer", minimum: 0, maximum: 100 },
-            dataset: { type: "object" },
-            fields: { type: "object" },
-            warnings: { type: "array" },
-            processing_ms: { type: "number" },
-          },
-          required: ["schema_version", "scoring_version", "quality_score"],
+          fields: {}, warnings: [], processing_ms: 42,
         },
       },
     });
 
     const counterpartyBazaarExtension = declareDiscoveryExtension({
-      method: "POST",
       bodyType: "json",
-      input: {
-        country_code: "US",
-        timezone: "America/Chicago",
-      },
+      input: { country_code: "US", timezone: "America/Chicago" },
       inputSchema: {
         type: "object",
         properties: {
@@ -109,18 +82,6 @@ export function buildPaymentPlugin(config) {
             next_contact_local: "2026-08-20T09:00",
             assumed_business_hours: "09:00-17:00 local",
           },
-        },
-        schema: {
-          type: "object",
-          properties: {
-            country: { type: "object" },
-            timezone: { type: "string" },
-            timezone_source: { type: "string" },
-            local: { type: "object" },
-            business: { type: "object" },
-            caveat: { type: "string" },
-          },
-          required: ["country", "timezone", "local", "business"],
         },
       },
     });
@@ -165,9 +126,7 @@ export function buildPaymentPlugin(config) {
     const protectedRoutes = new Set(Object.keys(routes));
     app.addHook("onRequest", async (request) => {
       const path = request.url.split("?")[0];
-      if (protectedRoutes.has(`${request.method} ${path}`)) {
-        await ensureFacilitatorReady();
-      }
+      if (protectedRoutes.has(`${request.method} ${path}`)) await ensureFacilitatorReady();
     });
 
     paymentMiddleware(app, routes, resourceServer, undefined, undefined, false);
