@@ -1,0 +1,42 @@
+name: Product 11 Codemod
+
+on:
+  push:
+    branches:
+      - feat/sec-company-snapshot
+    paths:
+      - '.github/workflows/product11-codemod.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/sec-company-snapshot
+      - name: Add Product 11 route seam
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('products/drafts/data-quality-profiler/src/app.mjs')
+          s = p.read_text()
+          if 'secCompanySnapshot,' not in s:
+              s = s.replace('  companyDomainIntelligence,\n', '  companyDomainIntelligence,\n  secCompanySnapshot,\n', 1)
+          if 'const inspectSecCompany = secCompanySnapshot;' not in s:
+              marker = '  const inspectCompanyDomain = companyDomainIntelligence ?? createCompanyDomainIntelligence({\n    resolver: domainResolver,\n    pageRequester: domainPageRequester,\n    rdapFetch,\n    clock: domainClock ?? clock,\n  });\n'
+              s = s.replace(marker, marker + '  const inspectSecCompany = secCompanySnapshot;\n', 1)
+          route = '''\n  app.post("/v1/sec-company-snapshot", async (request, reply) => {\n    try {\n      if (typeof inspectSecCompany !== "function") throw new Error("SEC_SOURCE_UNAVAILABLE: SEC snapshot service is not configured");\n      return reply.send(await inspectSecCompany(request.body));\n    } catch (error) {\n      const { statusCode, body } = classifyError(error);\n      return reply.status(statusCode).send(body);\n    }\n  });\n'''
+          if 'app.post("/v1/sec-company-snapshot"' not in s:
+              marker = '''  app.post("/v1/company-domain-intelligence", async (request, reply) => {\n    try {\n      return reply.send(await inspectCompanyDomain(request.body));\n    } catch (error) {\n      const { statusCode, body } = classifyError(error);\n      return reply.status(statusCode).send(body);\n    }\n  });\n'''
+              s = s.replace(marker, marker + route, 1)
+          p.write_text(s)
+          PY
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git add products/drafts/data-quality-profiler/src/app.mjs
+          git commit -m 'feat: add SEC snapshot route seam' || true
+          git push origin HEAD:feat/sec-company-snapshot
