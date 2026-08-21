@@ -1,0 +1,51 @@
+name: Product 10 Wire Default Runtime
+
+on:
+  push:
+    branches:
+      - feat/company-domain-intelligence
+    paths:
+      - '.github/workflows/product10-wire-default.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  wire:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Wire Product 10 default service
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('products/drafts/data-quality-profiler/src/app.mjs')
+          s = p.read_text()
+          s = s.replace(
+              'import { createEntitySanctionsScreen } from "./entity-sanctions-screen.mjs";\n',
+              'import { createEntitySanctionsScreen } from "./entity-sanctions-screen.mjs";\nimport { createCompanyDomainIntelligence } from "./company-domain-intelligence.mjs";\n',
+              1,
+          )
+          s = s.replace(
+              '  entitySanctionsScreen,\n  companyDomainIntelligence,\n  ofacFetch = globalThis.fetch,\n',
+              '  entitySanctionsScreen,\n  companyDomainIntelligence,\n  domainResolver,\n  domainPageRequester,\n  rdapFetch = globalThis.fetch,\n  domainClock,\n  ofacFetch = globalThis.fetch,\n',
+              1,
+          )
+          needle = '''  const screenEntity = entitySanctionsScreen ?? createEntitySanctionsScreen({\n    fetchImpl: ofacFetch,\n    clock: sanctionsClock ?? clock,\n  });\n'''
+          replacement = needle + '''  const inspectCompanyDomain = companyDomainIntelligence ?? createCompanyDomainIntelligence({\n    resolver: domainResolver,\n    pageRequester: domainPageRequester,\n    rdapFetch,\n    clock: domainClock ?? clock,\n  });\n'''
+          if needle not in s:
+              raise SystemExit('screenEntity constructor seam not found')
+          s = s.replace(needle, replacement, 1)
+          old = '''  app.post("/v1/company-domain-intelligence", async (request, reply) => {\n    try {\n      if (!companyDomainIntelligence) throw new Error("INTERNAL_ERROR: company domain service is unavailable");\n      return reply.send(await companyDomainIntelligence(request.body));\n    } catch (error) {\n      const { statusCode, body } = classifyError(error);\n      return reply.status(statusCode).send(body);\n    }\n  });\n'''
+          new = '''  app.post("/v1/company-domain-intelligence", async (request, reply) => {\n    try {\n      return reply.send(await inspectCompanyDomain(request.body));\n    } catch (error) {\n      const { statusCode, body } = classifyError(error);\n      return reply.status(statusCode).send(body);\n    }\n  });\n'''
+          if old not in s:
+              raise SystemExit('Product 10 route seam not found')
+          s = s.replace(old, new, 1)
+          p.write_text(s)
+          PY
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git add products/drafts/data-quality-profiler/src/app.mjs
+          git commit -m 'feat: wire Product 10 default runtime'
+          git push origin HEAD:feat/company-domain-intelligence
