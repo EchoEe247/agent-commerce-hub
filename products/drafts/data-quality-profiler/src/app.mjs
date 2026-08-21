@@ -90,6 +90,7 @@ export function buildApp({
     const network = config.x402Network ?? "eip155:8453";
     const localePrice = config.x402LocalePrice ?? "$0.03";
     const sanctionsPrice = config.x402SanctionsScreenPrice ?? "$0.02";
+    const companyDomainPrice = config.x402CompanyDomainPrice ?? "$0.02";
     const profilerPrice = config.x402Price ?? "$0.02";
     const duplicatePrice = config.x402DuplicateAuditPrice ?? "$0.005";
     const qualityGatePrice = config.x402QualityGatePrice ?? "$0.01";
@@ -97,10 +98,12 @@ export function buildApp({
     const dataContractPrice = config.x402DataContractPrice ?? "$0.015";
     const cleanNormalizePrice = config.x402CleanNormalizePrice ?? "$0.02";
     const repairPlanPrice = config.x402RepairPlanPrice ?? "$0.02";
+    const businessIntelligencePrices = [localePrice, companyDomainPrice];
     const dataQualityPrices = [profilerPrice, duplicatePrice, qualityGatePrice, schemaDriftPrice, dataContractPrice, cleanNormalizePrice, repairPlanPrice];
-    const priceRange = buildPriceRange([localePrice, sanctionsPrice, ...dataQualityPrices]);
+    const priceRange = buildPriceRange([...businessIntelligencePrices, sanctionsPrice, ...dataQualityPrices]);
+    const businessIntelligencePriceRange = buildPriceRange(businessIntelligencePrices);
     const dataQualityPriceRange = buildPriceRange(dataQualityPrices);
-    const description = "Agent-ready paid utilities for OFAC sanctions screening, JSON and CSV data quality, schema compatibility, deterministic cleanup, repair planning, and practical counterparty contact-window checks.";
+    const description = "Agent-ready paid utilities for company/domain intelligence, OFAC sanctions screening, JSON and CSV data quality, schema compatibility, deterministic cleanup, repair planning, and practical counterparty contact-window checks.";
 
     return {
       spec: "agent402-service-manifest/1",
@@ -113,6 +116,7 @@ export function buildApp({
       resources: [
         { url: `${SELLER_ORIGIN}/v1/counterparty-availability`, method: "POST" },
         { url: `${SELLER_ORIGIN}/v1/entity-sanctions-screen`, method: "POST" },
+        { url: `${SELLER_ORIGIN}/v1/company-domain-intelligence`, method: "POST" },
         { url: `${SELLER_ORIGIN}/v1/profile`, method: "POST" },
         { url: `${SELLER_ORIGIN}/v1/duplicate-audit`, method: "POST" },
         { url: `${SELLER_ORIGIN}/v1/quality-gate`, method: "POST" },
@@ -134,13 +138,13 @@ export function buildApp({
         },
       },
       capabilities: {
-        tools: 9,
+        tools: 10,
         categories: [
           {
             key: "business-intelligence",
             label: "Business Intelligence",
-            tools: 1,
-            priceRange: localePrice,
+            tools: 2,
+            priceRange: businessIntelligencePriceRange,
           },
           {
             key: "compliance",
@@ -165,6 +169,16 @@ export function buildApp({
           summary: "Counterparty availability and contact-window brief",
           description: "Returns local time, public-holiday status, business-day status, business days remaining this week, and the next practical local contact time.",
           price_usd: priceNumber(localePrice),
+          network,
+        },
+        {
+          name: "company-domain-intelligence-dns-rdap-mail-website",
+          method: "POST",
+          path: "/v1/company-domain-intelligence",
+          url: `${SELLER_ORIGIN}/v1/company-domain-intelligence`,
+          summary: "Company domain intelligence from public DNS, mail, RDAP, and website signals.",
+          description: "Returns public DNS A/AAAA records, MX/SPF/DMARC signals, RDAP registration metadata, website reachability and identity metadata, selected social/contact links, and HSTS/CSP presence for a public company domain.",
+          price_usd: priceNumber(companyDomainPrice),
           network,
         },
         {

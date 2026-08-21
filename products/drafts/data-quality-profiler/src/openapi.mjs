@@ -198,7 +198,7 @@ export function buildOpenApiDocument(config) {
         post: paidOperation({
           operationId: "companyDomainIntelligence",
           summary: "Enrich a company domain with public DNS, mail, RDAP, and website signals",
-          description: "Returns normalized domain identity, public A/AAAA records, MX/SPF/DMARC signals, RDAP registration metadata, website reachability and identity metadata, selected social/contact links, and HSTS/CSP header presence. Public-domain input only; IP literals, special-use hostnames, and private/non-routable resolved targets are rejected.",
+          description: "Returns normalized domain identity, public DNS A/AAAA records, MX/SPF/DMARC signals, RDAP registration metadata, website reachability and identity metadata, selected social/contact links, and HSTS/CSP header presence. Public-domain input only; IP literals, special-use hostnames, and private/non-routable resolved targets are rejected.",
           price: config.x402CompanyDomainPrice ?? "$0.02",
           tags: ["Business Intelligence"],
           schema: {
