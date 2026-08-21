@@ -85,46 +85,26 @@ jobs:
           if [ -f test/entity-sanctions-x402.test.mjs ]; then TESTS+=(test/entity-sanctions-x402.test.mjs); fi
           if [ -f test/company-domain-intelligence.test.mjs ]; then TESTS+=(test/company-domain-intelligence.test.mjs); fi
           node --test "${TESTS[@]}"
-      - name: Publish Product 10 to Agent402 and 402 Index (temporary)
+      - name: Verify Product 10 index listings (temporary, read-only)
         if: github.event_name == 'pull_request'
         run: |
           node <<'NODE'
           const origin = 'https://hermes-counterparty-api.onrender.com';
-          const agentPayload = { origin };
-          const indexPayload = {
-            url: `${origin}/v1/company-domain-intelligence`,
-            name: 'Hermes Company Domain Intelligence',
-            protocol: 'x402',
-            http_method: 'POST',
-            probe_body: JSON.stringify({ domain: 'stripe.com' }),
-            description: 'Enrich a public company domain with DNS A/AAAA, MX/SPF/DMARC, RDAP registration metadata, website identity/metadata, selected social/contact links, and HSTS/CSP security-header signals.',
-            price_usd: 0.02,
-            payment_asset: 'USDC',
-            payment_network: 'Base',
-            category: 'business-intelligence',
-            provider: 'Hermes Commerce',
-          };
+          const serviceId = '3d84c0ea-8e83-4e48-8a00-35ed00cb188c';
 
-          async function post(url, payload) {
-            try {
-              const response = await fetch(url, {
-                method: 'POST',
-                headers: { 'content-type': 'application/json' },
-                body: JSON.stringify(payload),
-                signal: AbortSignal.timeout(30000),
-              });
-              const body = await response.text();
-              return { status: response.status, ok: response.ok, body };
-            } catch (error) {
-              return { status: null, ok: false, body: null, error: String(error?.stack ?? error) };
-            }
-          }
+          const agentResponse = await fetch('https://agent402.tools/api/index', { signal: AbortSignal.timeout(30000) });
+          const agentText = await agentResponse.text();
+          const agentFound = agentResponse.ok && agentText.includes(origin);
+          console.log(`AGENT402_INDEX_LOOKUP=${JSON.stringify({ status: agentResponse.status, ok: agentResponse.ok, origin_found: agentFound, snapshot_bytes: agentText.length })}`);
 
-          const agent402 = await post('https://agent402.tools/api/index/register', agentPayload);
-          console.log(`AGENT402_REGISTER_RESULT=${JSON.stringify(agent402)}`);
-          const index402 = await post('https://402index.io/api/v1/register', indexPayload);
-          console.log(`INDEX402_REGISTER_RESULT=${JSON.stringify(index402)}`);
-          console.log('PAID_CALL_EXECUTED=false');
+          const indexResponse = await fetch(`https://402index.io/api/v1/services/${serviceId}`, { signal: AbortSignal.timeout(30000) });
+          const indexText = await indexResponse.text();
+          let indexBody = null;
+          try { indexBody = JSON.parse(indexText); } catch {}
+          const service = indexBody?.service ?? indexBody;
+          console.log(`INDEX402_SERVICE_LOOKUP=${JSON.stringify({ status: indexResponse.status, ok: indexResponse.ok, service: service ? { id: service.id, name: service.name, url: service.url, protocol: service.protocol, price_usd: service.price_usd, payment_asset: service.payment_asset, payment_network: service.payment_network, category: service.category, provider: service.provider, status: service.status, health_status: service.health_status, probe_status: service.probe_status, http_method: service.http_method, approval_reason: service.approval_reason, verified: service.verified, domain_verified: service.domain_verified, x402_payment_valid: service.x402_payment_valid } : null })}`);
+
+          if (!agentFound || !indexResponse.ok || service?.id !== serviceId) process.exit(1);
           NODE
       - name: Full profiler suite (PR gate)
         if: github.event_name == 'pull_request'
