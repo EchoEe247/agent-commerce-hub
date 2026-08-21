@@ -5,6 +5,18 @@ import { scoreProfile } from "./scoring.mjs";
 import { canonicalize } from "./canonicalize.mjs";
 import { ERROR_CODES } from "./limits.mjs";
 
+const CONTRACT_TYPES = new Set([
+  "null",
+  "array",
+  "object",
+  "boolean",
+  "integer",
+  "number",
+  "string",
+  "mixed",
+  "unknown",
+]);
+
 export function analyzeDataset(payload, options = {}) {
   const normalized = normalizeDataset(payload, options);
   const profile = profileDataset(normalized, options);
@@ -102,8 +114,127 @@ export function qualityGate(payload, options = {}) {
   };
 }
 
+export function schemaDrift(payload, options = {}) {
+  if (!isPlainObject(payload) || !isPlainObject(payload.baseline) || !isPlainObject(payload.current)) {
+    throw invalidDataset("schema drift requires baseline and current dataset objects");
+  }
+
+  const baseline = analyzeDataset(payload.baseline, options);
+  const current = analyzeDataset(payload.current, options);
+  const baselineNames = Object.keys(baseline.profile.fields).sort();
+  const currentNames = Object.keys(current.profile.fields).sort();
+  const baselineSet = new Set(baselineNames);
+  const currentSet = new Set(currentNames);
+
+  const addedFields = currentNames.filter((field) => !baselineSet.has(field));
+  const removedFields = baselineNames.filter((field) => !currentSet.has(field));
+  const commonFields = baselineNames.filter((field) => currentSet.has(field));
+
+  const typeChanges = commonFields.flatMap((field) => {
+    const baselineType = baseline.profile.fields[field].inferred_type;
+    const currentType = current.profile.fields[field].inferred_type;
+    return baselineType === currentType
+      ? []
+      : [{ field, baseline_type: baselineType, current_type: currentType }];
+  });
+
+  const nullableChanges = commonFields.flatMap((field) => {
+    const baselineNullable = baseline.profile.fields[field].null_count > 0;
+    const currentNullable = current.profile.fields[field].null_count > 0;
+    return baselineNullable === currentNullable
+      ? []
+      : [{ field, baseline_nullable: baselineNullable, current_nullable: currentNullable }];
+  });
+
+  return {
+    schema_version: "1.0",
+    baseline_fingerprint: baseline.schemaFingerprint,
+    current_fingerprint: current.schemaFingerprint,
+    added_fields: addedFields,
+    removed_fields: removedFields,
+    type_changes: typeChanges,
+    nullable_changes: nullableChanges,
+    breaking_change: removedFields.length > 0 || typeChanges.length > 0,
+  };
+}
+
+export function dataContractCheck(payload, options = {}) {
+  if (!isPlainObject(payload) || !isPlainObject(payload.dataset) || !isPlainObject(payload.contract)) {
+    throw invalidDataset("data contract check requires dataset and contract objects");
+  }
+
+  const contract = payload.contract;
+  const requiredFields = contract.required_fields ?? [];
+  const fieldTypes = contract.field_types ?? {};
+  const allowExtraFields = contract.allow_extra_fields ?? true;
+
+  if (!Array.isArray(requiredFields)) {
+    throw invalidDataset("required_fields must be an array of unique non-empty strings");
+  }
+  const normalizedRequired = requiredFields.map((field) => {
+    if (typeof field !== "string" || field.trim() === "") {
+      throw invalidDataset("required_fields must contain unique non-empty strings");
+    }
+    return field.trim();
+  });
+  if (new Set(normalizedRequired).size !== normalizedRequired.length) {
+    throw invalidDataset("required_fields must contain unique non-empty strings");
+  }
+
+  if (!isPlainObject(fieldTypes)) {
+    throw invalidDataset("field_types must be an object");
+  }
+  const normalizedFieldTypes = {};
+  for (const [rawField, expectedType] of Object.entries(fieldTypes)) {
+    const field = rawField.trim();
+    if (!field || !CONTRACT_TYPES.has(expectedType)) {
+      throw invalidDataset("field_types must map non-empty field names to supported inferred types");
+    }
+    normalizedFieldTypes[field] = expectedType;
+  }
+
+  if (typeof allowExtraFields !== "boolean") {
+    throw invalidDataset("allow_extra_fields must be a boolean");
+  }
+
+  const { profile, schemaFingerprint } = analyzeDataset(payload.dataset, options);
+  const observedFields = Object.keys(profile.fields).sort();
+  const observedSet = new Set(observedFields);
+  const missingRequiredFields = normalizedRequired.filter((field) => !observedSet.has(field)).sort();
+  const declaredSet = new Set([...normalizedRequired, ...Object.keys(normalizedFieldTypes)]);
+  const extraFields = allowExtraFields
+    ? []
+    : observedFields.filter((field) => !declaredSet.has(field));
+
+  const typeMismatches = Object.keys(normalizedFieldTypes)
+    .sort()
+    .flatMap((field) => {
+      if (!observedSet.has(field)) return [];
+      const observedType = profile.fields[field].inferred_type;
+      const expectedType = normalizedFieldTypes[field];
+      return observedType === expectedType
+        ? []
+        : [{ field, expected_type: expectedType, observed_type: observedType }];
+    });
+
+  const reasons = [];
+  if (missingRequiredFields.length > 0) reasons.push("MISSING_REQUIRED_FIELDS");
+  if (extraFields.length > 0) reasons.push("EXTRA_FIELDS_NOT_ALLOWED");
+  if (typeMismatches.length > 0) reasons.push("FIELD_TYPE_MISMATCH");
+
+  return {
+    schema_version: "1.0",
+    compatible: reasons.length === 0,
+    schema_fingerprint: schemaFingerprint,
+    missing_required_fields: missingRequiredFields,
+    extra_fields: extraFields,
+    type_mismatches: typeMismatches,
+    reasons,
+  };
+}
+
 function assertQualityGateThresholds(payload) {
-  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+  if (!isPlainObject(payload)) {
     throw invalidDataset("body must be a JSON object");
   }
 
@@ -126,6 +257,10 @@ function assertQualityGateThresholds(payload) {
   if (payload.allow_mixed_types !== undefined && typeof payload.allow_mixed_types !== "boolean") {
     throw invalidDataset("allow_mixed_types must be a boolean");
   }
+}
+
+function isPlainObject(value) {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
 function invalidDataset(message) {
