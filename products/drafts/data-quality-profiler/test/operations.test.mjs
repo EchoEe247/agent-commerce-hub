@@ -1,6 +1,11 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { duplicateAudit, qualityGate } from "../src/dataset/operations.mjs";
+import {
+  duplicateAudit,
+  qualityGate,
+  schemaDrift,
+  dataContractCheck,
+} from "../src/dataset/operations.mjs";
 
 const duplicateInput = {
   format: "json",
@@ -79,6 +84,97 @@ test("qualityGate rejects malformed thresholds", () => {
   );
   assert.throws(
     () => qualityGate({ format: "json", records: [], allow_mixed_types: "yes" }),
+    /INVALID_DATASET/
+  );
+});
+
+test("schemaDrift reports added, removed, type, and nullable changes deterministically", () => {
+  const result = schemaDrift({
+    baseline: {
+      format: "json",
+      records: [{ id: 1, amount: 10, note: "ok" }, { id: 2, amount: 20, note: "ok" }],
+    },
+    current: {
+      format: "json",
+      records: [{ id: "1", extra: true, note: null }, { id: "2", extra: false, note: "ok" }],
+    },
+  });
+  assert.equal(result.schema_version, "1.0");
+  assert.deepEqual(result.added_fields, ["extra"]);
+  assert.deepEqual(result.removed_fields, ["amount"]);
+  assert.deepEqual(result.type_changes, [{ field: "id", baseline_type: "integer", current_type: "string" }]);
+  assert.deepEqual(result.nullable_changes, [{ field: "note", baseline_nullable: false, current_nullable: true }]);
+  assert.equal(result.breaking_change, true);
+  assert.match(result.baseline_fingerprint, /^[a-f0-9]{64}$/);
+  assert.match(result.current_fingerprint, /^[a-f0-9]{64}$/);
+});
+
+test("schemaDrift treats additive-only schema change as non-breaking", () => {
+  const result = schemaDrift({
+    baseline: { format: "json", records: [{ id: 1 }] },
+    current: { format: "json", records: [{ id: 1, name: "A" }] },
+  });
+  assert.deepEqual(result.added_fields, ["name"]);
+  assert.deepEqual(result.removed_fields, []);
+  assert.deepEqual(result.type_changes, []);
+  assert.equal(result.breaking_change, false);
+});
+
+test("schemaDrift rejects malformed body", () => {
+  assert.throws(
+    () => schemaDrift({ baseline: { format: "json", records: [] } }),
+    /INVALID_DATASET/
+  );
+});
+
+test("dataContractCheck enforces required fields, types, and extra-field policy", () => {
+  const result = dataContractCheck({
+    dataset: {
+      format: "json",
+      records: [{ id: 1, email: "a@example.com", extra: 1 }],
+    },
+    contract: {
+      required_fields: ["id", "email"],
+      field_types: { id: "integer", email: "string" },
+      allow_extra_fields: false,
+    },
+  });
+  assert.equal(result.schema_version, "1.0");
+  assert.equal(result.compatible, false);
+  assert.deepEqual(result.missing_required_fields, []);
+  assert.deepEqual(result.extra_fields, ["extra"]);
+  assert.deepEqual(result.type_mismatches, []);
+  assert.ok(result.reasons.includes("EXTRA_FIELDS_NOT_ALLOWED"));
+});
+
+test("dataContractCheck reports missing fields and type mismatches", () => {
+  const result = dataContractCheck({
+    dataset: { format: "json", records: [{ id: "1" }] },
+    contract: {
+      required_fields: ["id", "email"],
+      field_types: { id: "integer", email: "string" },
+    },
+  });
+  assert.equal(result.compatible, false);
+  assert.deepEqual(result.missing_required_fields, ["email"]);
+  assert.deepEqual(result.type_mismatches, [{ field: "id", expected_type: "integer", observed_type: "string" }]);
+});
+
+test("dataContractCheck rejects malformed contracts", () => {
+  assert.throws(
+    () => dataContractCheck({ dataset: { format: "json", records: [] }, contract: { required_fields: [""] } }),
+    /INVALID_DATASET/
+  );
+  assert.throws(
+    () => dataContractCheck({ dataset: { format: "json", records: [] }, contract: { required_fields: ["id", "id"] } }),
+    /INVALID_DATASET/
+  );
+  assert.throws(
+    () => dataContractCheck({ dataset: { format: "json", records: [] }, contract: { field_types: { id: "nonsense" } } }),
+    /INVALID_DATASET/
+  );
+  assert.throws(
+    () => dataContractCheck({ dataset: { format: "json", records: [] }, contract: { allow_extra_fields: "yes" } }),
     /INVALID_DATASET/
   );
 });
