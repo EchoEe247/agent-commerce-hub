@@ -141,3 +141,27 @@ test("builds deterministic company and domain intelligence from DNS, RDAP, and w
   assert.equal(result.security.content_security_policy, true);
   assert.equal(result.sources.fetched_at, "2026-08-21T05:00:00.000Z");
 });
+
+test("rejects IP literals and special-use hostnames before any network lookup", async () => {
+  const { createCompanyDomainIntelligence } = await loadCompanyDomainModule();
+  let networkCalls = 0;
+  const resolver = {
+    resolve4: async () => { networkCalls += 1; return []; },
+    resolve6: async () => { networkCalls += 1; return []; },
+    resolveMx: async () => { networkCalls += 1; return []; },
+    resolveTxt: async () => { networkCalls += 1; return []; },
+  };
+  const pageRequester = async () => { networkCalls += 1; return null; };
+  const rdapFetch = async () => { networkCalls += 1; return { ok: false, status: 404 }; };
+  const inspect = createCompanyDomainIntelligence({ resolver, pageRequester, rdapFetch });
+
+  for (const domain of ["127.0.0.1", "::1", "localhost", "service.local", "corp.internal", "probe.test", "hidden.onion"]) {
+    await assert.rejects(
+      inspect({ domain }),
+      (error) => error instanceof Error && /^INVALID_DOMAIN_REQUEST:/.test(error.message),
+      `expected ${domain} to be rejected`
+    );
+  }
+
+  assert.equal(networkCalls, 0);
+});
