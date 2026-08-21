@@ -1,0 +1,58 @@
+name: Product 10 TDD Reporter
+
+on:
+  push:
+    branches:
+      - feat/company-domain-intelligence
+    paths:
+      - '.github/workflows/product10-tdd.yml'
+      - 'products/drafts/data-quality-profiler/src/company-domain-intelligence.mjs'
+      - 'products/drafts/data-quality-profiler/src/app.mjs'
+      - 'products/drafts/data-quality-profiler/src/openapi.mjs'
+      - 'products/drafts/data-quality-profiler/src/config.mjs'
+      - 'products/drafts/data-quality-profiler/src/errors.mjs'
+      - 'products/drafts/data-quality-profiler/src/payments/x402-plugin.mjs'
+      - 'products/drafts/data-quality-profiler/test/company-domain-intelligence.test.mjs'
+
+permissions:
+  contents: write
+
+jobs:
+  product10-tdd:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install dependencies
+        working-directory: products/drafts/data-quality-profiler
+        run: npm ci
+      - name: Run Product 10 test and persist receipt
+        shell: bash
+        run: |
+          set -uo pipefail
+          cd products/drafts/data-quality-profiler
+          set +e
+          node --test test/company-domain-intelligence.test.mjs > /tmp/product10-test.log 2>&1
+          code=$?
+          set -e
+          TEST_EXIT_CODE="$code" node <<'NODE'
+          const fs = require('node:fs');
+          const code = Number(process.env.TEST_EXIT_CODE);
+          const output = fs.readFileSync('/tmp/product10-test.log', 'utf8');
+          const receipt = {
+            observed_at: new Date().toISOString(),
+            status: code === 0 ? 'PASS' : 'FAIL',
+            exit_code: code,
+            output_tail: output.split('\n').slice(-80).join('\n'),
+          };
+          fs.writeFileSync('../../../product10-tdd-result.json', JSON.stringify(receipt, null, 2) + '\n');
+          NODE
+          cd ../../..
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git add product10-tdd-result.json
+          git commit -m "test: record Product 10 TDD result" || true
+          git push origin HEAD:feat/company-domain-intelligence
+          exit "$code"
