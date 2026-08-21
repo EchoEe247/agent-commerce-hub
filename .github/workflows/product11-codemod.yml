@@ -40,3 +40,4 @@ jobs:
           git add products/drafts/data-quality-profiler/src/app.mjs
           git commit -m 'feat: add SEC snapshot route seam' || true
           git push origin HEAD:feat/sec-company-snapshot
+# retrigger
