@@ -1,0 +1,65 @@
+name: Product 10 Discovery Green
+
+on:
+  push:
+    branches:
+      - feat/company-domain-intelligence
+    paths:
+      - '.github/workflows/product10-discovery-green.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Publish Product 10 discovery metadata
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          openapi = Path('products/drafts/data-quality-profiler/src/openapi.mjs')
+          s = openapi.read_text()
+          old = 'Returns normalized domain identity, public A/AAAA records, MX/SPF/DMARC signals, RDAP registration metadata, website reachability and identity metadata, selected social/contact links, and HSTS/CSP header presence.'
+          new = 'Returns normalized domain identity, public DNS A/AAAA records, MX/SPF/DMARC signals, RDAP registration metadata, website reachability and identity metadata, selected social/contact links, and HSTS/CSP header presence.'
+          if old not in s:
+              raise SystemExit('Product 10 OpenAPI description marker not found')
+          openapi.write_text(s.replace(old, new, 1))
+
+          app = Path('products/drafts/data-quality-profiler/src/app.mjs')
+          s = app.read_text()
+          s = s.replace(
+              '    const sanctionsPrice = config.x402SanctionsScreenPrice ?? "$0.02";\n',
+              '    const sanctionsPrice = config.x402SanctionsScreenPrice ?? "$0.02";\n    const companyDomainPrice = config.x402CompanyDomainPrice ?? "$0.02";\n',
+              1,
+          )
+          old_block = '''    const dataQualityPrices = [profilerPrice, duplicatePrice, qualityGatePrice, schemaDriftPrice, dataContractPrice, cleanNormalizePrice, repairPlanPrice];\n    const priceRange = buildPriceRange([localePrice, sanctionsPrice, ...dataQualityPrices]);\n    const dataQualityPriceRange = buildPriceRange(dataQualityPrices);\n    const description = "Agent-ready paid utilities for OFAC sanctions screening, JSON and CSV data quality, schema compatibility, deterministic cleanup, repair planning, and practical counterparty contact-window checks.";\n'''
+          new_block = '''    const businessIntelligencePrices = [localePrice, companyDomainPrice];\n    const dataQualityPrices = [profilerPrice, duplicatePrice, qualityGatePrice, schemaDriftPrice, dataContractPrice, cleanNormalizePrice, repairPlanPrice];\n    const priceRange = buildPriceRange([...businessIntelligencePrices, sanctionsPrice, ...dataQualityPrices]);\n    const businessIntelligencePriceRange = buildPriceRange(businessIntelligencePrices);\n    const dataQualityPriceRange = buildPriceRange(dataQualityPrices);\n    const description = "Agent-ready paid utilities for company/domain intelligence, OFAC sanctions screening, JSON and CSV data quality, schema compatibility, deterministic cleanup, repair planning, and practical counterparty contact-window checks.";\n'''
+          if old_block not in s:
+              raise SystemExit('manifest price block not found')
+          s = s.replace(old_block, new_block, 1)
+          resource_marker = '        { url: `${SELLER_ORIGIN}/v1/entity-sanctions-screen`, method: "POST" },\n'
+          if resource_marker not in s:
+              raise SystemExit('manifest resource marker not found')
+          s = s.replace(resource_marker, resource_marker + '        { url: `${SELLER_ORIGIN}/v1/company-domain-intelligence`, method: "POST" },\n', 1)
+          s = s.replace('        tools: 9,\n', '        tools: 10,\n', 1)
+          old_category = '''          {\n            key: "business-intelligence",\n            label: "Business Intelligence",\n            tools: 1,\n            priceRange: localePrice,\n          },\n'''
+          new_category = '''          {\n            key: "business-intelligence",\n            label: "Business Intelligence",\n            tools: 2,\n            priceRange: businessIntelligencePriceRange,\n          },\n'''
+          if old_category not in s:
+              raise SystemExit('business intelligence category marker not found')
+          s = s.replace(old_category, new_category, 1)
+          endpoint_marker = '''        {\n          name: "ofac-sdn-entity-sanctions-screen",\n'''
+          endpoint_block = '''        {\n          name: "company-domain-intelligence-dns-rdap-mail-website",\n          method: "POST",\n          path: "/v1/company-domain-intelligence",\n          url: `${SELLER_ORIGIN}/v1/company-domain-intelligence`,\n          summary: "Company domain intelligence from public DNS, mail, RDAP, and website signals.",\n          description: "Returns public DNS A/AAAA records, MX/SPF/DMARC signals, RDAP registration metadata, website reachability and identity metadata, selected social/contact links, and HSTS/CSP presence for a public company domain.",\n          price_usd: priceNumber(companyDomainPrice),\n          network,\n        },\n'''
+          if endpoint_marker not in s:
+              raise SystemExit('manifest endpoint marker not found')
+          s = s.replace(endpoint_marker, endpoint_block + endpoint_marker, 1)
+          app.write_text(s)
+          PY
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git add products/drafts/data-quality-profiler/src/app.mjs products/drafts/data-quality-profiler/src/openapi.mjs
+          git commit -m 'feat: publish Product 10 Agent402 discovery'
+          git push origin HEAD:feat/company-domain-intelligence
