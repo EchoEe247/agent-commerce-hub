@@ -47,6 +47,86 @@ test("POST /v1/profile returns the approved envelope", async () => {
   await app.close();
 });
 
+test("six portfolio routes expose deterministic operation results", async () => {
+  const app = unpaidApp();
+
+  const duplicate = await app.inject({
+    method: "POST",
+    url: "/v1/duplicate-audit",
+    payload: { format: "json", records: [{ id: 1 }, { id: 1 }, { id: 2 }] },
+  });
+  assert.equal(duplicate.statusCode, 200);
+  assert.equal(duplicate.json().duplicate_rows, 1);
+
+  const gate = await app.inject({
+    method: "POST",
+    url: "/v1/quality-gate",
+    payload: { format: "json", records: [{ id: 1, value: 10 }, { id: 2, value: 20 }] },
+  });
+  assert.equal(gate.statusCode, 200);
+  assert.equal(gate.json().pass, true);
+
+  const drift = await app.inject({
+    method: "POST",
+    url: "/v1/schema-drift",
+    payload: {
+      baseline: { format: "json", records: [{ id: 1 }] },
+      current: { format: "json", records: [{ id: 1, name: "A" }] },
+    },
+  });
+  assert.equal(drift.statusCode, 200);
+  assert.deepEqual(drift.json().added_fields, ["name"]);
+
+  const contract = await app.inject({
+    method: "POST",
+    url: "/v1/data-contract-check",
+    payload: {
+      dataset: { format: "json", records: [{ id: 1, name: "A" }] },
+      contract: {
+        required_fields: ["id", "name"],
+        field_types: { id: "integer", name: "string" },
+        allow_extra_fields: true,
+      },
+    },
+  });
+  assert.equal(contract.statusCode, 200);
+  assert.equal(contract.json().compatible, true);
+
+  const clean = await app.inject({
+    method: "POST",
+    url: "/v1/clean-normalize",
+    payload: {
+      format: "json",
+      records: [{ id: 1, name: " A " }, { id: 1, name: "A" }],
+    },
+  });
+  assert.equal(clean.statusCode, 200);
+  assert.equal(clean.json().cleaned_record_count, 1);
+  assert.equal(clean.json().removed_duplicate_rows, 1);
+
+  const repair = await app.inject({
+    method: "POST",
+    url: "/v1/repair-plan",
+    payload: { format: "json", records: [{ id: 1 }, { id: 1 }] },
+  });
+  assert.equal(repair.statusCode, 200);
+  assert.equal(repair.json().actions[0].code, "DEDUPLICATE_ROWS");
+
+  await app.close();
+});
+
+test("portfolio routes reuse structured dataset errors", async () => {
+  const app = unpaidApp();
+  const response = await app.inject({
+    method: "POST",
+    url: "/v1/quality-gate",
+    payload: { format: "json", records: "nope" },
+  });
+  assert.equal(response.statusCode, 400);
+  assert.equal(response.json().error.code, "INVALID_DATASET");
+  await app.close();
+});
+
 test("structured error: invalid dataset returns 400", async () => {
   const app = unpaidApp();
   const response = await app.inject({ method: "POST", url: "/v1/profile", payload: { format: "json", records: "nope" } });
@@ -72,16 +152,11 @@ test("structured error: 1 MiB body limit returns 413", async () => {
     url: "/v1/profile",
     payload: { format: "json", records: [{ id: 1, note: bigValue }] },
   });
-  // Note: fastify enforces bodyLimit at the transport layer (413) for payloads
-  // larger than bodyBytes. Some body encoders reject before routing.
   assert.equal(response.statusCode, 413);
   await app.close();
 });
 
 test("processing timeout crosses deadline and returns 408", async () => {
-  // Injectable clock whose value grows by a large step per call, so the
-  // per-record deadline check (deadline = now() + deadlineMs) is exceeded
-  // during iteration without waiting real seconds.
   let n = 0;
   const app = unpaidApp({ clock: { now: () => Date.now() + ++n * 10_000 } });
   const response = await app.inject({ method: "POST", url: "/v1/profile", payload: FIXTURE });
@@ -127,9 +202,6 @@ test("security: path/url/shell/html strings remain inert data", async () => {
 });
 
 test("legal maximum-size dataset is processed successfully", async () => {
-  // The 1 MiB body cap is the binding constraint (1000 records x 250 fields
-  // does not fit under 1 MiB). Use the largest payload that stays legal and
-  // verify both structural caps are respected end to end.
   const app = unpaidApp();
   const fieldNames = Array.from({ length: 70 }, (_, i) => `f${i}`);
   const records = Array.from({ length: LIMITS.records }, (_, r) =>
@@ -163,7 +235,6 @@ test("all-null field at API level returns no NaN/Infinity in profile", async () 
   assert.equal(field.null_count, 3);
   assert.equal(field.null_pct, 100);
   assert.equal(field.inferred_type, "null");
-  // Must not contain NaN or Infinity anywhere in the field profile
   const json = JSON.stringify(field);
   assert.ok(!json.includes("NaN"), "field profile must not contain NaN");
   assert.ok(!json.includes("Infinity"), "field profile must not contain Infinity");
