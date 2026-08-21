@@ -42,3 +42,29 @@ test("fails closed when OFAC responds 200 but the SDN snapshot contains no usabl
     await server.close();
   }
 });
+
+test("rejects unsupported entity_type before contacting OFAC", async () => {
+  let sourceCalls = 0;
+  const server = buildApp({
+    config: config(),
+    paymentPlugin: async () => {},
+    ofacFetch: async () => {
+      sourceCalls += 1;
+      throw new Error("OFAC should not be contacted for an invalid entity_type");
+    },
+  });
+
+  const response = await server.inject({
+    method: "POST",
+    url: "/v1/entity-sanctions-screen",
+    payload: { name: "ACME SHIPPING LLC", entity_type: "company" },
+  });
+
+  try {
+    assert.equal(response.statusCode, 400);
+    assert.equal(response.json().error.code, "INVALID_SANCTIONS_REQUEST");
+    assert.equal(sourceCalls, 0);
+  } finally {
+    await server.close();
+  }
+});
