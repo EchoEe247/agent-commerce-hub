@@ -1,0 +1,43 @@
+name: Agent402 Manifest Green
+
+on:
+  push:
+    branches:
+      - feat/agent402-manifest-ranking
+    paths:
+      - '.github/workflows/agent402-manifest-green.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/agent402-manifest-ranking
+      - name: Align manifest summaries with buyer language
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('products/drafts/data-quality-profiler/src/app.mjs')
+          s = p.read_text()
+          replacements = {
+              'summary: "Screen a person or organization name against the U.S. Treasury OFAC SDN list with deterministic exact and fuzzy candidate scoring.",': 'summary: "OFAC sanctions screening for a person or organization",',
+              'summary: "SEC EDGAR company snapshot with identity, recent filings, and sourced XBRL facts.",': 'summary: "SEC company snapshot by ticker or CIK with filings and financial facts",',
+          }
+          for old, new in replacements.items():
+              if s.count(old) != 1:
+                  raise SystemExit(f'expected exactly one occurrence: {old!r}')
+              s = s.replace(old, new)
+          p.write_text(s)
+          PY
+          git diff --check
+          git diff -- products/drafts/data-quality-profiler/src/app.mjs
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add products/drafts/data-quality-profiler/src/app.mjs
+          git commit -m "fix: align Agent402 manifest summaries"
+          git push origin HEAD:feat/agent402-manifest-ranking
