@@ -18,6 +18,7 @@ on:
       - 'products/drafts/data-quality-profiler/src/errors.mjs'
       - 'products/drafts/data-quality-profiler/src/payments/x402-plugin.mjs'
       - 'products/drafts/data-quality-profiler/scripts/ofac-source-smoke.mjs'
+      - 'products/drafts/data-quality-profiler/test/agent402-manifest.test.mjs'
       - 'products/drafts/data-quality-profiler/test/counterparty-availability.test.mjs'
       - 'products/drafts/data-quality-profiler/test/entity-sanctions-screen.test.mjs'
       - 'products/drafts/data-quality-profiler/test/entity-sanctions-source.test.mjs'
@@ -46,6 +47,7 @@ on:
       - 'products/drafts/data-quality-profiler/src/errors.mjs'
       - 'products/drafts/data-quality-profiler/src/payments/x402-plugin.mjs'
       - 'products/drafts/data-quality-profiler/scripts/ofac-source-smoke.mjs'
+      - 'products/drafts/data-quality-profiler/test/agent402-manifest.test.mjs'
       - 'products/drafts/data-quality-profiler/test/counterparty-availability.test.mjs'
       - 'products/drafts/data-quality-profiler/test/entity-sanctions-screen.test.mjs'
       - 'products/drafts/data-quality-profiler/test/entity-sanctions-source.test.mjs'
@@ -91,7 +93,7 @@ jobs:
       - name: Focused seller tests
         working-directory: products/drafts/data-quality-profiler
         run: |
-          TESTS=(test/counterparty-availability.test.mjs test/counterparty-api.test.mjs test/openapi-discovery.test.mjs test/x402-plugin.test.mjs test/config.test.mjs)
+          TESTS=(test/agent402-manifest.test.mjs test/counterparty-availability.test.mjs test/counterparty-api.test.mjs test/openapi-discovery.test.mjs test/x402-plugin.test.mjs test/config.test.mjs)
           if [ -f test/entity-sanctions-screen.test.mjs ]; then TESTS+=(test/entity-sanctions-screen.test.mjs); fi
           if [ -f test/entity-sanctions-source.test.mjs ]; then TESTS+=(test/entity-sanctions-source.test.mjs); fi
           if [ -f test/entity-sanctions-x402.test.mjs ]; then TESTS+=(test/entity-sanctions-x402.test.mjs); fi
