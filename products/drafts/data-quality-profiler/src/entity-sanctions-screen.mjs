@@ -11,6 +11,7 @@ const DISCLAIMER = "Screening result is informational and is not a legal complia
 const DEFAULT_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
 const MATCH_THRESHOLD = 80;
 const MAX_RESULTS = 5;
+const ENTITY_TYPES = new Set(["individual", "entity", "vessel", "aircraft"]);
 
 export function createEntitySanctionsScreen({
   fetchImpl = globalThis.fetch,
@@ -97,6 +98,9 @@ function normalizeRequest(payload) {
       throw new Error("INVALID_SANCTIONS_REQUEST: entity_type must be a non-empty string when provided");
     }
     entityType = payload.entity_type.trim().toLowerCase();
+    if (!ENTITY_TYPES.has(entityType)) {
+      throw new Error("INVALID_SANCTIONS_REQUEST: entity_type must be one of individual, entity, vessel, aircraft");
+    }
   }
 
   return {
