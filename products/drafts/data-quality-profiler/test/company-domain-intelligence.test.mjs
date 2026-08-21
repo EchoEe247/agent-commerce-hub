@@ -187,3 +187,43 @@ test("rejects domains resolving to private or non-routable addresses before webs
   );
   assert.equal(pageCalls, 0);
 });
+
+test("buildApp constructs the default Product 10 service from runtime dependencies", async () => {
+  const resolver = {
+    resolve4: async () => ["93.184.216.34"],
+    resolve6: async () => [],
+    resolveMx: async () => [],
+    resolveTxt: async () => [],
+  };
+  const server = buildApp({
+    config: baseConfig(),
+    paymentPlugin: async () => {},
+    domainResolver: resolver,
+    domainPageRequester: async () => ({
+      status_code: 200,
+      final_url: "https://example.com/",
+      redirect_chain: [],
+      headers: {},
+      body: "<html><head><title>Example Company</title></head><body></body></html>",
+    }),
+    rdapFetch: async () => ({ ok: false, status: 404 }),
+    domainClock: { now: () => FIXED_NOW },
+  });
+
+  const response = await server.inject({
+    method: "POST",
+    url: "/v1/company-domain-intelligence",
+    payload: { domain: "example.com" },
+  });
+
+  try {
+    assert.equal(response.statusCode, 200);
+    const body = response.json();
+    assert.equal(body.query.normalized_domain, "example.com");
+    assert.equal(body.company.display_name, "Example Company");
+    assert.equal(body.company.source, "website_title");
+    assert.equal(body.website.reachable, true);
+  } finally {
+    await server.close();
+  }
+});
