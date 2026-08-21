@@ -1,0 +1,50 @@
+name: AgentCash Discovery Local Contract Check
+
+on:
+  pull_request:
+    branches:
+      - feat/hermes-commerce-control-plane
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install service dependencies
+        working-directory: products/drafts/data-quality-profiler
+        run: npm ci
+      - name: Start local production-shaped x402 service
+        working-directory: products/drafts/data-quality-profiler
+        env:
+          HOST: 127.0.0.1
+          PORT: '4021'
+          X402_ENABLED: 'true'
+          ALLOW_MAINNET: 'true'
+          X402_NETWORK: eip155:8453
+          X402_PAY_TO: 0x2BD7c4e294B09E9a853168a58712498D03A45B01
+          X402_FACILITATOR_URL: https://facilitator.xpay.sh
+        run: |
+          set -euo pipefail
+          npm start >/tmp/hermes-agentcash-server.log 2>&1 &
+          echo $! >/tmp/hermes-agentcash-server.pid
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:4021/health >/dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/hermes-agentcash-server.log
+          exit 1
+      - name: AgentCash discover
+        run: npx -y @agentcash/discovery@latest discover http://127.0.0.1:4021
+      - name: AgentCash check
+        run: npx -y @agentcash/discovery@latest check http://127.0.0.1:4021
+      - name: Stop local service
+        if: always()
+        run: |
+          if [ -f /tmp/hermes-agentcash-server.pid ]; then kill "$(cat /tmp/hermes-agentcash-server.pid)" 2>/dev/null || true; fi
+          cat /tmp/hermes-agentcash-server.log 2>/dev/null || true
