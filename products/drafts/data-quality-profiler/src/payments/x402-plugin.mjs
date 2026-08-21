@@ -130,6 +130,37 @@ export function buildPaymentPlugin(config) {
       },
     });
 
+    const companyDomainBazaarExtension = declareDiscoveryExtension({
+      bodyType: "json",
+      input: { domain: "stripe.com" },
+      inputSchema: {
+        type: "object",
+        properties: {
+          domain: {
+            type: "string",
+            minLength: 1,
+            maxLength: 253,
+            description: "Public company domain name, for example stripe.com",
+          },
+        },
+        required: ["domain"],
+      },
+      output: {
+        example: {
+          schema_version: "1.0",
+          query: { domain: "stripe.com", normalized_domain: "stripe.com" },
+          company: { display_name: "Stripe", source: "og:site_name", confidence: "high" },
+          domain: { registered: true, registrar: null, registration_date: null, expiration_date: null, age_days: null, statuses: [], nameservers: [] },
+          website: { reachable: true, https: true, status_code: 200, final_url: "https://stripe.com/", redirect_chain: [], title: null, description: null, canonical_url: null, social_links: [], contact_links: [] },
+          dns: { has_a: true, has_aaaa: false, addresses: [], ipv6_addresses: [] },
+          mail: { has_mx: true, mx: [], spf_present: true, dmarc_present: true },
+          security: { hsts: true, content_security_policy: true },
+          sources: { dns: "system-resolver", rdap: "https://rdap.org/domain/stripe.com", website: "https://stripe.com/" },
+          warnings: [],
+        },
+      },
+    });
+
     const duplicateAuditBazaarExtension = declareDiscoveryExtension({
       bodyType: "json",
       input: { format: "json", records: [{ id: 1 }, { id: 1 }] },
@@ -311,6 +342,12 @@ export function buildPaymentPlugin(config) {
         config.x402SanctionsScreenPrice,
         "Screen a person or organization name against authoritative OFAC SDN data and return deterministic candidate matches; informational, not a legal compliance determination",
         sanctionsBazaarExtension
+      ),
+      "POST /v1/company-domain-intelligence": protectedRoute(
+        config,
+        config.x402CompanyDomainPrice,
+        "Enrich a public company domain with DNS, MX/SPF/DMARC, RDAP registration, website identity metadata, social/contact links, and security-header signals",
+        companyDomainBazaarExtension
       ),
       "POST /v1/duplicate-audit": protectedRoute(
         config,
