@@ -1,7 +1,9 @@
 import * as dns from "node:dns/promises";
+import net from "node:net";
 import { domainToASCII } from "node:url";
 
 const RDAP_BASE = "https://rdap.org/domain/";
+const BLOCKED_SUFFIXES = [".local", ".internal", ".test", ".invalid", ".example", ".onion", ".localhost", ".home", ".lan"];
 
 export function createCompanyDomainIntelligence({
   resolver = dns,
@@ -67,8 +69,20 @@ function normalizeDomain(value) {
     throw new Error("INVALID_DOMAIN_REQUEST: domain must be a non-empty string");
   }
   const trimmed = value.trim().replace(/\.+$/, "").toLowerCase();
-  const ascii = domainToASCII(trimmed);
-  if (!ascii) throw new Error("INVALID_DOMAIN_REQUEST: domain is invalid");
+  if (net.isIP(trimmed)) {
+    throw new Error("INVALID_DOMAIN_REQUEST: IP literals are not allowed");
+  }
+  const ascii = domainToASCII(trimmed).toLowerCase();
+  if (!ascii || ascii.length > 253 || !ascii.includes(".")) {
+    throw new Error("INVALID_DOMAIN_REQUEST: domain must be a public DNS hostname");
+  }
+  if (ascii === "localhost" || BLOCKED_SUFFIXES.some((suffix) => ascii.endsWith(suffix))) {
+    throw new Error("INVALID_DOMAIN_REQUEST: special-use or private hostnames are not allowed");
+  }
+  const labels = ascii.split(".");
+  if (labels.some((label) => !label || label.length > 63 || !/^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/.test(label))) {
+    throw new Error("INVALID_DOMAIN_REQUEST: domain contains an invalid DNS label");
+  }
   return ascii;
 }
 
