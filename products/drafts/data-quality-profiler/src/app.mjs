@@ -25,6 +25,7 @@ export function buildApp({
   deadlineMs = LIMITS.processingMs,
   logger = console,
   entitySanctionsScreen,
+  companyDomainIntelligence,
   ofacFetch = globalThis.fetch,
 }) {
   const app = Fastify({
@@ -262,6 +263,16 @@ export function buildApp({
   app.post("/v1/entity-sanctions-screen", async (request, reply) => {
     try {
       return reply.send(await screenEntity(request.body));
+    } catch (error) {
+      const { statusCode, body } = classifyError(error);
+      return reply.status(statusCode).send(body);
+    }
+  });
+
+  app.post("/v1/company-domain-intelligence", async (request, reply) => {
+    try {
+      if (!companyDomainIntelligence) throw new Error("INTERNAL_ERROR: company domain service is unavailable");
+      return reply.send(await companyDomainIntelligence(request.body));
     } catch (error) {
       const { statusCode, body } = classifyError(error);
       return reply.status(statusCode).send(body);
