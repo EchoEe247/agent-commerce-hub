@@ -1,8 +1,12 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
+import { qualityGate } from "../dataset/operations.mjs";
 
 const MAX_WEBHOOK_AGE_SECONDS = 300;
+const SERVICE_HANDLERS = new Map([
+  ["Hermes Data Quality Gate", qualityGate],
+]);
 
-export function registerThe402Webhook(app, { config, now = () => Date.now() }) {
+export function registerThe402Webhook(app, { config, now = () => Date.now(), fetchImpl = globalThis.fetch }) {
   app.register(async function the402WebhookScope(instance) {
     instance.removeContentTypeParser("application/json");
     instance.addContentTypeParser(
@@ -13,22 +17,12 @@ export function registerThe402Webhook(app, { config, now = () => Date.now() }) {
 
     instance.post("/webhooks/the402", async (request, reply) => {
       if (!config.the402ApiKey || !config.the402WebhookSecret) {
-        return reply.status(503).send({
-          error: {
-            code: "THE402_NOT_CONFIGURED",
-            message: "the402 provider webhook is not configured",
-          },
-        });
+        return fail(reply, 503, "THE402_NOT_CONFIGURED", "the402 provider webhook is not configured");
       }
 
       const rawBody = request.body;
       if (typeof rawBody !== "string") {
-        return reply.status(400).send({
-          error: {
-            code: "THE402_INVALID_BODY",
-            message: "the402 webhook body must be JSON",
-          },
-        });
+        return fail(reply, 400, "THE402_INVALID_BODY", "the402 webhook body must be JSON");
       }
 
       const platformSecret = headerValue(request.headers["x-platform-secret"]);
@@ -58,25 +52,122 @@ export function registerThe402Webhook(app, { config, now = () => Date.now() }) {
       try {
         payload = JSON.parse(rawBody);
       } catch {
-        return reply.status(400).send({
-          error: {
-            code: "THE402_INVALID_BODY",
-            message: "the402 webhook body must be valid JSON",
-          },
+        return fail(reply, 400, "THE402_INVALID_BODY", "the402 webhook body must be valid JSON");
+      }
+
+      if (payload?.type !== "job_dispatch") {
+        return reply.send({
+          ok: true,
+          accepted: false,
+          type: typeof payload?.type === "string" ? payload.type : null,
         });
       }
 
-      return reply.send({
-        ok: true,
-        accepted: false,
-        type: typeof payload?.type === "string" ? payload.type : null,
-      });
+      return handleJobDispatch(payload, reply, { config, fetchImpl });
     });
   });
 }
 
+async function handleJobDispatch(payload, reply, { config, fetchImpl }) {
+  if (
+    typeof payload.job_id !== "string" || payload.job_id.length === 0 ||
+    typeof payload.service_id !== "string" || payload.service_id.length === 0 ||
+    !payload.brief || typeof payload.brief !== "object" || Array.isArray(payload.brief) ||
+    typeof payload.callback_url !== "string" || payload.callback_url.length === 0
+  ) {
+    return fail(reply, 400, "THE402_INVALID_JOB", "the402 job dispatch is missing required fields");
+  }
+
+  if (typeof fetchImpl !== "function") {
+    return fail(reply, 503, "THE402_FETCH_UNAVAILABLE", "the402 provider HTTP client is unavailable");
+  }
+
+  const apiBase = normalizedApiBase(config.the402ApiBase);
+  const serviceUrl = new URL(`/v1/services/${encodeURIComponent(payload.service_id)}`, apiBase).toString();
+
+  let serviceResponse;
+  try {
+    serviceResponse = await fetchImpl(serviceUrl, {
+      method: "GET",
+      headers: { Accept: "application/json" },
+    });
+  } catch {
+    return fail(reply, 502, "THE402_SERVICE_LOOKUP_FAILED", "the402 service lookup failed");
+  }
+  if (!serviceResponse?.ok) {
+    return fail(reply, 502, "THE402_SERVICE_LOOKUP_FAILED", "the402 service lookup failed");
+  }
+
+  let service;
+  try {
+    service = await serviceResponse.json();
+  } catch {
+    return fail(reply, 502, "THE402_SERVICE_LOOKUP_FAILED", "the402 service lookup returned invalid JSON");
+  }
+
+  const handler = SERVICE_HANDLERS.get(service?.name);
+  if (!handler) {
+    return fail(reply, 422, "THE402_UNSUPPORTED_SERVICE", "the402 service is not supported by this provider adapter");
+  }
+
+  let callbackUrl;
+  try {
+    callbackUrl = new URL(payload.callback_url);
+  } catch {
+    return fail(reply, 400, "THE402_INVALID_CALLBACK_URL", "the402 callback URL is invalid");
+  }
+  if (callbackUrl.origin !== apiBase.origin) {
+    return fail(reply, 400, "THE402_INVALID_CALLBACK_URL", "the402 callback URL must use the configured API origin");
+  }
+
+  let result;
+  try {
+    result = handler(payload.brief);
+  } catch {
+    return fail(reply, 400, "THE402_FULFILLMENT_FAILED", "the402 job input could not be fulfilled");
+  }
+
+  let callbackResponse;
+  try {
+    callbackResponse = await fetchImpl(callbackUrl.toString(), {
+      method: "POST",
+      headers: {
+        "X-API-Key": config.the402ApiKey,
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({
+        status: "completed",
+        deliverables: {
+          service: service.name,
+          result,
+        },
+      }),
+    });
+  } catch {
+    return fail(reply, 502, "THE402_CALLBACK_FAILED", "the402 completion callback failed");
+  }
+  if (!callbackResponse?.ok) {
+    return fail(reply, 502, "THE402_CALLBACK_FAILED", "the402 completion callback failed");
+  }
+
+  return reply.send({ ok: true, accepted: true, job_id: payload.job_id });
+}
+
+function normalizedApiBase(value) {
+  const url = new URL(value || "https://api.the402.ai");
+  url.pathname = "/";
+  url.search = "";
+  url.hash = "";
+  return url;
+}
+
+function fail(reply, status, code, message) {
+  return reply.status(status).send({ error: { code, message } });
+}
+
 function unauthorized(reply, code, message) {
-  return reply.status(401).send({ error: { code, message } });
+  return fail(reply, 401, code, message);
 }
 
 function headerValue(value) {
