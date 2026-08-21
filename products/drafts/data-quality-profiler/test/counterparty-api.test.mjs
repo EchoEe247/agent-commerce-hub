@@ -49,16 +49,16 @@ test("GET /.well-known/x402 publishes eight unique Agent402-compatible tools", a
   assert.equal(body.name, "Hermes Counterparty Availability");
   assert.equal(body.homepage, PUBLIC_ORIGIN);
   assert.equal(body.resources.length, 8);
-  assert.equal(new Set(body.resources).size, 8);
+  assert.equal(new Set(body.resources.map((resource) => resource.url)).size, 8);
   assert.deepEqual(body.resources, [
-    `${PUBLIC_ORIGIN}/v1/counterparty-availability`,
-    `${PUBLIC_ORIGIN}/v1/profile`,
-    `${PUBLIC_ORIGIN}/v1/duplicate-audit`,
-    `${PUBLIC_ORIGIN}/v1/quality-gate`,
-    `${PUBLIC_ORIGIN}/v1/schema-drift`,
-    `${PUBLIC_ORIGIN}/v1/data-contract-check`,
-    `${PUBLIC_ORIGIN}/v1/clean-normalize`,
-    `${PUBLIC_ORIGIN}/v1/repair-plan`,
+    { url: `${PUBLIC_ORIGIN}/v1/counterparty-availability`, method: "POST" },
+    { url: `${PUBLIC_ORIGIN}/v1/profile`, method: "POST" },
+    { url: `${PUBLIC_ORIGIN}/v1/duplicate-audit`, method: "POST" },
+    { url: `${PUBLIC_ORIGIN}/v1/quality-gate`, method: "POST" },
+    { url: `${PUBLIC_ORIGIN}/v1/schema-drift`, method: "POST" },
+    { url: `${PUBLIC_ORIGIN}/v1/data-contract-check`, method: "POST" },
+    { url: `${PUBLIC_ORIGIN}/v1/clean-normalize`, method: "POST" },
+    { url: `${PUBLIC_ORIGIN}/v1/repair-plan`, method: "POST" },
   ]);
 
   assert.deepEqual(body.payment.x402.networks, ["eip155:8453"]);
