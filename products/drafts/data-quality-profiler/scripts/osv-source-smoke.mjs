@@ -1,5 +1,6 @@
 const started = Date.now();
-const response = await fetch("https://api.osv.dev/v1/query", {
+const apiUrl = "https://api.osv.dev/v1/query";
+const response = await fetch(apiUrl, {
   method: "POST",
   headers: {
     accept: "application/json",
@@ -24,6 +25,7 @@ if (!body || typeof body !== "object" || !Array.isArray(body.vulns) || body.vuln
 console.log(JSON.stringify({
   smoke: "OSV_SOURCE_OK",
   provider: "OSV.dev",
+  api_url: apiUrl,
   ecosystem: "PyPI",
   package: "jinja2",
   version: "2.4.1",
