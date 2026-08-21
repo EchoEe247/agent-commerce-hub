@@ -89,8 +89,8 @@ export function buildOpenApiDocument(config) {
     info: {
       title: "Hermes Agent Commerce API",
       version,
-      description: "Paid agent utilities for counterparty availability, OFAC sanctions screening, and deterministic JSON/CSV data-quality work.",
-      "x-guidance": "All nine POST operations are pay-per-call x402 resources on Base using USDC. Choose the narrowest operation that matches the task. Send the documented JSON request body; an unpaid call returns HTTP 402 with the runtime payment challenge, then retry with a valid x402 payment. Dataset operations accept JSON records or CSV text. The sanctions screen returns candidate matches from authoritative OFAC SDN source files and is not a legal compliance determination. No MPP payment support is advertised by this API yet.",
+      description: "Paid agent utilities for counterparty availability, company/domain intelligence, OFAC sanctions screening, and deterministic JSON/CSV data-quality work.",
+      "x-guidance": "All ten POST operations are pay-per-call x402 resources on Base using USDC. Choose the narrowest operation that matches the task. Send the documented JSON request body; an unpaid call returns HTTP 402 with the runtime payment challenge, then retry with a valid x402 payment. Dataset operations accept JSON records or CSV text. Company domain intelligence combines public DNS, mail-policy, RDAP, and website metadata signals. The sanctions screen returns candidate matches from authoritative OFAC SDN source files and is not a legal compliance determination. No MPP payment support is advertised by this API yet.",
     },
     servers: [{ url: PUBLIC_ORIGIN }],
     paths: {
@@ -191,6 +191,45 @@ export function buildOpenApiDocument(config) {
           },
           extraResponses: {
             "503": { description: "Authoritative OFAC source unavailable" },
+          },
+        }),
+      },
+      "/v1/company-domain-intelligence": {
+        post: paidOperation({
+          operationId: "companyDomainIntelligence",
+          summary: "Enrich a company domain with public DNS, mail, RDAP, and website signals",
+          description: "Returns normalized domain identity, public DNS A/AAAA records, MX/SPF/DMARC signals, RDAP registration metadata, website reachability and identity metadata, selected social/contact links, and HSTS/CSP header presence. Public-domain input only; IP literals, special-use hostnames, and private/non-routable resolved targets are rejected.",
+          price: config.x402CompanyDomainPrice ?? "$0.02",
+          tags: ["Business Intelligence"],
+          schema: {
+            type: "object",
+            properties: {
+              domain: {
+                type: "string",
+                minLength: 1,
+                maxLength: 253,
+                description: "Public company domain name, for example stripe.com. Do not include a URL path.",
+              },
+            },
+            required: ["domain"],
+          },
+          example: { domain: "stripe.com" },
+          outputSchema: {
+            type: "object",
+            properties: {
+              schema_version: { type: "string" },
+              query: { type: "object", additionalProperties: true },
+              company: { type: "object", additionalProperties: true },
+              domain: { type: "object", additionalProperties: true },
+              website: { type: "object", additionalProperties: true },
+              dns: { type: "object", additionalProperties: true },
+              mail: { type: "object", additionalProperties: true },
+              security: { type: "object", additionalProperties: true },
+              sources: { type: "object", additionalProperties: true },
+              warnings: { type: "array", items: { type: "string" } },
+            },
+            required: ["schema_version", "query", "company", "domain", "website", "dns", "mail", "security", "sources", "warnings"],
+            additionalProperties: true,
           },
         }),
       },
