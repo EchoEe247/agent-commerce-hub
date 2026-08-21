@@ -27,13 +27,13 @@ function decodePaymentRequired(response) {
   return JSON.parse(Buffer.from(header, "base64").toString("utf8"));
 }
 
-test("Product 13 unpaid request advertises exact $0.015 x402 payment and valid package Bazaar metadata", async () => {
+test("Product 13 unpaid request advertises exact $0.005 x402 payment and valid package Bazaar metadata", async () => {
   const { app: facilitator, url } = await createFakeFacilitator();
   const plugin = buildPaymentPlugin({
     x402Enabled: true,
     x402Network: "eip155:84532",
     x402PayTo: PAY_TO,
-    x402PackageMaintenancePrice: "$0.015",
+    x402PackageMaintenancePrice: "$0.005",
     x402FacilitatorUrl: url,
   });
   const app = buildApp({
@@ -56,7 +56,7 @@ test("Product 13 unpaid request advertises exact $0.015 x402 payment and valid p
     assert.equal(quote.scheme, "exact");
     assert.equal(quote.network, "eip155:84532");
     assert.equal(quote.payTo, PAY_TO);
-    assert.equal(quote.amount, "15000");
+    assert.equal(quote.amount, "5000");
 
     const bazaar = decoded.extensions?.bazaar;
     assert.ok(bazaar, "Product 13 must advertise Bazaar discovery metadata");
