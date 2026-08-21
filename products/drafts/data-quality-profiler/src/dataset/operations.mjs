@@ -233,6 +233,155 @@ export function dataContractCheck(payload, options = {}) {
   };
 }
 
+export function cleanNormalize(payload, options = {}) {
+  if (!isPlainObject(payload)) {
+    throw invalidDataset("body must be a JSON object");
+  }
+  const cleanOptions = {
+    trim_strings: payload.options?.trim_strings ?? true,
+    blank_to_null: payload.options?.blank_to_null ?? true,
+    deduplicate: payload.options?.deduplicate ?? true,
+  };
+  if (payload.options !== undefined && !isPlainObject(payload.options)) {
+    throw invalidDataset("options must be an object");
+  }
+  for (const [name, value] of Object.entries(cleanOptions)) {
+    if (typeof value !== "boolean") {
+      throw invalidDataset(`options.${name} must be a boolean`);
+    }
+  }
+
+  const { normalized } = analyzeDataset(payload, options);
+  const counters = {
+    trimmed_strings: 0,
+    blanks_to_null: 0,
+    duplicates_removed: 0,
+  };
+
+  const transformedRecords = normalized.records.map((record) =>
+    transformValue(record, cleanOptions, counters)
+  );
+
+  const cleanedRecords = [];
+  const seen = new Set();
+  for (const record of transformedRecords) {
+    if (cleanOptions.deduplicate) {
+      const key = canonicalize(record);
+      if (seen.has(key)) {
+        counters.duplicates_removed += 1;
+        continue;
+      }
+      seen.add(key);
+    }
+    cleanedRecords.push(record);
+  }
+
+  const cleanedAnalysis = analyzeDataset({ format: "json", records: cleanedRecords }, options);
+
+  return {
+    schema_version: "1.0",
+    original_record_count: normalized.records.length,
+    cleaned_record_count: cleanedRecords.length,
+    removed_duplicate_rows: counters.duplicates_removed,
+    transformations: counters,
+    schema_fingerprint: cleanedAnalysis.schemaFingerprint,
+    records: cleanedRecords,
+  };
+}
+
+export function repairPlan(payload, options = {}) {
+  const { profile, schemaFingerprint, scored } = analyzeDataset(payload, options);
+  const identifierIntegrityFields = Object.entries(profile.fields)
+    .filter(([, field]) => field.candidate_identifier && field.null_count > 0)
+    .map(([name]) => name)
+    .sort();
+  const mixedTypeFields = profile.mixed_fields.slice().sort();
+  const constantFields = profile.constant_fields.slice().sort();
+
+  const issues = {
+    duplicate_rows: profile.duplicate_rows,
+    missing_values: profile.missing_cell_count,
+    mixed_type_fields: mixedTypeFields,
+    identifier_integrity_fields: identifierIntegrityFields,
+    constant_fields: constantFields,
+  };
+
+  const actions = [];
+  if (issues.duplicate_rows > 0) {
+    actions.push({
+      code: "DEDUPLICATE_ROWS",
+      priority: 1,
+      affected_count: issues.duplicate_rows,
+      recommendation: "Remove or reconcile exact duplicate rows before downstream use.",
+    });
+  }
+  if (issues.missing_values > 0) {
+    actions.push({
+      code: "RESOLVE_MISSING_VALUES",
+      priority: 2,
+      affected_count: issues.missing_values,
+      recommendation: "Review missing values and apply a domain-appropriate fill, exclusion, or acceptance policy.",
+    });
+  }
+  if (mixedTypeFields.length > 0) {
+    actions.push({
+      code: "NORMALIZE_FIELD_TYPES",
+      priority: 3,
+      fields: mixedTypeFields,
+      recommendation: "Normalize mixed-type fields to one explicit contract before ETL, RAG, analytics, or agent use.",
+    });
+  }
+  if (identifierIntegrityFields.length > 0) {
+    actions.push({
+      code: "REPAIR_IDENTIFIER_INTEGRITY",
+      priority: 4,
+      fields: identifierIntegrityFields,
+      recommendation: "Repair missing identifier values before relying on record identity or joins.",
+    });
+  }
+  if (constantFields.length > 0) {
+    actions.push({
+      code: "REVIEW_CONSTANT_FIELDS",
+      priority: 5,
+      fields: constantFields,
+      recommendation: "Review constant fields and remove them when they carry no downstream signal.",
+    });
+  }
+
+  return {
+    schema_version: "1.0",
+    quality_score: scored.quality_score,
+    schema_fingerprint: schemaFingerprint,
+    issues,
+    actions,
+  };
+}
+
+function transformValue(value, cleanOptions, counters) {
+  if (typeof value === "string") {
+    let next = value;
+    if (cleanOptions.trim_strings) {
+      const trimmed = next.trim();
+      if (trimmed !== next) counters.trimmed_strings += 1;
+      next = trimmed;
+    }
+    if (cleanOptions.blank_to_null && next.trim() === "") {
+      counters.blanks_to_null += 1;
+      return null;
+    }
+    return next;
+  }
+  if (Array.isArray(value)) {
+    return value.map((item) => transformValue(item, cleanOptions, counters));
+  }
+  if (isPlainObject(value)) {
+    return Object.fromEntries(
+      Object.entries(value).map(([key, child]) => [key, transformValue(child, cleanOptions, counters)])
+    );
+  }
+  return value;
+}
+
 function assertQualityGateThresholds(payload) {
   if (!isPlainObject(payload)) {
     throw invalidDataset("body must be a JSON object");
