@@ -1,0 +1,97 @@
+name: Product 12 402 Index Retry
+
+on:
+  pull_request:
+    branches:
+      - feat/hermes-commerce-control-plane
+    paths:
+      - '.github/workflows/product12-402index-retry.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  register:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Register Product 12 with 402 Index
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat >/tmp/register.json <<'JSON'
+          {
+            "url":"https://hermes-counterparty-api.onrender.com/v1/dependency-vulnerability-check",
+            "name":"Hermes Dependency Vulnerability Check",
+            "protocol":"x402",
+            "http_method":"POST",
+            "probe_body":"{\"ecosystem\":\"npm\",\"package\":\"fastify\",\"version\":\"5.6.0\"}",
+            "description":"Check one exact dependency version against OSV.dev and return normalized vulnerability IDs, CVE aliases, severity records, queried-package affected ranges, known fixed versions, references, and source provenance.",
+            "price_usd":0.015,
+            "payment_asset":"USDC",
+            "payment_network":"Base",
+            "category":"software-security",
+            "provider":"Hermes Commerce"
+          }
+          JSON
+          status="$(curl --silent --show-error -o /tmp/402index.json -w '%{http_code}' \
+            -X POST 'https://402index.io/api/v1/register' \
+            -H 'content-type: application/json' \
+            --data-binary @/tmp/register.json)"
+          STATUS="$status" node <<'NODE'
+          const fs = require('fs');
+          const status = Number(process.env.STATUS);
+          const body = JSON.parse(fs.readFileSync('/tmp/402index.json', 'utf8'));
+          if (status !== 201) throw new Error(`402 Index register HTTP ${status}: ${JSON.stringify(body)}`);
+          const service = body.service ?? body.data ?? body;
+          const id = service.id ?? body.id ?? null;
+          if (!id) throw new Error(`402 Index registration returned no service id: ${JSON.stringify(body)}`);
+          const url = service.url ?? body.url ?? null;
+          if (url && url !== 'https://hermes-counterparty-api.onrender.com/v1/dependency-vulnerability-check') throw new Error(`wrong URL: ${url}`);
+          fs.writeFileSync('/tmp/service-id.txt', String(id));
+          console.log(JSON.stringify({
+            registration: 'PASS',
+            service_id: id,
+            url,
+            message: body.message ?? null,
+            status: service.status ?? body.status ?? null,
+            health_status: service.health_status ?? body.health_status ?? null,
+            probe_status: service.probe_status ?? body.probe_status ?? null,
+            approval_reason: service.approval_reason ?? body.approval_reason ?? null,
+            verification: body.verification ?? null
+          }));
+          NODE
+
+      - name: Verify registered 402 Index record
+        shell: bash
+        run: |
+          set -euo pipefail
+          id="$(cat /tmp/service-id.txt)"
+          status="$(curl --silent --show-error -o /tmp/service.json -w '%{http_code}' "https://402index.io/api/v1/services/$id")"
+          STATUS="$status" node <<'NODE'
+          const fs = require('fs');
+          const status = Number(process.env.STATUS);
+          const body = JSON.parse(fs.readFileSync('/tmp/service.json', 'utf8'));
+          if (status !== 200) throw new Error(`402 Index lookup HTTP ${status}: ${JSON.stringify(body)}`);
+          const service = body.service ?? body.data ?? body;
+          if (service.url !== 'https://hermes-counterparty-api.onrender.com/v1/dependency-vulnerability-check') throw new Error(`wrong service URL: ${service.url}`);
+          if ((service.http_method ?? service.method) !== 'POST') throw new Error(`wrong method: ${service.http_method ?? service.method}`);
+          if (Number(service.price_usd) !== 0.015) throw new Error(`wrong price: ${service.price_usd}`);
+          if (String(service.protocol).toLowerCase() !== 'x402') throw new Error(`wrong protocol: ${service.protocol}`);
+          console.log(JSON.stringify({
+            verification: 'PASS',
+            service_id: service.id,
+            url: service.url,
+            protocol: service.protocol,
+            method: service.http_method ?? service.method,
+            price_usd: service.price_usd,
+            payment_asset: service.payment_asset,
+            payment_network: service.payment_network,
+            category: service.category,
+            provider: service.provider,
+            status: service.status ?? null,
+            health_status: service.health_status ?? null,
+            probe_status: service.probe_status ?? null,
+            approval_reason: service.approval_reason ?? null
+          }));
+          NODE
