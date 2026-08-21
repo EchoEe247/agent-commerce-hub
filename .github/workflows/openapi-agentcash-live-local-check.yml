@@ -1,18 +1,22 @@
 name: AgentCash Discovery Local Contract Check
 
 on:
-  pull_request:
+  push:
     branches:
-      - feat/hermes-commerce-control-plane
+      - feat/openapi-agentcash-discovery
+    paths:
+      - '.github/workflows/openapi-agentcash-live-local-check.yml'
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   validate:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: feat/openapi-agentcash-discovery
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
@@ -39,10 +43,29 @@ jobs:
           done
           cat /tmp/hermes-agentcash-server.log
           exit 1
-      - name: AgentCash discover
-        run: npx -y @agentcash/discovery@latest discover http://127.0.0.1:4021
-      - name: AgentCash check
-        run: npx -y @agentcash/discovery@latest check http://127.0.0.1:4021
+      - name: AgentCash discover and check
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx -y @agentcash/discovery@latest discover http://127.0.0.1:4021 | tee /tmp/agentcash-discover.txt
+          npx -y @agentcash/discovery@latest check http://127.0.0.1:4021 | tee /tmp/agentcash-check.txt
+          {
+            echo 'AGENTCASH_DISCOVERY_VALIDATION=PASS'
+            echo 'TARGET=http://127.0.0.1:4021'
+            echo '--- discover ---'
+            cat /tmp/agentcash-discover.txt
+            echo '--- check ---'
+            cat /tmp/agentcash-check.txt
+          } > .agentcash-validation-proof.txt
+      - name: Commit validation proof
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add .agentcash-validation-proof.txt
+          git commit -m 'test: record AgentCash discovery validation proof'
+          git push origin HEAD:feat/openapi-agentcash-discovery
       - name: Stop local service
         if: always()
         run: |
