@@ -24,7 +24,6 @@ jobs:
         shell: bash
         run: |
           node <<'NODE'
-          const fs = require('node:fs');
           const origin = 'https://hermes-counterparty-api.onrender.com';
           const endpoint = `${origin}/v1/package-maintenance-snapshot`;
           const expected = {
@@ -152,7 +151,6 @@ jobs:
             && agentBody?.routable === true
             && agentBody?.toolCount === 13
             && receipt.index402?.status === 201;
-          fs.writeFileSync('product13-release-result.json', JSON.stringify(receipt, null, 2) + '\n');
           console.log('PRODUCT13_RELEASE_RECEIPT_BEGIN');
           console.log(JSON.stringify(receipt, null, 2));
           console.log('PRODUCT13_RELEASE_RECEIPT_END');
