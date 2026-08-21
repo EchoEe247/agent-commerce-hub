@@ -9,41 +9,62 @@ permissions:
   contents: read
 
 jobs:
-  distribute-remaining:
+  verify-discovery:
     runs-on: ubuntu-latest
     steps:
-      - name: Register remaining Batch 1 services with 402 Index
+      - name: Wait for Agent402 recrawl and verify directories
         shell: bash
         run: |
           set -euo pipefail
-          BASE='https://hermes-counterparty-api.onrender.com'
 
-          register() {
-            local path="$1" name="$2" price="$3" probe="$4" description="$5"
-            local payload response status
-            payload="$(jq -n \
-              --arg url "$BASE$path" \
-              --arg name "$name" \
-              --arg probe "$probe" \
-              --arg description "$description" \
-              --argjson price "$price" \
-              '{url:$url,name:$name,protocol:"x402",http_method:"POST",probe_body:$probe,description:$description,price_usd:$price,payment_asset:"USDC",payment_network:"Base",category:"data-quality",provider:"Hermes Commerce"}')"
-            response="/tmp$(echo "$path" | tr '/-' '__').json"
-            status="$(curl --max-time 30 -sS -o "$response" -w '%{http_code}' \
-              -X POST 'https://402index.io/api/v1/register' \
-              -H 'Content-Type: application/json' \
-              --data "$payload")"
-            echo "$path HTTP=$status"
-            cat "$response"; echo
-            [ "$status" = '200' ] || [ "$status" = '201' ]
-          }
+          ORIGIN='https://hermes-counterparty-api.onrender.com'
+          SELLER_URL='https://agent402.tools/api/index?seller=hermes-counterparty-api.onrender.com'
+          DEPLOY_MS='1787276499000'
+          EXPECTED_ROUTES='["/v1/clean-normalize","/v1/counterparty-availability","/v1/data-contract-check","/v1/duplicate-audit","/v1/profile","/v1/quality-gate","/v1/repair-plan","/v1/schema-drift"]'
 
-          failures=0
-          register '/v1/duplicate-audit' 'Hermes Duplicate Row Audit' '0.005' '{"format":"json","records":[{"id":1},{"id":1}]}' 'Deterministic JSON and CSV duplicate-row audit with unique-row count, duplicate ratio, and repeated row indexes.' || failures=$((failures+1))
-          register '/v1/schema-drift' 'Hermes Schema Drift Detector' '0.015' '{"baseline":{"format":"json","records":[{"id":1}]},"current":{"format":"json","records":[{"id":1,"name":"A"}]}}' 'Deterministic schema-drift comparison for added, removed, type-changed, nullable, and breaking changes between datasets.' || failures=$((failures+1))
-          register '/v1/data-contract-check' 'Hermes Data Contract Check' '0.015' '{"dataset":{"format":"json","records":[{"id":1}]},"contract":{"required_fields":["id"],"field_types":{"id":"integer"},"allow_extra_fields":true}}' 'JSON and CSV data-contract compatibility check for required fields, expected types, extra fields, and incompatibility reasons.' || failures=$((failures+1))
-          register '/v1/clean-normalize' 'Hermes Clean Normalize' '0.02' '{"format":"json","records":[{"id":1,"name":" Alice "},{"id":1,"name":"Alice"}]}' 'Conservative deterministic JSON and CSV cleanup: trim strings, convert blanks to null, and remove exact duplicates without semantic guessing.' || failures=$((failures+1))
+          echo '=== AGENT402 RECrawl ==='
+          passed=0
+          for attempt in 1 2 3 4 5 6 7 8; do
+            status="$(curl --max-time 30 -sS -o /tmp/agent402.json -w '%{http_code}' "$SELLER_URL")"
+            echo "attempt=$attempt HTTP=$status"
+            if [ "$status" = '200' ]; then
+              jq '{toolCount,fetchedAt,error,health,routable,tools:[.tools[]|{method,route,name,price,networks}]}' /tmp/agent402.json
+              if jq -e --argjson deploy "$DEPLOY_MS" --argjson routes "$EXPECTED_ROUTES" '
+                .error == null and
+                .health == 1 and
+                .routable == true and
+                .fetchedAt > $deploy and
+                .toolCount == 8 and
+                (.tools | length) == 8 and
+                ([.tools[].method] | all(. == "POST")) and
+                (([.tools[].route] | sort) == $routes)
+              ' /tmp/agent402.json >/dev/null; then
+                passed=1
+                break
+              fi
+            fi
+            if [ "$attempt" -lt 8 ]; then sleep 60; fi
+          done
+          [ "$passed" -eq 1 ]
+          echo 'AGENT402_8_POST_TOOLS=PASS'
 
-          echo "failures=$failures"
-          [ "$failures" -eq 0 ]
-          echo 'REMAINING_402INDEX_REGISTRATIONS=PASS'
+          echo '=== 402 INDEX DIRECTORY ==='
+          status="$(curl --max-time 30 -sS -o /tmp/402index.json -w '%{http_code}' \
+            'https://402index.io/api/v1/services?q=Hermes&protocol=x402&limit=100')"
+          echo "HTTP=$status"
+          [ "$status" = '200' ]
+          jq '{total, services:[.services[] | select(.url | startswith("https://hermes-counterparty-api.onrender.com/")) | {name,url,http_method,price_usd,health_status,status,domain_verified,x402_payment_valid}]}' /tmp/402index.json
+
+          EXPECTED_NEW='["/v1/clean-normalize","/v1/data-contract-check","/v1/duplicate-audit","/v1/quality-gate","/v1/repair-plan","/v1/schema-drift"]'
+          jq -e --arg origin "$ORIGIN" --argjson expected "$EXPECTED_NEW" '
+            ([.services[]
+              | select(.url | startswith($origin + "/"))
+              | select(.http_method == "POST")
+              | .url
+              | sub("^https://hermes-counterparty-api\\.onrender\\.com"; "")
+            ] | unique | sort) as $actual
+            | ($expected - $actual | length) == 0
+          ' /tmp/402index.json >/dev/null
+          echo '402INDEX_BATCH1_LISTINGS=PASS'
+
+          echo 'DISCOVERY_ACCEPTANCE=PASS'
