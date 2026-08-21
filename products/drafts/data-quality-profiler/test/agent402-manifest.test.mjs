@@ -52,12 +52,16 @@ test("manifest exposes all eleven POST tools including Product 11", async () => 
   assert.match(domainProduct.description, /DNS/i);
   assert.match(domainProduct.description, /RDAP/i);
 
+  const sanctionsProduct = body.endpoints.find((endpoint) => endpoint.path === "/v1/entity-sanctions-screen");
+  assert.ok(sanctionsProduct);
+  assert.equal(sanctionsProduct.summary, "OFAC sanctions screening for a person or organization");
+
   const secProduct = body.endpoints.find((endpoint) => endpoint.path === "/v1/sec-company-snapshot");
   assert.ok(secProduct);
   assert.equal(secProduct.method, "POST");
   assert.equal(secProduct.price_usd, 0.02);
   assert.equal(secProduct.network, "eip155:8453");
-  assert.match(secProduct.summary, /SEC|EDGAR/i);
+  assert.equal(secProduct.summary, "SEC company snapshot by ticker or CIK with filings and financial facts");
   assert.match(secProduct.description, /XBRL/i);
 
   await instance.close();
