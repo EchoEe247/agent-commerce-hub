@@ -85,6 +85,47 @@ jobs:
           if [ -f test/entity-sanctions-x402.test.mjs ]; then TESTS+=(test/entity-sanctions-x402.test.mjs); fi
           if [ -f test/company-domain-intelligence.test.mjs ]; then TESTS+=(test/company-domain-intelligence.test.mjs); fi
           node --test "${TESTS[@]}"
+      - name: Publish Product 10 to Agent402 and 402 Index (temporary)
+        if: github.event_name == 'pull_request'
+        run: |
+          node <<'NODE'
+          const origin = 'https://hermes-counterparty-api.onrender.com';
+          const agentPayload = { origin };
+          const indexPayload = {
+            url: `${origin}/v1/company-domain-intelligence`,
+            name: 'Hermes Company Domain Intelligence',
+            protocol: 'x402',
+            http_method: 'POST',
+            probe_body: JSON.stringify({ domain: 'stripe.com' }),
+            description: 'Enrich a public company domain with DNS A/AAAA, MX/SPF/DMARC, RDAP registration metadata, website identity/metadata, selected social/contact links, and HSTS/CSP security-header signals.',
+            price_usd: 0.02,
+            payment_asset: 'USDC',
+            payment_network: 'Base',
+            category: 'business-intelligence',
+            provider: 'Hermes Commerce',
+          };
+
+          async function post(url, payload) {
+            try {
+              const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'content-type': 'application/json' },
+                body: JSON.stringify(payload),
+                signal: AbortSignal.timeout(30000),
+              });
+              const body = await response.text();
+              return { status: response.status, ok: response.ok, body };
+            } catch (error) {
+              return { status: null, ok: false, body: null, error: String(error?.stack ?? error) };
+            }
+          }
+
+          const agent402 = await post('https://agent402.tools/api/index/register', agentPayload);
+          console.log(`AGENT402_REGISTER_RESULT=${JSON.stringify(agent402)}`);
+          const index402 = await post('https://402index.io/api/v1/register', indexPayload);
+          console.log(`INDEX402_REGISTER_RESULT=${JSON.stringify(index402)}`);
+          console.log('PAID_CALL_EXECUTED=false');
+          NODE
       - name: Full profiler suite (PR gate)
         if: github.event_name == 'pull_request'
         working-directory: products/drafts/data-quality-profiler
