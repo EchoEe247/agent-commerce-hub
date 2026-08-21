@@ -15,6 +15,9 @@ test("defaults to local unpaid development mode", () => {
   assert.equal(cfg.x402CleanNormalizePrice, "$0.02");
   assert.equal(cfg.x402RepairPlanPrice, "$0.02");
   assert.equal(cfg.x402FacilitatorUrl, "https://x402.org/facilitator");
+  assert.equal(cfg.the402ApiKey, "");
+  assert.equal(cfg.the402WebhookSecret, "");
+  assert.equal(cfg.the402ApiBase, "https://api.the402.ai");
   assert.equal(cfg.allowMainnet, false);
 });
 
@@ -33,6 +36,17 @@ test("allows route-specific price overrides", () => {
   assert.equal(cfg.x402DataContractPrice, "$0.017");
   assert.equal(cfg.x402CleanNormalizePrice, "$0.021");
   assert.equal(cfg.x402RepairPlanPrice, "$0.022");
+});
+
+test("loads the402 credentials and API base without exposing them elsewhere", () => {
+  const cfg = loadConfig({
+    THE402_API_KEY: "sk_test",
+    THE402_WEBHOOK_SECRET: "whsec_test",
+    THE402_API_BASE: "https://example.invalid",
+  });
+  assert.equal(cfg.the402ApiKey, "sk_test");
+  assert.equal(cfg.the402WebhookSecret, "whsec_test");
+  assert.equal(cfg.the402ApiBase, "https://example.invalid");
 });
 
 test("requires a receiving address when x402 is enabled", () => {
