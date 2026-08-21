@@ -1,0 +1,47 @@
+name: Product 10 OpenAPI Green
+
+on:
+  push:
+    branches:
+      - feat/company-domain-intelligence
+    paths:
+      - '.github/workflows/product10-openapi-green.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Add Product 10 OpenAPI operation
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('products/drafts/data-quality-profiler/src/openapi.mjs')
+          s = p.read_text()
+          s = s.replace(
+              'description: "Paid agent utilities for counterparty availability, OFAC sanctions screening, and deterministic JSON/CSV data-quality work.",',
+              'description: "Paid agent utilities for counterparty availability, company/domain intelligence, OFAC sanctions screening, and deterministic JSON/CSV data-quality work.",',
+              1,
+          )
+          s = s.replace('All nine POST operations are pay-per-call x402 resources on Base using USDC.', 'All ten POST operations are pay-per-call x402 resources on Base using USDC.', 1)
+          s = s.replace(
+              'Dataset operations accept JSON records or CSV text. The sanctions screen returns candidate matches from authoritative OFAC SDN source files and is not a legal compliance determination.',
+              'Dataset operations accept JSON records or CSV text. Company domain intelligence combines public DNS, mail-policy, RDAP, and website metadata signals. The sanctions screen returns candidate matches from authoritative OFAC SDN source files and is not a legal compliance determination.',
+              1,
+          )
+          marker = '      "/v1/profile": {\n'
+          if marker not in s:
+              raise SystemExit('OpenAPI profile marker not found')
+          block = '''      "/v1/company-domain-intelligence": {\n        post: paidOperation({\n          operationId: "companyDomainIntelligence",\n          summary: "Enrich a company domain with public DNS, mail, RDAP, and website signals",\n          description: "Returns normalized domain identity, public A/AAAA records, MX/SPF/DMARC signals, RDAP registration metadata, website reachability and identity metadata, selected social/contact links, and HSTS/CSP header presence. Public-domain input only; IP literals, special-use hostnames, and private/non-routable resolved targets are rejected.",\n          price: config.x402CompanyDomainPrice ?? "$0.02",\n          tags: ["Business Intelligence"],\n          schema: {\n            type: "object",\n            properties: {\n              domain: {\n                type: "string",\n                minLength: 1,\n                maxLength: 253,\n                description: "Public company domain name, for example stripe.com. Do not include a URL path.",\n              },\n            },\n            required: ["domain"],\n          },\n          example: { domain: "stripe.com" },\n          outputSchema: {\n            type: "object",\n            properties: {\n              schema_version: { type: "string" },\n              query: { type: "object", additionalProperties: true },\n              company: { type: "object", additionalProperties: true },\n              domain: { type: "object", additionalProperties: true },\n              website: { type: "object", additionalProperties: true },\n              dns: { type: "object", additionalProperties: true },\n              mail: { type: "object", additionalProperties: true },\n              security: { type: "object", additionalProperties: true },\n              sources: { type: "object", additionalProperties: true },\n              warnings: { type: "array", items: { type: "string" } },\n            },\n            required: ["schema_version", "query", "company", "domain", "website", "dns", "mail", "security", "sources", "warnings"],\n            additionalProperties: true,\n          },\n        }),\n      },\n'''
+          s = s.replace(marker, block + marker, 1)
+          p.write_text(s)
+          PY
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git add products/drafts/data-quality-profiler/src/openapi.mjs
+          git commit -m 'feat: publish Product 10 OpenAPI contract'
+          git push origin HEAD:feat/company-domain-intelligence
