@@ -6,10 +6,12 @@ on:
       - feat/hermes-commerce-control-plane
       - feat/entity-sanctions-screen
       - feat/company-domain-intelligence
+      - feat/sec-company-snapshot
     paths:
       - 'products/drafts/data-quality-profiler/src/counterparty-availability.mjs'
       - 'products/drafts/data-quality-profiler/src/entity-sanctions-screen.mjs'
       - 'products/drafts/data-quality-profiler/src/company-domain-intelligence.mjs'
+      - 'products/drafts/data-quality-profiler/src/sec-company-snapshot.mjs'
       - 'products/drafts/data-quality-profiler/src/app.mjs'
       - 'products/drafts/data-quality-profiler/src/openapi.mjs'
       - 'products/drafts/data-quality-profiler/src/config.mjs'
@@ -21,6 +23,8 @@ on:
       - 'products/drafts/data-quality-profiler/test/entity-sanctions-source.test.mjs'
       - 'products/drafts/data-quality-profiler/test/entity-sanctions-x402.test.mjs'
       - 'products/drafts/data-quality-profiler/test/company-domain-intelligence.test.mjs'
+      - 'products/drafts/data-quality-profiler/test/sec-company-snapshot.test.mjs'
+      - 'products/drafts/data-quality-profiler/test/sec-company-snapshot-x402.test.mjs'
       - 'products/drafts/data-quality-profiler/test/counterparty-api.test.mjs'
       - 'products/drafts/data-quality-profiler/test/openapi-discovery.test.mjs'
       - 'products/drafts/data-quality-profiler/test/x402-plugin.test.mjs'
@@ -33,6 +37,7 @@ on:
       - 'products/drafts/data-quality-profiler/src/counterparty-availability.mjs'
       - 'products/drafts/data-quality-profiler/src/entity-sanctions-screen.mjs'
       - 'products/drafts/data-quality-profiler/src/company-domain-intelligence.mjs'
+      - 'products/drafts/data-quality-profiler/src/sec-company-snapshot.mjs'
       - 'products/drafts/data-quality-profiler/src/app.mjs'
       - 'products/drafts/data-quality-profiler/src/openapi.mjs'
       - 'products/drafts/data-quality-profiler/src/config.mjs'
@@ -44,6 +49,8 @@ on:
       - 'products/drafts/data-quality-profiler/test/entity-sanctions-source.test.mjs'
       - 'products/drafts/data-quality-profiler/test/entity-sanctions-x402.test.mjs'
       - 'products/drafts/data-quality-profiler/test/company-domain-intelligence.test.mjs'
+      - 'products/drafts/data-quality-profiler/test/sec-company-snapshot.test.mjs'
+      - 'products/drafts/data-quality-profiler/test/sec-company-snapshot-x402.test.mjs'
       - 'products/drafts/data-quality-profiler/test/counterparty-api.test.mjs'
       - 'products/drafts/data-quality-profiler/test/openapi-discovery.test.mjs'
       - 'products/drafts/data-quality-profiler/test/x402-plugin.test.mjs'
@@ -71,6 +78,7 @@ jobs:
           node --check src/counterparty-availability.mjs
           if [ -f src/entity-sanctions-screen.mjs ]; then node --check src/entity-sanctions-screen.mjs; fi
           if [ -f src/company-domain-intelligence.mjs ]; then node --check src/company-domain-intelligence.mjs; fi
+          if [ -f src/sec-company-snapshot.mjs ]; then node --check src/sec-company-snapshot.mjs; fi
           if [ -f scripts/ofac-source-smoke.mjs ]; then node --check scripts/ofac-source-smoke.mjs; fi
           node --check src/app.mjs
           node --check src/openapi.mjs
@@ -84,6 +92,8 @@ jobs:
           if [ -f test/entity-sanctions-source.test.mjs ]; then TESTS+=(test/entity-sanctions-source.test.mjs); fi
           if [ -f test/entity-sanctions-x402.test.mjs ]; then TESTS+=(test/entity-sanctions-x402.test.mjs); fi
           if [ -f test/company-domain-intelligence.test.mjs ]; then TESTS+=(test/company-domain-intelligence.test.mjs); fi
+          if [ -f test/sec-company-snapshot.test.mjs ]; then TESTS+=(test/sec-company-snapshot.test.mjs); fi
+          if [ -f test/sec-company-snapshot-x402.test.mjs ]; then TESTS+=(test/sec-company-snapshot-x402.test.mjs); fi
           node --test "${TESTS[@]}"
       - name: Full profiler suite (PR gate)
         if: github.event_name == 'pull_request'
