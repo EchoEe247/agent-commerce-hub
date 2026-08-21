@@ -1,6 +1,6 @@
 {
-  "observed_at": "2026-08-21T05:09:26.109Z",
-  "status": "PASS",
-  "exit_code": 0,
-  "output_tail": "✔ POST /v1/company-domain-intelligence delegates to the company domain service (52.59522ms)\nℹ tests 1\nℹ suites 0\nℹ pass 1\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 138.595461\n"
+  "observed_at": "2026-08-21T05:11:03.174Z",
+  "status": "FAIL",
+  "exit_code": 1,
+  "output_tail": "✔ POST /v1/company-domain-intelligence delegates to the company domain service (85.925935ms)\n✖ builds deterministic company and domain intelligence from DNS, RDAP, and website signals (1.387323ms)\nℹ tests 2\nℹ suites 0\nℹ pass 1\nℹ fail 1\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 237.122414\n\n✖ failing tests:\n\ntest at test/company-domain-intelligence.test.mjs:63:1\n✖ builds deterministic company and domain intelligence from DNS, RDAP, and website signals (1.387323ms)\n  AssertionError [ERR_ASSERTION]: company-domain-intelligence module must exist: ERR_MODULE_NOT_FOUND\n      at loadCompanyDomainModule (file:///home/runner/work/agent-commerce-hub/agent-commerce-hub/products/drafts/data-quality-profiler/test/company-domain-intelligence.test.mjs:21:12)\n      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\n      at async TestContext.<anonymous> (file:///home/runner/work/agent-commerce-hub/agent-commerce-hub/products/drafts/data-quality-profiler/test/company-domain-intelligence.test.mjs:64:47)\n      at async Test.run (node:internal/test_runner/test:1389:7)\n      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {\n    generatedMessage: false,\n    code: 'ERR_ASSERTION',\n    actual: undefined,\n    expected: undefined,\n    operator: 'fail',\n    diff: 'simple'\n  }\n"
 }
