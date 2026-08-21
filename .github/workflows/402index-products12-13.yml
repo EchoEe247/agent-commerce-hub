@@ -1,0 +1,63 @@
+name: Publish Products 12 and 13 to 402 Index
+
+on:
+  pull_request:
+    branches:
+      - feat/hermes-commerce-control-plane
+    paths:
+      - '.github/workflows/402index-products12-13.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Register Products 12 and 13 once
+        shell: bash
+        run: |
+          node <<'NODE'
+          const origin = 'https://hermes-counterparty-api.onrender.com';
+          const services = [
+            {
+              url: `${origin}/v1/dependency-vulnerability-check`,
+              name: 'Hermes Dependency Vulnerability Check',
+              description: 'Check an exact dependency version against OSV for known vulnerabilities, CVE aliases, affected ranges, and fixed versions.',
+              price_usd: 0.015,
+              category: 'developer-security',
+              probe_body: JSON.stringify({ecosystem:'PyPI', package:'jinja2', version:'2.4.1'}),
+            },
+            {
+              url: `${origin}/v1/package-maintenance-snapshot`,
+              name: 'Hermes Package Maintenance Snapshot',
+              description: 'Exact npm or PyPI package/version maintenance snapshot with latest release, release age, deprecation or yanked status, license, repository, and runtime constraints.',
+              price_usd: 0.015,
+              category: 'developer-intelligence',
+              probe_body: JSON.stringify({ecosystem:'npm', package:'is-number', version:'7.0.0'}),
+            },
+          ];
+          const safe = async r => { const t = await r.text(); try{return JSON.parse(t)}catch{return {raw:t.slice(0,4000)}} };
+          let rateLimited = false;
+          const results = [];
+          for (const service of services) {
+            if (rateLimited) { results.push({url:service.url, skipped:'prior_rate_limit'}); continue; }
+            const res = await fetch('https://402index.io/api/v1/register', {
+              method:'POST', headers:{'content-type':'application/json'},
+              body:JSON.stringify({
+                ...service,
+                protocol:'x402', http_method:'POST', payment_asset:'USDC', payment_network:'Base', provider:'Hermes Commerce'
+              })
+            });
+            const body = await safe(res);
+            results.push({url:service.url,status:res.status,body});
+            if (res.status === 429) rateLimited = true;
+          }
+          console.log('INDEX402_PUBLICATION_RESULTS', JSON.stringify(results,null,2));
+          const fatal = results.some(x => x.status && ![200,201,409,429].includes(x.status));
+          if (fatal) process.exitCode = 1;
+          NODE
