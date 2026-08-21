@@ -8,8 +8,31 @@ test("defaults to local unpaid development mode", () => {
   assert.equal(cfg.x402Network, "eip155:84532");
   assert.equal(cfg.x402Price, "$0.02");
   assert.equal(cfg.x402LocalePrice, "$0.03");
+  assert.equal(cfg.x402DuplicateAuditPrice, "$0.005");
+  assert.equal(cfg.x402QualityGatePrice, "$0.01");
+  assert.equal(cfg.x402SchemaDriftPrice, "$0.015");
+  assert.equal(cfg.x402DataContractPrice, "$0.015");
+  assert.equal(cfg.x402CleanNormalizePrice, "$0.02");
+  assert.equal(cfg.x402RepairPlanPrice, "$0.02");
   assert.equal(cfg.x402FacilitatorUrl, "https://x402.org/facilitator");
   assert.equal(cfg.allowMainnet, false);
+});
+
+test("allows route-specific price overrides", () => {
+  const cfg = loadConfig({
+    X402_DUPLICATE_AUDIT_PRICE: "$0.006",
+    X402_QUALITY_GATE_PRICE: "$0.011",
+    X402_SCHEMA_DRIFT_PRICE: "$0.016",
+    X402_DATA_CONTRACT_PRICE: "$0.017",
+    X402_CLEAN_NORMALIZE_PRICE: "$0.021",
+    X402_REPAIR_PLAN_PRICE: "$0.022",
+  });
+  assert.equal(cfg.x402DuplicateAuditPrice, "$0.006");
+  assert.equal(cfg.x402QualityGatePrice, "$0.011");
+  assert.equal(cfg.x402SchemaDriftPrice, "$0.016");
+  assert.equal(cfg.x402DataContractPrice, "$0.017");
+  assert.equal(cfg.x402CleanNormalizePrice, "$0.021");
+  assert.equal(cfg.x402RepairPlanPrice, "$0.022");
 });
 
 test("requires a receiving address when x402 is enabled", () => {
