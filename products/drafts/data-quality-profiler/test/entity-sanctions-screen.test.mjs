@@ -171,6 +171,39 @@ test("matches an OFAC alias exactly and labels the match source", async () => {
   }
 });
 
+test("token-reordered names can score 100 without being mislabeled as exact", async () => {
+  const { fetchImpl } = createFixtureFetch();
+  const server = appWithOfacFetch(fetchImpl);
+  const primaryResponse = await server.inject({
+    method: "POST",
+    url: "/v1/entity-sanctions-screen",
+    payload: { name: "LLC ACME SHIPPING" },
+  });
+  const aliasResponse = await server.inject({
+    method: "POST",
+    url: "/v1/entity-sanctions-screen",
+    payload: { name: "MARITIME ACME" },
+  });
+
+  try {
+    assert.equal(primaryResponse.statusCode, 200);
+    const primary = primaryResponse.json().candidates[0];
+    assert.equal(primary.uid, "12345");
+    assert.equal(primary.score, 100);
+    assert.equal(primary.match_type, "fuzzy");
+    assert.equal(primary.matched_name, "ACME SHIPPING LLC");
+
+    assert.equal(aliasResponse.statusCode, 200);
+    const alias = aliasResponse.json().candidates[0];
+    assert.equal(alias.uid, "12345");
+    assert.equal(alias.score, 100);
+    assert.equal(alias.match_type, "fuzzy");
+    assert.equal(alias.matched_name, "ACME MARITIME");
+  } finally {
+    await server.close();
+  }
+});
+
 test("returns deterministic fuzzy candidates for a small name typo", async () => {
   const { fetchImpl } = createFixtureFetch();
   const server = appWithOfacFetch(fetchImpl);
