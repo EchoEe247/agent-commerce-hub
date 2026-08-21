@@ -5,6 +5,7 @@ import { classifyError } from "./errors.mjs";
 import { buildCounterpartyAvailability } from "./counterparty-availability.mjs";
 import { createEntitySanctionsScreen } from "./entity-sanctions-screen.mjs";
 import { createCompanyDomainIntelligence } from "./company-domain-intelligence.mjs";
+import { createSecCompanySnapshot } from "./sec-company-snapshot.mjs";
 import { buildOpenApiDocument } from "./openapi.mjs";
 import {
   duplicateAudit,
@@ -27,6 +28,9 @@ export function buildApp({
   logger = console,
   entitySanctionsScreen,
   companyDomainIntelligence,
+  secCompanySnapshot,
+  secFetch = globalThis.fetch,
+  secClock,
   domainResolver,
   domainPageRequester,
   rdapFetch = globalThis.fetch,
@@ -47,6 +51,10 @@ export function buildApp({
     pageRequester: domainPageRequester,
     rdapFetch,
     clock: domainClock ?? clock,
+  });
+  const inspectSecCompany = secCompanySnapshot ?? createSecCompanySnapshot({
+    fetchImpl: secFetch,
+    clock: secClock ?? clock,
   });
 
   app.addHook("onResponse", async (request, reply) => {
@@ -91,6 +99,7 @@ export function buildApp({
     const localePrice = config.x402LocalePrice ?? "$0.03";
     const sanctionsPrice = config.x402SanctionsScreenPrice ?? "$0.02";
     const companyDomainPrice = config.x402CompanyDomainPrice ?? "$0.02";
+    const secCompanyPrice = config.x402SecCompanyPrice ?? "$0.02";
     const profilerPrice = config.x402Price ?? "$0.02";
     const duplicatePrice = config.x402DuplicateAuditPrice ?? "$0.005";
     const qualityGatePrice = config.x402QualityGatePrice ?? "$0.01";
@@ -98,12 +107,12 @@ export function buildApp({
     const dataContractPrice = config.x402DataContractPrice ?? "$0.015";
     const cleanNormalizePrice = config.x402CleanNormalizePrice ?? "$0.02";
     const repairPlanPrice = config.x402RepairPlanPrice ?? "$0.02";
-    const businessIntelligencePrices = [localePrice, companyDomainPrice];
+    const businessIntelligencePrices = [localePrice, companyDomainPrice, secCompanyPrice];
     const dataQualityPrices = [profilerPrice, duplicatePrice, qualityGatePrice, schemaDriftPrice, dataContractPrice, cleanNormalizePrice, repairPlanPrice];
     const priceRange = buildPriceRange([...businessIntelligencePrices, sanctionsPrice, ...dataQualityPrices]);
     const businessIntelligencePriceRange = buildPriceRange(businessIntelligencePrices);
     const dataQualityPriceRange = buildPriceRange(dataQualityPrices);
-    const description = "Agent-ready paid utilities for company/domain intelligence, OFAC sanctions screening, JSON and CSV data quality, schema compatibility, deterministic cleanup, repair planning, and practical counterparty contact-window checks.";
+    const description = "Agent-ready paid utilities for SEC company snapshots, company/domain intelligence, OFAC sanctions screening, JSON and CSV data quality, schema compatibility, deterministic cleanup, repair planning, and practical counterparty contact-window checks.";
 
     return {
       spec: "agent402-service-manifest/1",
@@ -117,6 +126,7 @@ export function buildApp({
         { url: `${SELLER_ORIGIN}/v1/counterparty-availability`, method: "POST" },
         { url: `${SELLER_ORIGIN}/v1/entity-sanctions-screen`, method: "POST" },
         { url: `${SELLER_ORIGIN}/v1/company-domain-intelligence`, method: "POST" },
+        { url: `${SELLER_ORIGIN}/v1/sec-company-snapshot`, method: "POST" },
         { url: `${SELLER_ORIGIN}/v1/profile`, method: "POST" },
         { url: `${SELLER_ORIGIN}/v1/duplicate-audit`, method: "POST" },
         { url: `${SELLER_ORIGIN}/v1/quality-gate`, method: "POST" },
@@ -138,12 +148,12 @@ export function buildApp({
         },
       },
       capabilities: {
-        tools: 10,
+        tools: 11,
         categories: [
           {
             key: "business-intelligence",
             label: "Business Intelligence",
-            tools: 2,
+            tools: 3,
             priceRange: businessIntelligencePriceRange,
           },
           {
@@ -179,6 +189,16 @@ export function buildApp({
           summary: "Company domain intelligence from public DNS, mail, RDAP, and website signals.",
           description: "Returns public DNS A/AAAA records, MX/SPF/DMARC signals, RDAP registration metadata, website reachability and identity metadata, selected social/contact links, and HSTS/CSP presence for a public company domain.",
           price_usd: priceNumber(companyDomainPrice),
+          network,
+        },
+        {
+          name: "sec-company-snapshot-edgar-filings-xbrl",
+          method: "POST",
+          path: "/v1/sec-company-snapshot",
+          url: `${SELLER_ORIGIN}/v1/sec-company-snapshot`,
+          summary: "SEC EDGAR company snapshot with identity, recent filings, and sourced XBRL facts.",
+          description: "Resolve a ticker or CIK to canonical SEC identity, latest 10-K, 10-Q, and 8-K filing metadata and URLs, plus selected SEC XBRL facts for revenue, net income, assets, liabilities, and shares outstanding.",
+          price_usd: priceNumber(secCompanyPrice),
           network,
         },
         {
@@ -297,6 +317,15 @@ export function buildApp({
   app.post("/v1/company-domain-intelligence", async (request, reply) => {
     try {
       return reply.send(await inspectCompanyDomain(request.body));
+    } catch (error) {
+      const { statusCode, body } = classifyError(error);
+      return reply.status(statusCode).send(body);
+    }
+  });
+
+  app.post("/v1/sec-company-snapshot", async (request, reply) => {
+    try {
+      return reply.send(await inspectSecCompany(request.body));
     } catch (error) {
       const { statusCode, body } = classifyError(error);
       return reply.status(statusCode).send(body);

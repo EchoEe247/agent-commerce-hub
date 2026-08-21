@@ -29,6 +29,7 @@ export function loadConfig(env = process.env) {
     x402LocalePrice: env.X402_LOCALE_PRICE ?? "$0.03",
     x402SanctionsScreenPrice: env.X402_SANCTIONS_SCREEN_PRICE ?? "$0.02",
     x402CompanyDomainPrice: env.X402_COMPANY_DOMAIN_PRICE ?? "$0.02",
+    x402SecCompanyPrice: env.X402_SEC_COMPANY_PRICE ?? "$0.02",
     x402DuplicateAuditPrice: env.X402_DUPLICATE_AUDIT_PRICE ?? "$0.005",
     x402QualityGatePrice: env.X402_QUALITY_GATE_PRICE ?? "$0.01",
     x402SchemaDriftPrice: env.X402_SCHEMA_DRIFT_PRICE ?? "$0.015",

@@ -89,8 +89,8 @@ export function buildOpenApiDocument(config) {
     info: {
       title: "Hermes Agent Commerce API",
       version,
-      description: "Paid agent utilities for counterparty availability, company/domain intelligence, OFAC sanctions screening, and deterministic JSON/CSV data-quality work.",
-      "x-guidance": "All ten POST operations are pay-per-call x402 resources on Base using USDC. Choose the narrowest operation that matches the task. Send the documented JSON request body; an unpaid call returns HTTP 402 with the runtime payment challenge, then retry with a valid x402 payment. Dataset operations accept JSON records or CSV text. Company domain intelligence combines public DNS, mail-policy, RDAP, and website metadata signals. The sanctions screen returns candidate matches from authoritative OFAC SDN source files and is not a legal compliance determination. No MPP payment support is advertised by this API yet.",
+      description: "Paid agent utilities for counterparty availability, SEC company snapshots, company/domain intelligence, OFAC sanctions screening, and deterministic JSON/CSV data-quality work.",
+      "x-guidance": "All eleven POST operations are pay-per-call x402 resources on Base using USDC. Choose the narrowest operation that matches the task. Send the documented JSON request body; an unpaid call returns HTTP 402 with the runtime payment challenge, then retry with a valid x402 payment. Dataset operations accept JSON records or CSV text. Company domain intelligence combines public DNS, mail-policy, RDAP, and website metadata signals. The sanctions screen returns candidate matches from authoritative OFAC SDN source files and is not a legal compliance determination. No MPP payment support is advertised by this API yet.",
     },
     servers: [{ url: PUBLIC_ORIGIN }],
     paths: {
@@ -230,6 +230,45 @@ export function buildOpenApiDocument(config) {
             },
             required: ["schema_version", "query", "company", "domain", "website", "dns", "mail", "security", "sources", "warnings"],
             additionalProperties: true,
+          },
+        }),
+      },
+      "/v1/sec-company-snapshot": {
+        post: paidOperation({
+          operationId: "secCompanySnapshot",
+          summary: "SEC EDGAR company identity, filings, and XBRL snapshot",
+          description: "Resolve exactly one ticker or CIK using official SEC data and return canonical company identity, latest 10-K, 10-Q, and 8-K filing metadata with SEC archive URLs, plus selected sourced XBRL facts for revenue, net income, assets, liabilities, and shares outstanding.",
+          price: config.x402SecCompanyPrice ?? "$0.02",
+          tags: ["Business Intelligence"],
+          schema: {
+            type: "object",
+            properties: {
+              ticker: { type: "string", minLength: 1, maxLength: 20, description: "US public-company ticker, for example AAPL." },
+              cik: { type: ["string", "integer"], description: "SEC Central Index Key, 1 to 10 digits." },
+            },
+            oneOf: [
+              { required: ["ticker"] },
+              { required: ["cik"] },
+            ],
+          },
+          example: { ticker: "AAPL" },
+          outputSchema: {
+            type: "object",
+            properties: {
+              schema_version: { type: "string" },
+              query: { type: "object", additionalProperties: true },
+              company: { type: "object", additionalProperties: true },
+              filings: { type: "object", additionalProperties: true },
+              facts: { type: "object", additionalProperties: true },
+              source: { type: "object", additionalProperties: true },
+              warnings: { type: "array", items: { type: "string" } },
+            },
+            required: ["schema_version", "query", "company", "filings", "facts", "source", "warnings"],
+            additionalProperties: true,
+          },
+          extraResponses: {
+            "404": { description: "SEC company not found" },
+            "503": { description: "Required SEC source unavailable" },
           },
         }),
       },

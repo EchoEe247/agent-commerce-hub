@@ -6,21 +6,29 @@ on:
       - feat/hermes-commerce-control-plane
       - feat/entity-sanctions-screen
       - feat/company-domain-intelligence
+      - feat/sec-company-snapshot
     paths:
       - 'products/drafts/data-quality-profiler/src/counterparty-availability.mjs'
       - 'products/drafts/data-quality-profiler/src/entity-sanctions-screen.mjs'
       - 'products/drafts/data-quality-profiler/src/company-domain-intelligence.mjs'
+      - 'products/drafts/data-quality-profiler/src/sec-company-snapshot.mjs'
       - 'products/drafts/data-quality-profiler/src/app.mjs'
       - 'products/drafts/data-quality-profiler/src/openapi.mjs'
       - 'products/drafts/data-quality-profiler/src/config.mjs'
       - 'products/drafts/data-quality-profiler/src/errors.mjs'
       - 'products/drafts/data-quality-profiler/src/payments/x402-plugin.mjs'
       - 'products/drafts/data-quality-profiler/scripts/ofac-source-smoke.mjs'
+      - 'products/drafts/data-quality-profiler/scripts/sec-source-smoke.mjs'
+      - 'products/drafts/data-quality-profiler/test/agent402-manifest.test.mjs'
       - 'products/drafts/data-quality-profiler/test/counterparty-availability.test.mjs'
       - 'products/drafts/data-quality-profiler/test/entity-sanctions-screen.test.mjs'
       - 'products/drafts/data-quality-profiler/test/entity-sanctions-source.test.mjs'
       - 'products/drafts/data-quality-profiler/test/entity-sanctions-x402.test.mjs'
       - 'products/drafts/data-quality-profiler/test/company-domain-intelligence.test.mjs'
+      - 'products/drafts/data-quality-profiler/test/sec-company-snapshot.test.mjs'
+      - 'products/drafts/data-quality-profiler/test/sec-company-snapshot-errors.test.mjs'
+      - 'products/drafts/data-quality-profiler/test/sec-company-snapshot-discovery.test.mjs'
+      - 'products/drafts/data-quality-profiler/test/sec-company-snapshot-x402.test.mjs'
       - 'products/drafts/data-quality-profiler/test/counterparty-api.test.mjs'
       - 'products/drafts/data-quality-profiler/test/openapi-discovery.test.mjs'
       - 'products/drafts/data-quality-profiler/test/x402-plugin.test.mjs'
@@ -33,17 +41,24 @@ on:
       - 'products/drafts/data-quality-profiler/src/counterparty-availability.mjs'
       - 'products/drafts/data-quality-profiler/src/entity-sanctions-screen.mjs'
       - 'products/drafts/data-quality-profiler/src/company-domain-intelligence.mjs'
+      - 'products/drafts/data-quality-profiler/src/sec-company-snapshot.mjs'
       - 'products/drafts/data-quality-profiler/src/app.mjs'
       - 'products/drafts/data-quality-profiler/src/openapi.mjs'
       - 'products/drafts/data-quality-profiler/src/config.mjs'
       - 'products/drafts/data-quality-profiler/src/errors.mjs'
       - 'products/drafts/data-quality-profiler/src/payments/x402-plugin.mjs'
       - 'products/drafts/data-quality-profiler/scripts/ofac-source-smoke.mjs'
+      - 'products/drafts/data-quality-profiler/scripts/sec-source-smoke.mjs'
+      - 'products/drafts/data-quality-profiler/test/agent402-manifest.test.mjs'
       - 'products/drafts/data-quality-profiler/test/counterparty-availability.test.mjs'
       - 'products/drafts/data-quality-profiler/test/entity-sanctions-screen.test.mjs'
       - 'products/drafts/data-quality-profiler/test/entity-sanctions-source.test.mjs'
       - 'products/drafts/data-quality-profiler/test/entity-sanctions-x402.test.mjs'
       - 'products/drafts/data-quality-profiler/test/company-domain-intelligence.test.mjs'
+      - 'products/drafts/data-quality-profiler/test/sec-company-snapshot.test.mjs'
+      - 'products/drafts/data-quality-profiler/test/sec-company-snapshot-errors.test.mjs'
+      - 'products/drafts/data-quality-profiler/test/sec-company-snapshot-discovery.test.mjs'
+      - 'products/drafts/data-quality-profiler/test/sec-company-snapshot-x402.test.mjs'
       - 'products/drafts/data-quality-profiler/test/counterparty-api.test.mjs'
       - 'products/drafts/data-quality-profiler/test/openapi-discovery.test.mjs'
       - 'products/drafts/data-quality-profiler/test/x402-plugin.test.mjs'
@@ -71,7 +86,9 @@ jobs:
           node --check src/counterparty-availability.mjs
           if [ -f src/entity-sanctions-screen.mjs ]; then node --check src/entity-sanctions-screen.mjs; fi
           if [ -f src/company-domain-intelligence.mjs ]; then node --check src/company-domain-intelligence.mjs; fi
+          if [ -f src/sec-company-snapshot.mjs ]; then node --check src/sec-company-snapshot.mjs; fi
           if [ -f scripts/ofac-source-smoke.mjs ]; then node --check scripts/ofac-source-smoke.mjs; fi
+          if [ -f scripts/sec-source-smoke.mjs ]; then node --check scripts/sec-source-smoke.mjs; fi
           node --check src/app.mjs
           node --check src/openapi.mjs
           node --check src/config.mjs
@@ -79,11 +96,15 @@ jobs:
       - name: Focused seller tests
         working-directory: products/drafts/data-quality-profiler
         run: |
-          TESTS=(test/counterparty-availability.test.mjs test/counterparty-api.test.mjs test/openapi-discovery.test.mjs test/x402-plugin.test.mjs test/config.test.mjs)
+          TESTS=(test/agent402-manifest.test.mjs test/counterparty-availability.test.mjs test/counterparty-api.test.mjs test/openapi-discovery.test.mjs test/x402-plugin.test.mjs test/config.test.mjs)
           if [ -f test/entity-sanctions-screen.test.mjs ]; then TESTS+=(test/entity-sanctions-screen.test.mjs); fi
           if [ -f test/entity-sanctions-source.test.mjs ]; then TESTS+=(test/entity-sanctions-source.test.mjs); fi
           if [ -f test/entity-sanctions-x402.test.mjs ]; then TESTS+=(test/entity-sanctions-x402.test.mjs); fi
           if [ -f test/company-domain-intelligence.test.mjs ]; then TESTS+=(test/company-domain-intelligence.test.mjs); fi
+          if [ -f test/sec-company-snapshot.test.mjs ]; then TESTS+=(test/sec-company-snapshot.test.mjs); fi
+          if [ -f test/sec-company-snapshot-errors.test.mjs ]; then TESTS+=(test/sec-company-snapshot-errors.test.mjs); fi
+          if [ -f test/sec-company-snapshot-discovery.test.mjs ]; then TESTS+=(test/sec-company-snapshot-discovery.test.mjs); fi
+          if [ -f test/sec-company-snapshot-x402.test.mjs ]; then TESTS+=(test/sec-company-snapshot-x402.test.mjs); fi
           node --test "${TESTS[@]}"
       - name: Full profiler suite (PR gate)
         if: github.event_name == 'pull_request'
@@ -93,3 +114,7 @@ jobs:
         if: github.event_name == 'pull_request'
         working-directory: products/drafts/data-quality-profiler
         run: node scripts/ofac-source-smoke.mjs
+      - name: Live SEC source smoke (PR gate)
+        if: github.event_name == 'pull_request'
+        working-directory: products/drafts/data-quality-profiler
+        run: node scripts/sec-source-smoke.mjs

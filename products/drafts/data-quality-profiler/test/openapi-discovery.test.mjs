@@ -9,6 +9,7 @@ const ROUTES = [
   ["/v1/counterparty-availability", "counterpartyAvailability", "0.030000"],
   ["/v1/entity-sanctions-screen", "entitySanctionsScreen", "0.020000"],
   ["/v1/company-domain-intelligence", "companyDomainIntelligence", "0.020000"],
+  ["/v1/sec-company-snapshot", "secCompanySnapshot", "0.020000"],
   ["/v1/profile", "profileDataset", "0.020000"],
   ["/v1/duplicate-audit", "duplicateAudit", "0.005000"],
   ["/v1/quality-gate", "qualityGate", "0.010000"],
@@ -26,6 +27,7 @@ function app() {
       x402LocalePrice: "$0.03",
       x402SanctionsScreenPrice: "$0.02",
       x402CompanyDomainPrice: "$0.02",
+      x402SecCompanyPrice: "$0.02",
       x402DuplicateAuditPrice: "$0.005",
       x402QualityGatePrice: "$0.01",
       x402SchemaDriftPrice: "$0.015",
@@ -39,7 +41,7 @@ function app() {
   });
 }
 
-test("GET /openapi.json publishes ten AgentCash-compatible x402 operations", async () => {
+test("GET /openapi.json publishes eleven AgentCash-compatible x402 operations", async () => {
   const server = app();
   const response = await server.inject({ method: "GET", url: "/openapi.json" });
 
@@ -52,7 +54,7 @@ test("GET /openapi.json publishes ten AgentCash-compatible x402 operations", asy
     assert.equal(document.info.title, "Hermes Agent Commerce API");
     assert.equal(document.info.version, "0.1.0");
     assert.match(document.info["x-guidance"], /x402/i);
-    assert.match(document.info["x-guidance"], /ten POST operations/i);
+    assert.match(document.info["x-guidance"], /eleven POST operations/i);
     assert.deepEqual(document.servers, [{ url: PUBLIC_ORIGIN }]);
     assert.deepEqual(Object.keys(document.paths).sort(), ROUTES.map(([path]) => path).sort());
 

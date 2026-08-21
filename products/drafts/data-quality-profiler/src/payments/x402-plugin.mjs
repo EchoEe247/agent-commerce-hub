@@ -161,6 +161,33 @@ export function buildPaymentPlugin(config) {
       },
     });
 
+    const secCompanyBazaarExtension = declareDiscoveryExtension({
+      bodyType: "json",
+      input: { ticker: "AAPL" },
+      inputSchema: {
+        type: "object",
+        properties: {
+          ticker: { type: "string", minLength: 1, maxLength: 20, description: "US public-company ticker, for example AAPL" },
+          cik: { type: ["string", "integer"], description: "SEC Central Index Key, 1 to 10 digits" },
+        },
+        oneOf: [
+          { required: ["ticker"] },
+          { required: ["cik"] },
+        ],
+      },
+      output: {
+        example: {
+          schema_version: "1.0",
+          query: { ticker: "AAPL", cik: null, resolved_cik: "0000320193" },
+          company: { cik: "0000320193", name: "Apple Inc.", ticker: "AAPL", exchange: "Nasdaq", sic: "3571" },
+          filings: { latest_10_k: null, latest_10_q: null, latest_8_k: null },
+          facts: { revenue: null, net_income: null, assets: null, liabilities: null, shares_outstanding: null },
+          source: { provider: "SEC EDGAR" },
+          warnings: [],
+        },
+      },
+    });
+
     const duplicateAuditBazaarExtension = declareDiscoveryExtension({
       bodyType: "json",
       input: { format: "json", records: [{ id: 1 }, { id: 1 }] },
@@ -348,6 +375,12 @@ export function buildPaymentPlugin(config) {
         config.x402CompanyDomainPrice,
         "Enrich a public company domain with DNS, MX/SPF/DMARC, RDAP registration, website identity metadata, social/contact links, and security-header signals",
         companyDomainBazaarExtension
+      ),
+      "POST /v1/sec-company-snapshot": protectedRoute(
+        config,
+        config.x402SecCompanyPrice,
+        "Resolve a ticker or CIK to official SEC EDGAR company identity, recent filings, and selected XBRL facts",
+        secCompanyBazaarExtension
       ),
       "POST /v1/duplicate-audit": protectedRoute(
         config,
