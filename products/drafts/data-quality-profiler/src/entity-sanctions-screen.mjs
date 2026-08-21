@@ -227,16 +227,19 @@ function rankCandidates(records, query) {
   for (const record of records) {
     if (!matchesFilters(record, query)) continue;
 
-    let best = scoreName(query.normalizedName, record.normalizedName);
+    const primaryExact = query.normalizedName === record.normalizedName;
+    let best = primaryExact ? 100 : scoreName(query.normalizedName, record.normalizedName);
     let matchedName = record.name;
-    let matchType = best === 100 ? "primary_exact" : "fuzzy";
+    let matchType = primaryExact ? "primary_exact" : "fuzzy";
 
     for (const alias of record.aliases) {
-      const score = scoreName(query.normalizedName, normalizeName(alias.name));
-      if (score > best || (score === 100 && best === 100 && matchType !== "primary_exact")) {
+      const normalizedAlias = normalizeName(alias.name);
+      const aliasExact = query.normalizedName === normalizedAlias;
+      const score = aliasExact ? 100 : scoreName(query.normalizedName, normalizedAlias);
+      if (score > best || (score === best && aliasExact && matchType === "fuzzy")) {
         best = score;
         matchedName = alias.name;
-        matchType = score === 100 ? "alias_exact" : "fuzzy";
+        matchType = aliasExact ? "alias_exact" : "fuzzy";
       }
     }
 
