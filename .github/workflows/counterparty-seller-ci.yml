@@ -72,3 +72,7 @@ jobs:
           if [ -f test/entity-sanctions-screen.test.mjs ]; then TESTS+=(test/entity-sanctions-screen.test.mjs); fi
           if [ -f test/entity-sanctions-x402.test.mjs ]; then TESTS+=(test/entity-sanctions-x402.test.mjs); fi
           node --test "${TESTS[@]}"
+      - name: Full profiler suite (PR gate)
+        if: github.event_name == 'pull_request'
+        working-directory: products/drafts/data-quality-profiler
+        run: npm test
