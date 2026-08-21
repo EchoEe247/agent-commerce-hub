@@ -227,3 +227,48 @@ test("buildApp constructs the default Product 10 service from runtime dependenci
     await server.close();
   }
 });
+
+test("HTTP route returns stable 400 errors for invalid and unsafe domain targets", async () => {
+  const invalidServer = buildApp({
+    config: baseConfig(),
+    paymentPlugin: async () => {},
+    domainResolver: {
+      resolve4: async () => [],
+      resolve6: async () => [],
+      resolveMx: async () => [],
+      resolveTxt: async () => [],
+    },
+    domainPageRequester: async () => null,
+    rdapFetch: async () => ({ ok: false, status: 404 }),
+  });
+  const invalid = await invalidServer.inject({
+    method: "POST",
+    url: "/v1/company-domain-intelligence",
+    payload: { domain: "127.0.0.1" },
+  });
+  await invalidServer.close();
+
+  const unsafeServer = buildApp({
+    config: baseConfig(),
+    paymentPlugin: async () => {},
+    domainResolver: {
+      resolve4: async () => ["10.0.0.7"],
+      resolve6: async () => [],
+      resolveMx: async () => [],
+      resolveTxt: async () => [],
+    },
+    domainPageRequester: async () => null,
+    rdapFetch: async () => ({ ok: false, status: 404 }),
+  });
+  const unsafe = await unsafeServer.inject({
+    method: "POST",
+    url: "/v1/company-domain-intelligence",
+    payload: { domain: "assets.attacker.com" },
+  });
+  await unsafeServer.close();
+
+  assert.equal(invalid.statusCode, 400);
+  assert.equal(invalid.json().error.code, "INVALID_DOMAIN_REQUEST");
+  assert.equal(unsafe.statusCode, 400);
+  assert.equal(unsafe.json().error.code, "UNSAFE_DOMAIN_TARGET");
+});
