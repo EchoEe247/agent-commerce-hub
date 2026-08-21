@@ -11,6 +11,7 @@ const ROUTES = [
   ["/v1/company-domain-intelligence", "companyDomainIntelligence", "0.020000"],
   ["/v1/sec-company-snapshot", "secCompanySnapshot", "0.020000"],
   ["/v1/dependency-vulnerability-check", "dependencyVulnerabilityCheck", "0.015000"],
+  ["/v1/package-maintenance-snapshot", "packageMaintenanceSnapshot", "0.015000"],
   ["/v1/profile", "profileDataset", "0.020000"],
   ["/v1/duplicate-audit", "duplicateAudit", "0.005000"],
   ["/v1/quality-gate", "qualityGate", "0.010000"],
@@ -30,6 +31,7 @@ function app() {
       x402CompanyDomainPrice: "$0.02",
       x402SecCompanyPrice: "$0.02",
       x402DependencyVulnerabilityPrice: "$0.015",
+      x402PackageMaintenancePrice: "$0.015",
       x402DuplicateAuditPrice: "$0.005",
       x402QualityGatePrice: "$0.01",
       x402SchemaDriftPrice: "$0.015",
@@ -43,7 +45,7 @@ function app() {
   });
 }
 
-test("GET /openapi.json publishes twelve AgentCash-compatible x402 operations", async () => {
+test("GET /openapi.json publishes thirteen AgentCash-compatible x402 operations", async () => {
   const server = app();
   const response = await server.inject({ method: "GET", url: "/openapi.json" });
 
@@ -56,7 +58,7 @@ test("GET /openapi.json publishes twelve AgentCash-compatible x402 operations", 
     assert.equal(document.info.title, "Hermes Agent Commerce API");
     assert.equal(document.info.version, "0.1.0");
     assert.match(document.info["x-guidance"], /x402/i);
-    assert.match(document.info["x-guidance"], /twelve POST operations/i);
+    assert.match(document.info["x-guidance"], /thirteen POST operations/i);
     assert.deepEqual(document.servers, [{ url: PUBLIC_ORIGIN }]);
     assert.deepEqual(Object.keys(document.paths).sort(), ROUTES.map(([path]) => path).sort());
 
@@ -101,6 +103,15 @@ test("GET /openapi.json publishes twelve AgentCash-compatible x402 operations", 
 
     const sec = document.paths["/v1/sec-company-snapshot"].post;
     assert.equal(sec.summary, "SEC company snapshot by ticker or CIK with filings and financial facts");
+
+    const packageMaintenance = document.paths["/v1/package-maintenance-snapshot"].post;
+    assert.deepEqual(packageMaintenance.tags, ["Developer Intelligence"]);
+    assert.equal(packageMaintenance.responses["404"].description, "Package or exact version not found");
+    assert.equal(packageMaintenance.responses["503"].description, "Package registry source unavailable");
+    assert.deepEqual(
+      packageMaintenance.requestBody.content["application/json"].schema.properties.ecosystem.enum,
+      ["npm", "PyPI"]
+    );
   } finally {
     await server.close();
   }
