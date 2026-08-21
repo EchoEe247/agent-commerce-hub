@@ -1,0 +1,30 @@
+name: Product 13 TDD
+
+on:
+  push:
+    branches:
+      - feat/product13-package-maintenance
+    paths:
+      - 'products/drafts/data-quality-profiler/test/package-maintenance-snapshot.test.mjs'
+      - 'products/drafts/data-quality-profiler/src/package-maintenance-snapshot.mjs'
+      - 'products/drafts/data-quality-profiler/src/app.mjs'
+      - '.github/workflows/product13-tdd.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  red-green:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install dependencies
+        working-directory: products/drafts/data-quality-profiler
+        run: npm ci
+      - name: Product 13 focused test
+        working-directory: products/drafts/data-quality-profiler
+        run: node --test test/package-maintenance-snapshot.test.mjs
