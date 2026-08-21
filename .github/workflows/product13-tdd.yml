@@ -7,9 +7,14 @@ on:
     paths:
       - 'products/drafts/data-quality-profiler/test/package-maintenance-snapshot.test.mjs'
       - 'products/drafts/data-quality-profiler/test/package-maintenance-errors.test.mjs'
+      - 'products/drafts/data-quality-profiler/test/package-maintenance-discovery.test.mjs'
+      - 'products/drafts/data-quality-profiler/test/package-maintenance-x402.test.mjs'
       - 'products/drafts/data-quality-profiler/src/package-maintenance-snapshot.mjs'
       - 'products/drafts/data-quality-profiler/src/app.mjs'
       - 'products/drafts/data-quality-profiler/src/errors.mjs'
+      - 'products/drafts/data-quality-profiler/src/config.mjs'
+      - 'products/drafts/data-quality-profiler/src/openapi.mjs'
+      - 'products/drafts/data-quality-profiler/src/payments/x402-plugin.mjs'
       - '.github/workflows/product13-tdd.yml'
   pull_request:
     branches:
@@ -17,9 +22,14 @@ on:
     paths:
       - 'products/drafts/data-quality-profiler/test/package-maintenance-snapshot.test.mjs'
       - 'products/drafts/data-quality-profiler/test/package-maintenance-errors.test.mjs'
+      - 'products/drafts/data-quality-profiler/test/package-maintenance-discovery.test.mjs'
+      - 'products/drafts/data-quality-profiler/test/package-maintenance-x402.test.mjs'
       - 'products/drafts/data-quality-profiler/src/package-maintenance-snapshot.mjs'
       - 'products/drafts/data-quality-profiler/src/app.mjs'
       - 'products/drafts/data-quality-profiler/src/errors.mjs'
+      - 'products/drafts/data-quality-profiler/src/config.mjs'
+      - 'products/drafts/data-quality-profiler/src/openapi.mjs'
+      - 'products/drafts/data-quality-profiler/src/payments/x402-plugin.mjs'
       - '.github/workflows/product13-tdd.yml'
   workflow_dispatch:
 
@@ -39,4 +49,4 @@ jobs:
         run: npm ci
       - name: Product 13 focused tests
         working-directory: products/drafts/data-quality-profiler
-        run: node --test test/package-maintenance-snapshot.test.mjs test/package-maintenance-errors.test.mjs
+        run: node --test test/package-maintenance-snapshot.test.mjs test/package-maintenance-errors.test.mjs test/package-maintenance-discovery.test.mjs test/package-maintenance-x402.test.mjs test/config.test.mjs
