@@ -1,0 +1,48 @@
+name: Product 13 Patch Runtime
+
+on:
+  push:
+    branches:
+      - feat/product13-package-maintenance
+    paths:
+      - '.github/workflows/product13-patch-runtime.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/product13-package-maintenance
+      - name: Wire Product 13 default runtime
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('products/drafts/data-quality-profiler/src/app.mjs')
+          s = p.read_text()
+          old = 'import { createDependencyVulnerabilityCheck } from "./dependency-vulnerability-check.mjs";\n'
+          new = old + 'import { createPackageMaintenanceSnapshot } from "./package-maintenance-snapshot.mjs";\n'
+          if old not in s:
+              raise SystemExit('import anchor missing')
+          s = s.replace(old, new, 1)
+          old = '  packageMaintenanceSnapshot,\n  osvFetch = globalThis.fetch,'
+          new = '  packageMaintenanceSnapshot,\n  packageRegistryFetch = globalThis.fetch,\n  packageClock,\n  osvFetch = globalThis.fetch,'
+          if old not in s:
+              raise SystemExit('signature anchor missing')
+          s = s.replace(old, new, 1)
+          old = '  const inspectPackageMaintenance = packageMaintenanceSnapshot;\n'
+          new = '  const inspectPackageMaintenance = packageMaintenanceSnapshot ?? createPackageMaintenanceSnapshot({\n    fetchImpl: packageRegistryFetch,\n    clock: packageClock ?? clock,\n  });\n'
+          if old not in s:
+              raise SystemExit('service anchor missing')
+          s = s.replace(old, new, 1)
+          p.write_text(s)
+          PY
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add products/drafts/data-quality-profiler/src/app.mjs
+          git commit -m 'feat: wire Product 13 default registry runtime'
+          git push origin HEAD:feat/product13-package-maintenance
