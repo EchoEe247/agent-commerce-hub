@@ -8,12 +8,13 @@ import { loadConfig } from "../src/config.mjs";
 const API_KEY = "sk_test_provider";
 const WEBHOOK_SECRET = "whsec_test_provider";
 
-function configuredApp() {
+function configuredApp({ fetchImpl } = {}) {
   return buildApp({
     config: loadConfig({
       THE402_API_KEY: API_KEY,
       THE402_WEBHOOK_SECRET: WEBHOOK_SECRET,
     }),
+    the402Fetch: fetchImpl,
   });
 }
 
@@ -124,6 +125,97 @@ test("webhook rejects a payload changed after it was signed", async () => {
     });
     assert.equal(response.statusCode, 401);
     assert.equal(response.json().error.code, "THE402_INVALID_SIGNATURE");
+  } finally {
+    await app.close();
+  }
+});
+
+test("job_dispatch fulfills Hermes Data Quality Gate and completes through the trusted callback", async () => {
+  const calls = [];
+  const fetchImpl = async (url, options = {}) => {
+    calls.push({ url: String(url), options });
+    if (String(url) === "https://api.the402.ai/v1/services/svc_gate") {
+      return new Response(JSON.stringify({ id: "svc_gate", name: "Hermes Data Quality Gate" }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    }
+    if (String(url) === "https://api.the402.ai/v1/threads/thread_gate/update") {
+      return new Response(JSON.stringify({ ok: true }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    }
+    throw new Error(`unexpected fetch ${url}`);
+  };
+  const app = configuredApp({ fetchImpl });
+  await app.ready();
+  const payload = {
+    type: "job_dispatch",
+    job_id: "job_gate",
+    service_id: "svc_gate",
+    brief: { format: "json", records: [{ id: 1 }, { id: 2 }] },
+    callback_url: "https://api.the402.ai/v1/threads/thread_gate/update",
+  };
+  const rawBody = JSON.stringify(payload);
+
+  try {
+    const response = await app.inject({
+      method: "POST",
+      url: "/webhooks/the402",
+      headers: signedHeaders(rawBody),
+      payload: rawBody,
+    });
+
+    assert.equal(response.statusCode, 200);
+    assert.deepEqual(response.json(), { ok: true, accepted: true, job_id: "job_gate" });
+    assert.equal(calls.length, 2);
+    assert.equal(calls[0].options.method, "GET");
+    assert.equal(calls[1].options.method, "POST");
+    assert.equal(calls[1].options.headers["X-API-Key"], API_KEY);
+    const completion = JSON.parse(calls[1].options.body);
+    assert.equal(completion.status, "completed");
+    assert.equal(completion.deliverables.service, "Hermes Data Quality Gate");
+    assert.equal(completion.deliverables.result.pass, true);
+    assert.equal(typeof completion.deliverables.result.quality_score, "number");
+  } finally {
+    await app.close();
+  }
+});
+
+test("job_dispatch refuses an off-origin callback before the API key can be sent", async () => {
+  const calls = [];
+  const fetchImpl = async (url, options = {}) => {
+    calls.push({ url: String(url), options });
+    if (String(url) === "https://api.the402.ai/v1/services/svc_gate") {
+      return new Response(JSON.stringify({ id: "svc_gate", name: "Hermes Data Quality Gate" }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    }
+    throw new Error(`unexpected fetch ${url}`);
+  };
+  const app = configuredApp({ fetchImpl });
+  await app.ready();
+  const payload = {
+    type: "job_dispatch",
+    job_id: "job_ssrf",
+    service_id: "svc_gate",
+    brief: { format: "json", records: [{ id: 1 }, { id: 2 }] },
+    callback_url: "https://evil.example/steal-key",
+  };
+  const rawBody = JSON.stringify(payload);
+
+  try {
+    const response = await app.inject({
+      method: "POST",
+      url: "/webhooks/the402",
+      headers: signedHeaders(rawBody),
+      payload: rawBody,
+    });
+    assert.equal(response.statusCode, 400);
+    assert.equal(response.json().error.code, "THE402_INVALID_CALLBACK_URL");
+    assert.equal(calls.length, 1);
   } finally {
     await app.close();
   }
