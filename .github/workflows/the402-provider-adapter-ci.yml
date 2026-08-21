@@ -1,0 +1,33 @@
+name: the402 Provider Adapter CI
+
+on:
+  push:
+    branches:
+      - feat/the402-provider-adapter
+  pull_request:
+    branches:
+      - feat/hermes-commerce-control-plane
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install
+        working-directory: products/drafts/data-quality-profiler
+        run: npm ci
+      - name: Full tests
+        working-directory: products/drafts/data-quality-profiler
+        run: node --test test/*.test.mjs
+      - name: Syntax checks
+        working-directory: products/drafts/data-quality-profiler
+        run: |
+          node --check src/app.mjs
+          node --check src/config.mjs
+          if [ -f src/the402/webhook.mjs ]; then node --check src/the402/webhook.mjs; fi
