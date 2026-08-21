@@ -35,6 +35,9 @@ export function loadConfig(env = process.env) {
     x402RepairPlanPrice: env.X402_REPAIR_PLAN_PRICE ?? "$0.02",
     x402PayTo,
     x402FacilitatorUrl: env.X402_FACILITATOR_URL ?? "https://x402.org/facilitator",
+    the402ApiKey: env.THE402_API_KEY ?? "",
+    the402WebhookSecret: env.THE402_WEBHOOK_SECRET ?? "",
+    the402ApiBase: env.THE402_API_BASE ?? "https://api.the402.ai",
     allowMainnet,
   });
 }
