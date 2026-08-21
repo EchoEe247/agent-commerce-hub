@@ -1,0 +1,32 @@
+name: Agent402 Resource Methods CI
+
+on:
+  push:
+    branches:
+      - fix/agent402-resource-methods
+  pull_request:
+    branches:
+      - feat/hermes-commerce-control-plane
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install
+        working-directory: products/drafts/data-quality-profiler
+        run: npm ci
+      - name: Full test suite
+        working-directory: products/drafts/data-quality-profiler
+        run: node --test test/*.test.mjs
+      - name: Syntax checks
+        working-directory: products/drafts/data-quality-profiler
+        run: |
+          node --check src/app.mjs
+          node --check src/payments/x402-plugin.mjs
