@@ -237,14 +237,15 @@ export function cleanNormalize(payload, options = {}) {
   if (!isPlainObject(payload)) {
     throw invalidDataset("body must be a JSON object");
   }
-  const cleanOptions = {
-    trim_strings: payload.options?.trim_strings ?? true,
-    blank_to_null: payload.options?.blank_to_null ?? true,
-    deduplicate: payload.options?.deduplicate ?? true,
-  };
   if (payload.options !== undefined && !isPlainObject(payload.options)) {
     throw invalidDataset("options must be an object");
   }
+  const rawOptions = payload.options ?? {};
+  const cleanOptions = {
+    trim_strings: optionOrDefault(rawOptions, "trim_strings", true),
+    blank_to_null: optionOrDefault(rawOptions, "blank_to_null", true),
+    deduplicate: optionOrDefault(rawOptions, "deduplicate", true),
+  };
   for (const [name, value] of Object.entries(cleanOptions)) {
     if (typeof value !== "boolean") {
       throw invalidDataset(`options.${name} must be a boolean`);
@@ -380,6 +381,10 @@ function transformValue(value, cleanOptions, counters) {
     );
   }
   return value;
+}
+
+function optionOrDefault(options, name, fallback) {
+  return Object.prototype.hasOwnProperty.call(options, name) ? options[name] : fallback;
 }
 
 function assertQualityGateThresholds(payload) {
