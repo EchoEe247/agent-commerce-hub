@@ -89,8 +89,8 @@ export function buildOpenApiDocument(config) {
     info: {
       title: "Hermes Agent Commerce API",
       version,
-      description: "Paid agent utilities for dependency vulnerability checks, counterparty availability, SEC company snapshots, company/domain intelligence, OFAC sanctions screening, and deterministic JSON/CSV data-quality work.",
-      "x-guidance": "All twelve POST operations are pay-per-call x402 resources on Base using USDC. Choose the narrowest operation that matches the task. Send the documented JSON request body; an unpaid call returns HTTP 402 with the runtime payment challenge, then retry with a valid x402 payment. Dataset operations accept JSON records or CSV text. Company domain intelligence combines public DNS, mail-policy, RDAP, and website metadata signals. The sanctions screen returns candidate matches from authoritative OFAC SDN source files and is not a legal compliance determination. No MPP payment support is advertised by this API yet.",
+      description: "Paid agent utilities for package maintenance intelligence, dependency vulnerability checks, counterparty availability, SEC company snapshots, company/domain intelligence, OFAC sanctions screening, and deterministic JSON/CSV data-quality work.",
+      "x-guidance": "All thirteen POST operations are pay-per-call x402 resources on Base using USDC. Choose the narrowest operation that matches the task. Send the documented JSON request body; an unpaid call returns HTTP 402 with the runtime payment challenge, then retry with a valid x402 payment. Dataset operations accept JSON records or CSV text. Company domain intelligence combines public DNS, mail-policy, RDAP, and website metadata signals. The sanctions screen returns candidate matches from authoritative OFAC SDN source files and is not a legal compliance determination. No MPP payment support is advertised by this API yet.",
     },
     servers: [{ url: PUBLIC_ORIGIN }],
     paths: {
@@ -305,6 +305,42 @@ export function buildOpenApiDocument(config) {
           },
           extraResponses: {
             "503": { description: "OSV source unavailable" },
+          },
+        }),
+      },
+      "/v1/package-maintenance-snapshot": {
+        post: paidOperation({
+          operationId: "packageMaintenanceSnapshot",
+          summary: "Package maintenance snapshot for an exact npm or PyPI version",
+          description: "Checks one exact npm or PyPI package version and returns the current/latest release relationship, release timestamps and ages, npm deprecation or PyPI yanked status, license, repository/homepage, Node or Python runtime constraints, and public registry provenance.",
+          price: config.x402PackageMaintenancePrice ?? "$0.015",
+          tags: ["Developer Intelligence"],
+          schema: {
+            type: "object",
+            properties: {
+              ecosystem: { type: "string", enum: ["npm", "PyPI"], description: "Package registry ecosystem." },
+              package: { type: "string", minLength: 1, maxLength: 300, description: "Exact package name." },
+              version: { type: "string", minLength: 1, maxLength: 200, description: "Exact package version to inspect." },
+            },
+            required: ["ecosystem", "package", "version"],
+          },
+          example: { ecosystem: "npm", package: "fastify", version: "5.6.0" },
+          outputSchema: {
+            type: "object",
+            properties: {
+              schema_version: { type: "string" },
+              query: { type: "object", additionalProperties: true },
+              package: { type: "object", additionalProperties: true },
+              release: { type: "object", additionalProperties: true },
+              source: { type: "object", additionalProperties: true },
+              warnings: { type: "array", items: { type: "string" } },
+            },
+            required: ["schema_version", "query", "package", "release", "source", "warnings"],
+            additionalProperties: true,
+          },
+          extraResponses: {
+            "404": { description: "Package or exact version not found" },
+            "503": { description: "Package registry source unavailable" },
           },
         }),
       },

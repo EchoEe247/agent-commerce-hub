@@ -13,6 +13,8 @@ function app() {
       x402SanctionsScreenPrice: "$0.02",
       x402CompanyDomainPrice: "$0.02",
       x402SecCompanyPrice: "$0.02",
+      x402DependencyVulnerabilityPrice: "$0.015",
+      x402PackageMaintenancePrice: "$0.015",
       x402DuplicateAuditPrice: "$0.005",
       x402QualityGatePrice: "$0.01",
       x402SchemaDriftPrice: "$0.015",
@@ -26,22 +28,27 @@ function app() {
   });
 }
 
-test("manifest exposes all twelve POST tools including Product 12", async () => {
+test("manifest exposes all thirteen POST tools including Product 13", async () => {
   const instance = app();
   const response = await instance.inject({ method: "GET", url: "/.well-known/x402" });
   assert.equal(response.statusCode, 200);
   const body = response.json();
 
-  assert.equal(body.resources.length, 12);
-  assert.equal(new Set(body.resources.map((resource) => resource.url)).size, 12);
+  assert.equal(body.resources.length, 13);
+  assert.equal(new Set(body.resources.map((resource) => resource.url)).size, 13);
   for (const resource of body.resources) {
     assert.equal(resource.method, "POST");
     assert.match(resource.url, new RegExp(`^${PUBLIC_ORIGIN.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}/v1/`));
   }
-  assert.equal(body.capabilities.tools, 12);
+  assert.equal(body.capabilities.tools, 13);
   const business = body.capabilities.categories.find((category) => category.key === "business-intelligence");
   assert.equal(business.tools, 3);
   assert.equal(business.priceRange, "$0.02-$0.03");
+
+  const developer = body.capabilities.categories.find((category) => category.key === "developer-intelligence");
+  assert.ok(developer);
+  assert.equal(developer.tools, 1);
+  assert.equal(developer.priceRange, "$0.015");
 
   const domainProduct = body.endpoints.find((endpoint) => endpoint.path === "/v1/company-domain-intelligence");
   assert.ok(domainProduct);
@@ -63,6 +70,15 @@ test("manifest exposes all twelve POST tools including Product 12", async () => 
   assert.equal(secProduct.network, "eip155:8453");
   assert.equal(secProduct.summary, "SEC company snapshot by ticker or CIK with filings and financial facts");
   assert.match(secProduct.description, /XBRL/i);
+
+  const packageProduct = body.endpoints.find((endpoint) => endpoint.path === "/v1/package-maintenance-snapshot");
+  assert.ok(packageProduct);
+  assert.equal(packageProduct.method, "POST");
+  assert.equal(packageProduct.price_usd, 0.015);
+  assert.equal(packageProduct.network, "eip155:8453");
+  assert.match(packageProduct.summary, /package maintenance/i);
+  assert.match(packageProduct.description, /npm/i);
+  assert.match(packageProduct.description, /PyPI/i);
 
   await instance.close();
 });

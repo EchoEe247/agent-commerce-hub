@@ -4,13 +4,9 @@ import { buildApp } from "../src/app.mjs";
 
 const ORIGIN = "https://hermes-counterparty-api.onrender.com";
 
-test("Product 12 remains published after Product 13 in OpenAPI", async () => {
+test("Product 13 is published as the thirteenth OpenAPI paid operation", async () => {
   const app = buildApp({
-    config: {
-      serviceVersion: "0.1.0",
-      x402DependencyVulnerabilityPrice: "$0.015",
-      x402PackageMaintenancePrice: "$0.015",
-    },
+    config: { serviceVersion: "0.1.0", x402PackageMaintenancePrice: "$0.015" },
     paymentPlugin: async () => {},
   });
   const response = await app.inject({ method: "GET", url: "/openapi.json" });
@@ -18,28 +14,28 @@ test("Product 12 remains published after Product 13 in OpenAPI", async () => {
   const document = response.json();
   assert.equal(Object.keys(document.paths).length, 13);
   assert.match(document.info["x-guidance"], /thirteen POST operations/i);
-  const operation = document.paths["/v1/dependency-vulnerability-check"]?.post;
+  const operation = document.paths["/v1/package-maintenance-snapshot"]?.post;
   assert.ok(operation);
-  assert.equal(operation.operationId, "dependencyVulnerabilityCheck");
-  assert.deepEqual(operation.tags, ["Software Security"]);
-  assert.equal(operation.summary, "Check an exact dependency version for known OSV vulnerabilities");
+  assert.equal(operation.operationId, "packageMaintenanceSnapshot");
+  assert.deepEqual(operation.tags, ["Developer Intelligence"]);
+  assert.equal(operation.summary, "Package maintenance snapshot for an exact npm or PyPI version");
   assert.equal(operation["x-payment-info"].price.amount, "0.015000");
   const schema = operation.requestBody.content["application/json"].schema;
   assert.deepEqual(schema.required, ["ecosystem", "package", "version"]);
   assert.equal(schema.properties.ecosystem.type, "string");
   assert.equal(schema.properties.package.type, "string");
   assert.equal(schema.properties.version.type, "string");
-  assert.equal(operation.responses["503"].description, "OSV source unavailable");
+  assert.equal(operation.responses["404"].description, "Package or exact version not found");
+  assert.equal(operation.responses["503"].description, "Package registry source unavailable");
   await app.close();
 });
 
-test("Product 12 remains published after Product 13 in the Agent402 manifest", async () => {
+test("Product 13 is published as the thirteenth Agent402 manifest tool", async () => {
   const app = buildApp({
     config: {
       serviceVersion: "0.1.0",
       x402Network: "eip155:8453",
       x402PayTo: "0x2BD7c4e294B09E9a853168a58712498D03A45B01",
-      x402DependencyVulnerabilityPrice: "$0.015",
       x402PackageMaintenancePrice: "$0.015",
     },
     paymentPlugin: async () => {},
@@ -49,18 +45,19 @@ test("Product 12 remains published after Product 13 in the Agent402 manifest", a
   const body = response.json();
   assert.equal(body.resources.length, 13);
   assert.equal(body.capabilities.tools, 13);
-  const security = body.capabilities.categories.find((category) => category.key === "software-security");
-  assert.ok(security);
-  assert.equal(security.tools, 1);
-  assert.equal(security.priceRange, "$0.015");
-  assert.ok(body.resources.some((resource) => resource.url === `${ORIGIN}/v1/dependency-vulnerability-check` && resource.method === "POST"));
-  const endpoint = body.endpoints.find((candidate) => candidate.path === "/v1/dependency-vulnerability-check");
+  const category = body.capabilities.categories.find((item) => item.key === "developer-intelligence");
+  assert.ok(category);
+  assert.equal(category.tools, 1);
+  assert.equal(category.priceRange, "$0.015");
+  assert.ok(body.resources.some((resource) => resource.url === `${ORIGIN}/v1/package-maintenance-snapshot` && resource.method === "POST"));
+  const endpoint = body.endpoints.find((candidate) => candidate.path === "/v1/package-maintenance-snapshot");
   assert.ok(endpoint);
-  assert.equal(endpoint.name, "dependency-vulnerability-check-osv-exact-version");
+  assert.equal(endpoint.name, "package-maintenance-snapshot-npm-pypi-release-metadata");
   assert.equal(endpoint.price_usd, 0.015);
   assert.equal(endpoint.network, "eip155:8453");
-  assert.equal(endpoint.summary, "Check an exact dependency version for known OSV vulnerabilities");
-  assert.match(endpoint.description, /OSV/i);
-  assert.match(endpoint.description, /fixed/i);
+  assert.equal(endpoint.summary, "Package maintenance snapshot for an exact npm or PyPI version");
+  assert.match(endpoint.description, /latest/i);
+  assert.match(endpoint.description, /deprecat|yanked/i);
+  assert.match(endpoint.description, /license/i);
   await app.close();
 });

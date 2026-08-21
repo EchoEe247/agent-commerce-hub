@@ -213,6 +213,30 @@ export function buildPaymentPlugin(config) {
       },
     });
 
+    const packageMaintenanceBazaarExtension = declareDiscoveryExtension({
+      bodyType: "json",
+      input: { ecosystem: "npm", package: "fastify", version: "5.6.0" },
+      inputSchema: {
+        type: "object",
+        properties: {
+          ecosystem: { type: "string", enum: ["npm", "PyPI"], description: "npm or PyPI registry ecosystem" },
+          package: { type: "string", minLength: 1, maxLength: 300, description: "Exact package name" },
+          version: { type: "string", minLength: 1, maxLength: 200, description: "Exact package version" },
+        },
+        required: ["ecosystem", "package", "version"],
+      },
+      output: {
+        example: {
+          schema_version: "1.0",
+          query: { ecosystem: "npm", package: "fastify", version: "5.6.0" },
+          package: { name: "fastify", requested_version: "5.6.0", latest_version: "5.6.0", requested_is_latest: true, deprecated: false, yanked: false, license: "MIT", runtime: { node: ">=20", python: null } },
+          release: { requested_published_at: null, latest_published_at: null, package_created_at: null, requested_age_days: null, latest_release_age_days: null },
+          source: { provider: "npm registry", metadata_url: "https://registry.npmjs.org/fastify" },
+          warnings: [],
+        },
+      },
+    });
+
     const duplicateAuditBazaarExtension = declareDiscoveryExtension({
       bodyType: "json",
       input: { format: "json", records: [{ id: 1 }, { id: 1 }] },
@@ -412,6 +436,12 @@ export function buildPaymentPlugin(config) {
         config.x402DependencyVulnerabilityPrice,
         "Check one exact package version against OSV for known vulnerabilities, CVE aliases, affected ranges, and fixed versions",
         dependencyVulnerabilityBazaarExtension
+      ),
+      "POST /v1/package-maintenance-snapshot": protectedRoute(
+        config,
+        config.x402PackageMaintenancePrice,
+        "Check one exact npm or PyPI package version for latest release, release age, deprecation or yanked status, license, and runtime constraints",
+        packageMaintenanceBazaarExtension
       ),
       "POST /v1/duplicate-audit": protectedRoute(
         config,

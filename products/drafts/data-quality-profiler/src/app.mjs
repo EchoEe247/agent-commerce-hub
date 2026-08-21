@@ -7,6 +7,7 @@ import { createEntitySanctionsScreen } from "./entity-sanctions-screen.mjs";
 import { createCompanyDomainIntelligence } from "./company-domain-intelligence.mjs";
 import { createSecCompanySnapshot } from "./sec-company-snapshot.mjs";
 import { createDependencyVulnerabilityCheck } from "./dependency-vulnerability-check.mjs";
+import { createPackageMaintenanceSnapshot } from "./package-maintenance-snapshot.mjs";
 import { buildOpenApiDocument } from "./openapi.mjs";
 import {
   duplicateAudit,
@@ -31,6 +32,9 @@ export function buildApp({
   companyDomainIntelligence,
   secCompanySnapshot,
   dependencyVulnerabilityCheck,
+  packageMaintenanceSnapshot,
+  packageRegistryFetch = globalThis.fetch,
+  packageClock,
   osvFetch = globalThis.fetch,
   osvClock,
   secFetch = globalThis.fetch,
@@ -63,6 +67,10 @@ export function buildApp({
   const inspectDependency = dependencyVulnerabilityCheck ?? createDependencyVulnerabilityCheck({
     fetchImpl: osvFetch,
     clock: osvClock ?? clock,
+  });
+  const inspectPackageMaintenance = packageMaintenanceSnapshot ?? createPackageMaintenanceSnapshot({
+    fetchImpl: packageRegistryFetch,
+    clock: packageClock ?? clock,
   });
 
   app.addHook("onResponse", async (request, reply) => {
@@ -109,6 +117,7 @@ export function buildApp({
     const companyDomainPrice = config.x402CompanyDomainPrice ?? "$0.02";
     const secCompanyPrice = config.x402SecCompanyPrice ?? "$0.02";
     const dependencyVulnerabilityPrice = config.x402DependencyVulnerabilityPrice ?? "$0.015";
+    const packageMaintenancePrice = config.x402PackageMaintenancePrice ?? "$0.015";
     const profilerPrice = config.x402Price ?? "$0.02";
     const duplicatePrice = config.x402DuplicateAuditPrice ?? "$0.005";
     const qualityGatePrice = config.x402QualityGatePrice ?? "$0.01";
@@ -118,10 +127,10 @@ export function buildApp({
     const repairPlanPrice = config.x402RepairPlanPrice ?? "$0.02";
     const businessIntelligencePrices = [localePrice, companyDomainPrice, secCompanyPrice];
     const dataQualityPrices = [profilerPrice, duplicatePrice, qualityGatePrice, schemaDriftPrice, dataContractPrice, cleanNormalizePrice, repairPlanPrice];
-    const priceRange = buildPriceRange([...businessIntelligencePrices, sanctionsPrice, dependencyVulnerabilityPrice, ...dataQualityPrices]);
+    const priceRange = buildPriceRange([...businessIntelligencePrices, sanctionsPrice, dependencyVulnerabilityPrice, packageMaintenancePrice, ...dataQualityPrices]);
     const businessIntelligencePriceRange = buildPriceRange(businessIntelligencePrices);
     const dataQualityPriceRange = buildPriceRange(dataQualityPrices);
-    const description = "Agent-ready paid utilities for dependency vulnerability checks, SEC company snapshots, company/domain intelligence, OFAC sanctions screening, JSON and CSV data quality, schema compatibility, deterministic cleanup, repair planning, and practical counterparty contact-window checks.";
+    const description = "Agent-ready paid utilities for package maintenance intelligence, dependency vulnerability checks, SEC company snapshots, company/domain intelligence, OFAC sanctions screening, JSON and CSV data quality, schema compatibility, deterministic cleanup, repair planning, and practical counterparty contact-window checks.";
 
     return {
       spec: "agent402-service-manifest/1",
@@ -137,6 +146,7 @@ export function buildApp({
         { url: `${SELLER_ORIGIN}/v1/company-domain-intelligence`, method: "POST" },
         { url: `${SELLER_ORIGIN}/v1/sec-company-snapshot`, method: "POST" },
         { url: `${SELLER_ORIGIN}/v1/dependency-vulnerability-check`, method: "POST" },
+        { url: `${SELLER_ORIGIN}/v1/package-maintenance-snapshot`, method: "POST" },
         { url: `${SELLER_ORIGIN}/v1/profile`, method: "POST" },
         { url: `${SELLER_ORIGIN}/v1/duplicate-audit`, method: "POST" },
         { url: `${SELLER_ORIGIN}/v1/quality-gate`, method: "POST" },
@@ -158,7 +168,7 @@ export function buildApp({
         },
       },
       capabilities: {
-        tools: 12,
+        tools: 13,
         categories: [
           {
             key: "business-intelligence",
@@ -177,6 +187,12 @@ export function buildApp({
             label: "Software Security",
             tools: 1,
             priceRange: dependencyVulnerabilityPrice,
+          },
+          {
+            key: "developer-intelligence",
+            label: "Developer Intelligence",
+            tools: 1,
+            priceRange: packageMaintenancePrice,
           },
           {
             key: "data-quality",
@@ -235,6 +251,16 @@ export function buildApp({
           summary: "Check an exact dependency version for known OSV vulnerabilities",
           description: "Checks one exact package version against OSV and returns normalized vulnerability identifiers, CVE aliases, severity records, affected ranges, known fixed versions, references, and source provenance.",
           price_usd: priceNumber(dependencyVulnerabilityPrice),
+          network,
+        },
+        {
+          name: "package-maintenance-snapshot-npm-pypi-release-metadata",
+          method: "POST",
+          path: "/v1/package-maintenance-snapshot",
+          url: `${SELLER_ORIGIN}/v1/package-maintenance-snapshot`,
+          summary: "Package maintenance snapshot for an exact npm or PyPI version",
+          description: "Checks one exact npm or PyPI package version and returns the latest release, release ages, npm deprecation or PyPI yanked status, license, repository/homepage, and Node or Python runtime constraints with registry provenance.",
+          price_usd: priceNumber(packageMaintenancePrice),
           network,
         },
         {
@@ -361,6 +387,15 @@ export function buildApp({
   app.post("/v1/dependency-vulnerability-check", async (request, reply) => {
     try {
       return reply.send(await inspectDependency(request.body));
+    } catch (error) {
+      const { statusCode, body } = classifyError(error);
+      return reply.status(statusCode).send(body);
+    }
+  });
+
+  app.post("/v1/package-maintenance-snapshot", async (request, reply) => {
+    try {
+      return reply.send(await inspectPackageMaintenance(request.body));
     } catch (error) {
       const { statusCode, body } = classifyError(error);
       return reply.status(statusCode).send(body);
