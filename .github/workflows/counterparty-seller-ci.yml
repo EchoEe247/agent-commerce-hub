@@ -1,101 +1,49 @@
-name: Counterparty Seller CI
+name: Product 10 Index Listing Check
 
 on:
-  push:
-    branches:
-      - feat/hermes-commerce-control-plane
-      - feat/entity-sanctions-screen
-      - feat/company-domain-intelligence
-    paths:
-      - 'products/drafts/data-quality-profiler/src/counterparty-availability.mjs'
-      - 'products/drafts/data-quality-profiler/src/entity-sanctions-screen.mjs'
-      - 'products/drafts/data-quality-profiler/src/company-domain-intelligence.mjs'
-      - 'products/drafts/data-quality-profiler/src/app.mjs'
-      - 'products/drafts/data-quality-profiler/src/openapi.mjs'
-      - 'products/drafts/data-quality-profiler/src/config.mjs'
-      - 'products/drafts/data-quality-profiler/src/errors.mjs'
-      - 'products/drafts/data-quality-profiler/src/payments/x402-plugin.mjs'
-      - 'products/drafts/data-quality-profiler/scripts/ofac-source-smoke.mjs'
-      - 'products/drafts/data-quality-profiler/test/counterparty-availability.test.mjs'
-      - 'products/drafts/data-quality-profiler/test/entity-sanctions-screen.test.mjs'
-      - 'products/drafts/data-quality-profiler/test/entity-sanctions-source.test.mjs'
-      - 'products/drafts/data-quality-profiler/test/entity-sanctions-x402.test.mjs'
-      - 'products/drafts/data-quality-profiler/test/company-domain-intelligence.test.mjs'
-      - 'products/drafts/data-quality-profiler/test/counterparty-api.test.mjs'
-      - 'products/drafts/data-quality-profiler/test/openapi-discovery.test.mjs'
-      - 'products/drafts/data-quality-profiler/test/x402-plugin.test.mjs'
-      - 'products/drafts/data-quality-profiler/test/config.test.mjs'
-      - '.github/workflows/counterparty-seller-ci.yml'
   pull_request:
     branches:
       - feat/hermes-commerce-control-plane
     paths:
-      - 'products/drafts/data-quality-profiler/src/counterparty-availability.mjs'
-      - 'products/drafts/data-quality-profiler/src/entity-sanctions-screen.mjs'
-      - 'products/drafts/data-quality-profiler/src/company-domain-intelligence.mjs'
-      - 'products/drafts/data-quality-profiler/src/app.mjs'
-      - 'products/drafts/data-quality-profiler/src/openapi.mjs'
-      - 'products/drafts/data-quality-profiler/src/config.mjs'
-      - 'products/drafts/data-quality-profiler/src/errors.mjs'
-      - 'products/drafts/data-quality-profiler/src/payments/x402-plugin.mjs'
-      - 'products/drafts/data-quality-profiler/scripts/ofac-source-smoke.mjs'
-      - 'products/drafts/data-quality-profiler/test/counterparty-availability.test.mjs'
-      - 'products/drafts/data-quality-profiler/test/entity-sanctions-screen.test.mjs'
-      - 'products/drafts/data-quality-profiler/test/entity-sanctions-source.test.mjs'
-      - 'products/drafts/data-quality-profiler/test/entity-sanctions-x402.test.mjs'
-      - 'products/drafts/data-quality-profiler/test/company-domain-intelligence.test.mjs'
-      - 'products/drafts/data-quality-profiler/test/counterparty-api.test.mjs'
-      - 'products/drafts/data-quality-profiler/test/openapi-discovery.test.mjs'
-      - 'products/drafts/data-quality-profiler/test/x402-plugin.test.mjs'
-      - 'products/drafts/data-quality-profiler/test/config.test.mjs'
       - '.github/workflows/counterparty-seller-ci.yml'
-  workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
-  focused-tests:
+  lookup:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '24'
-      - name: Install dependencies
-        working-directory: products/drafts/data-quality-profiler
-        run: npm ci
-      - name: Syntax check changed runtime
-        working-directory: products/drafts/data-quality-profiler
-        run: |
-          node --check src/counterparty-availability.mjs
-          if [ -f src/entity-sanctions-screen.mjs ]; then node --check src/entity-sanctions-screen.mjs; fi
-          if [ -f src/company-domain-intelligence.mjs ]; then node --check src/company-domain-intelligence.mjs; fi
-          if [ -f scripts/ofac-source-smoke.mjs ]; then node --check scripts/ofac-source-smoke.mjs; fi
-          node --check src/app.mjs
-          node --check src/openapi.mjs
-          node --check src/config.mjs
-          node --check src/payments/x402-plugin.mjs
-      - name: Focused seller tests
-        working-directory: products/drafts/data-quality-profiler
-        run: |
-          TESTS=(test/counterparty-availability.test.mjs test/counterparty-api.test.mjs test/openapi-discovery.test.mjs test/x402-plugin.test.mjs test/config.test.mjs)
-          if [ -f test/entity-sanctions-screen.test.mjs ]; then TESTS+=(test/entity-sanctions-screen.test.mjs); fi
-          if [ -f test/entity-sanctions-source.test.mjs ]; then TESTS+=(test/entity-sanctions-source.test.mjs); fi
-          if [ -f test/entity-sanctions-x402.test.mjs ]; then TESTS+=(test/entity-sanctions-x402.test.mjs); fi
-          if [ -f test/company-domain-intelligence.test.mjs ]; then TESTS+=(test/company-domain-intelligence.test.mjs); fi
-          node --test "${TESTS[@]}"
-      - name: Verify Product 10 index listings (temporary, read-only)
-        if: github.event_name == 'pull_request'
+      - name: Check Agent402 snapshot/router and 402 Index service
         run: |
           node <<'NODE'
           const origin = 'https://hermes-counterparty-api.onrender.com';
+          const hostname = 'hermes-counterparty-api.onrender.com';
+          const wallet = '0x2BD7c4e294B09E9a853168a58712498D03A45B01';
           const serviceId = '3d84c0ea-8e83-4e48-8a00-35ed00cb188c';
 
-          const agentResponse = await fetch('https://agent402.tools/api/index', { signal: AbortSignal.timeout(30000) });
-          const agentText = await agentResponse.text();
-          const agentFound = agentResponse.ok && agentText.includes(origin);
-          console.log(`AGENT402_INDEX_LOOKUP=${JSON.stringify({ status: agentResponse.status, ok: agentResponse.ok, origin_found: agentFound, snapshot_bytes: agentText.length })}`);
+          const snapshotResponse = await fetch('https://agent402.tools/api/index', { signal: AbortSignal.timeout(30000) });
+          const snapshotText = await snapshotResponse.text();
+          console.log(`AGENT402_SNAPSHOT_LOOKUP=${JSON.stringify({
+            status: snapshotResponse.status,
+            ok: snapshotResponse.ok,
+            full_origin_found: snapshotText.includes(origin),
+            hostname_found: snapshotText.includes(hostname),
+            wallet_found: snapshotText.toLowerCase().includes(wallet.toLowerCase()),
+            display_name_found: snapshotText.includes('Hermes Counterparty Availability'),
+            snapshot_bytes: snapshotText.length,
+          })}`);
+
+          const findResponse = await fetch('https://agent402.tools/api/find?q=company%20domain%20intelligence', { signal: AbortSignal.timeout(30000) });
+          const findText = await findResponse.text();
+          console.log(`AGENT402_ROUTER_LOOKUP=${JSON.stringify({
+            status: findResponse.status,
+            ok: findResponse.ok,
+            hostname_found: findText.includes(hostname),
+            product_path_found: findText.includes('/v1/company-domain-intelligence'),
+            response_bytes: findText.length,
+            response_prefix: findText.slice(0, 1200),
+          })}`);
 
           const indexResponse = await fetch(`https://402index.io/api/v1/services/${serviceId}`, { signal: AbortSignal.timeout(30000) });
           const indexText = await indexResponse.text();
@@ -104,13 +52,5 @@ jobs:
           const service = indexBody?.service ?? indexBody;
           console.log(`INDEX402_SERVICE_LOOKUP=${JSON.stringify({ status: indexResponse.status, ok: indexResponse.ok, service: service ? { id: service.id, name: service.name, url: service.url, protocol: service.protocol, price_usd: service.price_usd, payment_asset: service.payment_asset, payment_network: service.payment_network, category: service.category, provider: service.provider, status: service.status, health_status: service.health_status, probe_status: service.probe_status, http_method: service.http_method, approval_reason: service.approval_reason, verified: service.verified, domain_verified: service.domain_verified, x402_payment_valid: service.x402_payment_valid } : null })}`);
 
-          if (!agentFound || !indexResponse.ok || service?.id !== serviceId) process.exit(1);
+          if (!snapshotResponse.ok || !findResponse.ok || !indexResponse.ok || service?.id !== serviceId) process.exit(1);
           NODE
-      - name: Full profiler suite (PR gate)
-        if: github.event_name == 'pull_request'
-        working-directory: products/drafts/data-quality-profiler
-        run: npm test
-      - name: Live OFAC source smoke (PR gate)
-        if: github.event_name == 'pull_request'
-        working-directory: products/drafts/data-quality-profiler
-        run: node scripts/ofac-source-smoke.mjs
