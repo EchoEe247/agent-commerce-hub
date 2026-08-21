@@ -13,6 +13,7 @@ on:
       - 'products/drafts/data-quality-profiler/src/errors.mjs'
       - 'products/drafts/data-quality-profiler/src/payments/x402-plugin.mjs'
       - 'products/drafts/data-quality-profiler/test/company-domain-intelligence.test.mjs'
+      - 'products/drafts/data-quality-profiler/test/company-domain-x402.test.mjs'
       - 'products/drafts/data-quality-profiler/test/config.test.mjs'
       - 'products/drafts/data-quality-profiler/test/openapi-discovery.test.mjs'
       - 'products/drafts/data-quality-profiler/test/agent402-manifest.test.mjs'
@@ -40,6 +41,7 @@ jobs:
           set +e
           node --test \
             test/company-domain-intelligence.test.mjs \
+            test/company-domain-x402.test.mjs \
             test/config.test.mjs \
             test/openapi-discovery.test.mjs \
             test/agent402-manifest.test.mjs \
@@ -55,7 +57,7 @@ jobs:
             observed_at: new Date().toISOString(),
             status: code === 0 ? 'PASS' : 'FAIL',
             exit_code: code,
-            output_tail: output.split('\n').slice(-140).join('\n'),
+            output_tail: output.split('\n').slice(-160).join('\n'),
           };
           fs.writeFileSync('../../../product10-tdd-result.json', JSON.stringify(receipt, null, 2) + '\n');
           NODE
