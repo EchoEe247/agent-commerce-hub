@@ -89,8 +89,8 @@ export function buildOpenApiDocument(config) {
     info: {
       title: "Hermes Agent Commerce API",
       version,
-      description: "Paid agent utilities for counterparty availability, SEC company snapshots, company/domain intelligence, OFAC sanctions screening, and deterministic JSON/CSV data-quality work.",
-      "x-guidance": "All eleven POST operations are pay-per-call x402 resources on Base using USDC. Choose the narrowest operation that matches the task. Send the documented JSON request body; an unpaid call returns HTTP 402 with the runtime payment challenge, then retry with a valid x402 payment. Dataset operations accept JSON records or CSV text. Company domain intelligence combines public DNS, mail-policy, RDAP, and website metadata signals. The sanctions screen returns candidate matches from authoritative OFAC SDN source files and is not a legal compliance determination. No MPP payment support is advertised by this API yet.",
+      description: "Paid agent utilities for dependency vulnerability checks, counterparty availability, SEC company snapshots, company/domain intelligence, OFAC sanctions screening, and deterministic JSON/CSV data-quality work.",
+      "x-guidance": "All twelve POST operations are pay-per-call x402 resources on Base using USDC. Choose the narrowest operation that matches the task. Send the documented JSON request body; an unpaid call returns HTTP 402 with the runtime payment challenge, then retry with a valid x402 payment. Dataset operations accept JSON records or CSV text. Company domain intelligence combines public DNS, mail-policy, RDAP, and website metadata signals. The sanctions screen returns candidate matches from authoritative OFAC SDN source files and is not a legal compliance determination. No MPP payment support is advertised by this API yet.",
     },
     servers: [{ url: PUBLIC_ORIGIN }],
     paths: {
@@ -269,6 +269,42 @@ export function buildOpenApiDocument(config) {
           extraResponses: {
             "404": { description: "SEC company not found" },
             "503": { description: "Required SEC source unavailable" },
+          },
+        }),
+      },
+      "/v1/dependency-vulnerability-check": {
+        post: paidOperation({
+          operationId: "dependencyVulnerabilityCheck",
+          summary: "Check an exact dependency version for known OSV vulnerabilities",
+          description: "Checks one exact package version against the public OSV vulnerability database and returns normalized OSV IDs, CVE aliases, severity records, affected ranges, known fixed versions, references, and source provenance.",
+          price: config.x402DependencyVulnerabilityPrice ?? "$0.015",
+          tags: ["Software Security"],
+          schema: {
+            type: "object",
+            properties: {
+              ecosystem: { type: "string", minLength: 1, maxLength: 100, description: "OSV ecosystem name such as npm, PyPI, Maven, Go, or RubyGems." },
+              package: { type: "string", minLength: 1, maxLength: 300, description: "Exact package name in the selected ecosystem." },
+              version: { type: "string", minLength: 1, maxLength: 200, description: "Exact package version to check." },
+            },
+            required: ["ecosystem", "package", "version"],
+          },
+          example: { ecosystem: "npm", package: "fastify", version: "5.6.0" },
+          outputSchema: {
+            type: "object",
+            properties: {
+              schema_version: { type: "string" },
+              query: { type: "object", additionalProperties: true },
+              vulnerable: { type: "boolean" },
+              vulnerability_count: { type: "integer" },
+              vulnerabilities: { type: "array", items: { type: "object", additionalProperties: true } },
+              source: { type: "object", additionalProperties: true },
+              warnings: { type: "array", items: { type: "string" } },
+            },
+            required: ["schema_version", "query", "vulnerable", "vulnerability_count", "vulnerabilities", "source", "warnings"],
+            additionalProperties: true,
+          },
+          extraResponses: {
+            "503": { description: "OSV source unavailable" },
           },
         }),
       },

@@ -1,4 +1,5 @@
 name: Counterparty Seller CI
+# Product 12 seller gate: dependency vulnerability check
 
 on:
   push:
@@ -7,11 +8,13 @@ on:
       - feat/entity-sanctions-screen
       - feat/company-domain-intelligence
       - feat/sec-company-snapshot
+      - feat/product12-dependency-vulnerability
     paths:
       - 'products/drafts/data-quality-profiler/src/counterparty-availability.mjs'
       - 'products/drafts/data-quality-profiler/src/entity-sanctions-screen.mjs'
       - 'products/drafts/data-quality-profiler/src/company-domain-intelligence.mjs'
       - 'products/drafts/data-quality-profiler/src/sec-company-snapshot.mjs'
+      - 'products/drafts/data-quality-profiler/src/dependency-vulnerability-check.mjs'
       - 'products/drafts/data-quality-profiler/src/app.mjs'
       - 'products/drafts/data-quality-profiler/src/openapi.mjs'
       - 'products/drafts/data-quality-profiler/src/config.mjs'
@@ -19,6 +22,7 @@ on:
       - 'products/drafts/data-quality-profiler/src/payments/x402-plugin.mjs'
       - 'products/drafts/data-quality-profiler/scripts/ofac-source-smoke.mjs'
       - 'products/drafts/data-quality-profiler/scripts/sec-source-smoke.mjs'
+      - 'products/drafts/data-quality-profiler/scripts/osv-source-smoke.mjs'
       - 'products/drafts/data-quality-profiler/test/agent402-manifest.test.mjs'
       - 'products/drafts/data-quality-profiler/test/counterparty-availability.test.mjs'
       - 'products/drafts/data-quality-profiler/test/entity-sanctions-screen.test.mjs'
@@ -29,6 +33,10 @@ on:
       - 'products/drafts/data-quality-profiler/test/sec-company-snapshot-errors.test.mjs'
       - 'products/drafts/data-quality-profiler/test/sec-company-snapshot-discovery.test.mjs'
       - 'products/drafts/data-quality-profiler/test/sec-company-snapshot-x402.test.mjs'
+      - 'products/drafts/data-quality-profiler/test/dependency-vulnerability-check.test.mjs'
+      - 'products/drafts/data-quality-profiler/test/dependency-vulnerability-errors.test.mjs'
+      - 'products/drafts/data-quality-profiler/test/dependency-vulnerability-discovery.test.mjs'
+      - 'products/drafts/data-quality-profiler/test/dependency-vulnerability-x402.test.mjs'
       - 'products/drafts/data-quality-profiler/test/counterparty-api.test.mjs'
       - 'products/drafts/data-quality-profiler/test/openapi-discovery.test.mjs'
       - 'products/drafts/data-quality-profiler/test/x402-plugin.test.mjs'
@@ -42,6 +50,7 @@ on:
       - 'products/drafts/data-quality-profiler/src/entity-sanctions-screen.mjs'
       - 'products/drafts/data-quality-profiler/src/company-domain-intelligence.mjs'
       - 'products/drafts/data-quality-profiler/src/sec-company-snapshot.mjs'
+      - 'products/drafts/data-quality-profiler/src/dependency-vulnerability-check.mjs'
       - 'products/drafts/data-quality-profiler/src/app.mjs'
       - 'products/drafts/data-quality-profiler/src/openapi.mjs'
       - 'products/drafts/data-quality-profiler/src/config.mjs'
@@ -49,6 +58,7 @@ on:
       - 'products/drafts/data-quality-profiler/src/payments/x402-plugin.mjs'
       - 'products/drafts/data-quality-profiler/scripts/ofac-source-smoke.mjs'
       - 'products/drafts/data-quality-profiler/scripts/sec-source-smoke.mjs'
+      - 'products/drafts/data-quality-profiler/scripts/osv-source-smoke.mjs'
       - 'products/drafts/data-quality-profiler/test/agent402-manifest.test.mjs'
       - 'products/drafts/data-quality-profiler/test/counterparty-availability.test.mjs'
       - 'products/drafts/data-quality-profiler/test/entity-sanctions-screen.test.mjs'
@@ -59,6 +69,10 @@ on:
       - 'products/drafts/data-quality-profiler/test/sec-company-snapshot-errors.test.mjs'
       - 'products/drafts/data-quality-profiler/test/sec-company-snapshot-discovery.test.mjs'
       - 'products/drafts/data-quality-profiler/test/sec-company-snapshot-x402.test.mjs'
+      - 'products/drafts/data-quality-profiler/test/dependency-vulnerability-check.test.mjs'
+      - 'products/drafts/data-quality-profiler/test/dependency-vulnerability-errors.test.mjs'
+      - 'products/drafts/data-quality-profiler/test/dependency-vulnerability-discovery.test.mjs'
+      - 'products/drafts/data-quality-profiler/test/dependency-vulnerability-x402.test.mjs'
       - 'products/drafts/data-quality-profiler/test/counterparty-api.test.mjs'
       - 'products/drafts/data-quality-profiler/test/openapi-discovery.test.mjs'
       - 'products/drafts/data-quality-profiler/test/x402-plugin.test.mjs'
@@ -87,8 +101,10 @@ jobs:
           if [ -f src/entity-sanctions-screen.mjs ]; then node --check src/entity-sanctions-screen.mjs; fi
           if [ -f src/company-domain-intelligence.mjs ]; then node --check src/company-domain-intelligence.mjs; fi
           if [ -f src/sec-company-snapshot.mjs ]; then node --check src/sec-company-snapshot.mjs; fi
+          if [ -f src/dependency-vulnerability-check.mjs ]; then node --check src/dependency-vulnerability-check.mjs; fi
           if [ -f scripts/ofac-source-smoke.mjs ]; then node --check scripts/ofac-source-smoke.mjs; fi
           if [ -f scripts/sec-source-smoke.mjs ]; then node --check scripts/sec-source-smoke.mjs; fi
+          if [ -f scripts/osv-source-smoke.mjs ]; then node --check scripts/osv-source-smoke.mjs; fi
           node --check src/app.mjs
           node --check src/openapi.mjs
           node --check src/config.mjs
@@ -105,6 +121,10 @@ jobs:
           if [ -f test/sec-company-snapshot-errors.test.mjs ]; then TESTS+=(test/sec-company-snapshot-errors.test.mjs); fi
           if [ -f test/sec-company-snapshot-discovery.test.mjs ]; then TESTS+=(test/sec-company-snapshot-discovery.test.mjs); fi
           if [ -f test/sec-company-snapshot-x402.test.mjs ]; then TESTS+=(test/sec-company-snapshot-x402.test.mjs); fi
+          if [ -f test/dependency-vulnerability-check.test.mjs ]; then TESTS+=(test/dependency-vulnerability-check.test.mjs); fi
+          if [ -f test/dependency-vulnerability-errors.test.mjs ]; then TESTS+=(test/dependency-vulnerability-errors.test.mjs); fi
+          if [ -f test/dependency-vulnerability-discovery.test.mjs ]; then TESTS+=(test/dependency-vulnerability-discovery.test.mjs); fi
+          if [ -f test/dependency-vulnerability-x402.test.mjs ]; then TESTS+=(test/dependency-vulnerability-x402.test.mjs); fi
           node --test "${TESTS[@]}"
       - name: Full profiler suite (PR gate)
         if: github.event_name == 'pull_request'
@@ -118,3 +138,7 @@ jobs:
         if: github.event_name == 'pull_request'
         working-directory: products/drafts/data-quality-profiler
         run: node scripts/sec-source-smoke.mjs
+      - name: Live OSV source smoke (PR gate)
+        if: github.event_name == 'pull_request' && hashFiles('products/drafts/data-quality-profiler/scripts/osv-source-smoke.mjs') != ''
+        working-directory: products/drafts/data-quality-profiler
+        run: node scripts/osv-source-smoke.mjs
