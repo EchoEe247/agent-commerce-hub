@@ -4,7 +4,7 @@ import { buildApp } from "../src/app.mjs";
 
 const ORIGIN = "https://hermes-counterparty-api.onrender.com";
 
-// Product #11 discovery and paid-surface contract.
+// Product #11 discovery and paid-surface contract; portfolio totals are now eleven.
 test("Product 11 is published as the eleventh OpenAPI paid operation", async () => {
   const app = buildApp({
     config: {
