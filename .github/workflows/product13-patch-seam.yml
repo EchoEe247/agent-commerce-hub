@@ -1,0 +1,48 @@
+name: Product 13 Patch Seam
+
+on:
+  push:
+    branches:
+      - feat/product13-package-maintenance
+    paths:
+      - '.github/workflows/product13-patch-seam.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/product13-package-maintenance
+      - name: Add Product 13 injected route seam
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('products/drafts/data-quality-profiler/src/app.mjs')
+          s = p.read_text()
+          old = '  dependencyVulnerabilityCheck,\n  osvFetch = globalThis.fetch,'
+          new = '  dependencyVulnerabilityCheck,\n  packageMaintenanceSnapshot,\n  osvFetch = globalThis.fetch,'
+          if old not in s:
+              raise SystemExit('signature anchor missing')
+          s = s.replace(old, new, 1)
+          old = '  const inspectDependency = dependencyVulnerabilityCheck ?? createDependencyVulnerabilityCheck({\n    fetchImpl: osvFetch,\n    clock: osvClock ?? clock,\n  });\n'
+          new = old + '  const inspectPackageMaintenance = packageMaintenanceSnapshot;\n'
+          if old not in s:
+              raise SystemExit('service anchor missing')
+          s = s.replace(old, new, 1)
+          old = '''  app.post("/v1/dependency-vulnerability-check", async (request, reply) => {\n    try {\n      return reply.send(await inspectDependency(request.body));\n    } catch (error) {\n      const { statusCode, body } = classifyError(error);\n      return reply.status(statusCode).send(body);\n    }\n  });\n'''
+          new = old + '''\n  app.post("/v1/package-maintenance-snapshot", async (request, reply) => {\n    try {\n      return reply.send(await inspectPackageMaintenance(request.body));\n    } catch (error) {\n      const { statusCode, body } = classifyError(error);\n      return reply.status(statusCode).send(body);\n    }\n  });\n'''
+          if old not in s:
+              raise SystemExit('route anchor missing')
+          s = s.replace(old, new, 1)
+          p.write_text(s)
+          PY
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add products/drafts/data-quality-profiler/src/app.mjs
+          git commit -m 'feat: add Product 13 route seam'
+          git push origin HEAD:feat/product13-package-maintenance
