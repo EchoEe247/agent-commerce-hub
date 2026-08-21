@@ -141,6 +141,9 @@ async function loadSnapshot(fetchImpl, loadedAt) {
   let records;
   try {
     records = joinOfacRecords(primaryText, aliasText, addressText);
+    if (records.length === 0) {
+      throw new Error("OFAC snapshot contains no usable primary SDN records");
+    }
   } catch {
     throw new Error("SANCTIONS_SOURCE_UNAVAILABLE: authoritative OFAC SDN data could not be parsed");
   }
@@ -173,7 +176,7 @@ function joinOfacRecords(primaryText, aliasText, addressText) {
   for (const row of aliasRows) {
     const uid = cleanValue(row[0]);
     const name = cleanValue(row[3]);
-    if (!uid || !name) continue;
+    if (!uid || !name || !/^\d+$/.test(uid)) continue;
     append(aliasesByUid, uid, {
       type: cleanValue(row[2]),
       name,
@@ -184,7 +187,7 @@ function joinOfacRecords(primaryText, aliasText, addressText) {
   const addressesByUid = new Map();
   for (const row of addressRows) {
     const uid = cleanValue(row[0]);
-    if (!uid) continue;
+    if (!uid || !/^\d+$/.test(uid)) continue;
     append(addressesByUid, uid, {
       address: cleanValue(row[2]),
       city_state_province: cleanValue(row[3]),
@@ -197,7 +200,7 @@ function joinOfacRecords(primaryText, aliasText, addressText) {
   for (const row of primaryRows) {
     const uid = cleanValue(row[0]);
     const name = cleanValue(row[1]);
-    if (!uid || !name) continue;
+    if (!uid || !name || !/^\d+$/.test(uid) || row.length < 12) continue;
     records.push({
       uid,
       name,
