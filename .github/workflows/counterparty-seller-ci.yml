@@ -18,6 +18,7 @@ on:
       - 'products/drafts/data-quality-profiler/src/errors.mjs'
       - 'products/drafts/data-quality-profiler/src/payments/x402-plugin.mjs'
       - 'products/drafts/data-quality-profiler/scripts/ofac-source-smoke.mjs'
+      - 'products/drafts/data-quality-profiler/scripts/sec-source-smoke.mjs'
       - 'products/drafts/data-quality-profiler/test/agent402-manifest.test.mjs'
       - 'products/drafts/data-quality-profiler/test/counterparty-availability.test.mjs'
       - 'products/drafts/data-quality-profiler/test/entity-sanctions-screen.test.mjs'
@@ -47,6 +48,7 @@ on:
       - 'products/drafts/data-quality-profiler/src/errors.mjs'
       - 'products/drafts/data-quality-profiler/src/payments/x402-plugin.mjs'
       - 'products/drafts/data-quality-profiler/scripts/ofac-source-smoke.mjs'
+      - 'products/drafts/data-quality-profiler/scripts/sec-source-smoke.mjs'
       - 'products/drafts/data-quality-profiler/test/agent402-manifest.test.mjs'
       - 'products/drafts/data-quality-profiler/test/counterparty-availability.test.mjs'
       - 'products/drafts/data-quality-profiler/test/entity-sanctions-screen.test.mjs'
@@ -86,6 +88,7 @@ jobs:
           if [ -f src/company-domain-intelligence.mjs ]; then node --check src/company-domain-intelligence.mjs; fi
           if [ -f src/sec-company-snapshot.mjs ]; then node --check src/sec-company-snapshot.mjs; fi
           if [ -f scripts/ofac-source-smoke.mjs ]; then node --check scripts/ofac-source-smoke.mjs; fi
+          if [ -f scripts/sec-source-smoke.mjs ]; then node --check scripts/sec-source-smoke.mjs; fi
           node --check src/app.mjs
           node --check src/openapi.mjs
           node --check src/config.mjs
@@ -111,3 +114,7 @@ jobs:
         if: github.event_name == 'pull_request'
         working-directory: products/drafts/data-quality-profiler
         run: node scripts/ofac-source-smoke.mjs
+      - name: Live SEC source smoke (PR gate)
+        if: github.event_name == 'pull_request'
+        working-directory: products/drafts/data-quality-profiler
+        run: node scripts/sec-source-smoke.mjs
