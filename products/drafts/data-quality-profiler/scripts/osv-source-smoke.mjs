@@ -1,3 +1,4 @@
+// Production deploy retrigger marker; no runtime service behavior depends on this smoke script.
 const started = Date.now();
 const apiUrl = "https://api.osv.dev/v1/query";
 const response = await fetch(apiUrl, {
