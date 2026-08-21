@@ -1,0 +1,223 @@
+name: Revenue Price Release Verification
+
+on:
+  pull_request:
+    branches:
+      - feat/hermes-commerce-control-plane
+    paths:
+      - '.github/workflows/revenue-price-release.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ops/revenue-price-release-20260821
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Verify live prices and refresh discovery
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          const origin = 'https://hermes-counterparty-api.onrender.com';
+          const wallet = '0x2BD7c4e294B09E9a853168a58712498D03A45B01';
+          const asset = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
+          const products = [
+            {
+              key: 'p12',
+              path: '/v1/dependency-vulnerability-check',
+              operationId: 'dependencyVulnerabilityCheck',
+              query: 'check exact dependency version for vulnerabilities',
+              body: { ecosystem: 'npm', package: 'fastify', version: '5.6.0' },
+              index: {
+                name: 'Hermes Dependency Vulnerability Check',
+                description: 'Check one exact npm package version against the public OSV vulnerability database and return normalized vulnerability IDs, CVE aliases, severities, affected ranges, fixed versions, references, and source provenance.',
+                category: 'software-security',
+              },
+            },
+            {
+              key: 'p13',
+              path: '/v1/package-maintenance-snapshot',
+              operationId: 'packageMaintenanceSnapshot',
+              query: 'package maintenance latest version deprecated yanked npm pypi',
+              body: { ecosystem: 'npm', package: 'is-number', version: '7.0.0' },
+              index: {
+                name: 'Hermes Package Maintenance Snapshot',
+                description: 'Exact npm or PyPI package/version maintenance snapshot with latest release, release age, deprecation or yanked status, license, repository, and runtime constraints.',
+                category: 'developer-intelligence',
+              },
+            },
+          ];
+
+          const receipt = {
+            checked_at: new Date().toISOString(),
+            expected_commit: '0f9adbbdc26482d527e573d8b75cef9fb088eb1c',
+            paid_call_executed: false,
+            core: {},
+            agent402: {},
+            index402: {},
+          };
+
+          const safeJson = async (res) => {
+            const text = await res.text();
+            try { return JSON.parse(text); } catch { return { raw: text.slice(0, 4000) }; }
+          };
+          const decodeHeader = (value) => {
+            let normalized = value.replace(/-/g, '+').replace(/_/g, '/');
+            while (normalized.length % 4) normalized += '=';
+            return JSON.parse(Buffer.from(normalized, 'base64').toString('utf8'));
+          };
+
+          const healthRes = await fetch(`${origin}/health`);
+          receipt.core.health = { status: healthRes.status, body: await safeJson(healthRes) };
+
+          const openapiRes = await fetch(`${origin}/openapi.json`);
+          const openapi = await safeJson(openapiRes);
+          receipt.core.openapi = { status: openapiRes.status, paths: Object.keys(openapi?.paths ?? {}).length, products: {} };
+          for (const p of products) {
+            const op = openapi?.paths?.[p.path]?.post;
+            receipt.core.openapi.products[p.key] = {
+              present: Boolean(op),
+              operation_id: op?.operationId ?? null,
+              price: op?.['x-payment-info']?.price?.amount ?? null,
+            };
+          }
+
+          const manifestRes = await fetch(`${origin}/.well-known/x402`);
+          const manifest = await safeJson(manifestRes);
+          receipt.core.manifest = {
+            status: manifestRes.status,
+            resources: (manifest?.resources ?? []).length,
+            tools: manifest?.capabilities?.tools ?? null,
+            products: {},
+          };
+          for (const p of products) {
+            const ep = (manifest?.endpoints ?? []).find((x) => x?.path === p.path);
+            receipt.core.manifest.products[p.key] = {
+              present: Boolean(ep),
+              price_usd: ep?.price_usd ?? null,
+              network: ep?.network ?? null,
+            };
+          }
+
+          receipt.core.challenges = {};
+          for (const p of products) {
+            const res = await fetch(`${origin}${p.path}`, {
+              method: 'POST',
+              headers: { 'content-type': 'application/json' },
+              body: JSON.stringify(p.body),
+            });
+            const header = res.headers.get('payment-required');
+            let payment = null;
+            if (header) payment = decodeHeader(header);
+            const quote = payment?.accepts?.[0] ?? {};
+            receipt.core.challenges[p.key] = {
+              status: res.status,
+              x402_version: payment?.x402Version ?? null,
+              scheme: quote?.scheme ?? null,
+              network: quote?.network ?? null,
+              amount: quote?.amount ?? null,
+              asset: quote?.asset ?? null,
+              pay_to: quote?.payTo ?? null,
+              bazaar_present: Boolean(payment?.extensions?.bazaar),
+            };
+          }
+
+          const registerRes = await fetch('https://agent402.tools/api/index/register', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ origin }),
+          });
+          receipt.agent402.registration = { status: registerRes.status, body: await safeJson(registerRes) };
+
+          await new Promise((resolve) => setTimeout(resolve, 1500));
+          receipt.agent402.routes = {};
+          for (const p of products) {
+            const routeRes = await fetch(`https://agent402.tools/api/route?q=${encodeURIComponent(p.query)}&include=external`);
+            const route = await safeJson(routeRes);
+            const results = Array.isArray(route?.results) ? route.results : [];
+            const index = results.findIndex((x) => x?.seller === origin && x?.route === p.path);
+            const match = index >= 0 ? results[index] : null;
+            receipt.agent402.routes[p.key] = {
+              status: routeRes.status,
+              rank: index >= 0 ? index + 1 : null,
+              count: route?.count ?? null,
+              score: match?.score ?? match?.why?.score ?? null,
+              price_usd: match?.priceUsd ?? null,
+              execute_via: match?.executeVia ?? null,
+            };
+          }
+
+          receipt.index402.registrations = {};
+          for (const p of products) {
+            const endpoint = `${origin}${p.path}`;
+            const indexRes = await fetch('https://402index.io/api/v1/register', {
+              method: 'POST',
+              headers: { 'content-type': 'application/json' },
+              body: JSON.stringify({
+                url: endpoint,
+                name: p.index.name,
+                protocol: 'x402',
+                http_method: 'POST',
+                probe_body: JSON.stringify(p.body),
+                description: p.index.description,
+                price_usd: 0.005,
+                payment_asset: 'USDC',
+                payment_network: 'Base',
+                category: p.index.category,
+                provider: 'Hermes Commerce',
+              }),
+            });
+            receipt.index402.registrations[p.key] = { status: indexRes.status, body: await safeJson(indexRes) };
+          }
+
+          receipt.index402.searches = {};
+          for (const p of products) {
+            const searchRes = await fetch(`https://402index.io/api/v1/services?protocol=x402&limit=100&q=${encodeURIComponent(p.index.name)}`);
+            const search = await safeJson(searchRes);
+            const services = Array.isArray(search?.services) ? search.services : [];
+            const exact = services.find((x) => x?.url === `${origin}${p.path}`) ?? null;
+            receipt.index402.searches[p.key] = {
+              status: searchRes.status,
+              found: Boolean(exact),
+              service: exact ? {
+                id: exact.id,
+                name: exact.name,
+                price_usd: exact.price_usd,
+                health_status: exact.health_status,
+                probe_status: exact.probe_status,
+                x402_payment_valid: exact.x402_payment_valid,
+              } : null,
+            };
+          }
+
+          const coreOk = receipt.core.health.status === 200
+            && receipt.core.openapi.status === 200
+            && receipt.core.openapi.paths === 13
+            && receipt.core.manifest.status === 200
+            && receipt.core.manifest.resources === 13
+            && receipt.core.manifest.tools === 13
+            && products.every((p) => receipt.core.openapi.products[p.key]?.price === '0.005000')
+            && products.every((p) => receipt.core.manifest.products[p.key]?.price_usd === 0.005)
+            && products.every((p) => {
+              const q = receipt.core.challenges[p.key];
+              return q?.status === 402
+                && q?.x402_version === 2
+                && q?.scheme === 'exact'
+                && q?.network === 'eip155:8453'
+                && q?.amount === '5000'
+                && String(q?.asset ?? '').toLowerCase() === asset.toLowerCase()
+                && String(q?.pay_to ?? '').toLowerCase() === wallet.toLowerCase()
+                && q?.bazaar_present === true;
+            });
+          receipt.core_ok = coreOk;
+          console.log('REVENUE_PRICE_RELEASE_RECEIPT_BEGIN');
+          console.log(JSON.stringify(receipt, null, 2));
+          console.log('REVENUE_PRICE_RELEASE_RECEIPT_END');
+          if (!coreOk) process.exitCode = 1;
+          NODE
