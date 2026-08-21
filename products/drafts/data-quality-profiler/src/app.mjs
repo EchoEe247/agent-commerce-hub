@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { LIMITS } from "./dataset/limits.mjs";
 import { classifyError } from "./errors.mjs";
 import { buildCounterpartyAvailability } from "./counterparty-availability.mjs";
+import { createEntitySanctionsScreen } from "./entity-sanctions-screen.mjs";
 import { buildOpenApiDocument } from "./openapi.mjs";
 import {
   duplicateAudit,
@@ -16,11 +17,24 @@ import {
 const SELLER_ORIGIN = "https://hermes-counterparty-api.onrender.com";
 const INDEX402_VERIFICATION_HASH = "38c7d63638e26a694fdf51fd1b213221e26d73044847c5dac48bf4aa19756605";
 
-export function buildApp({ config, paymentPlugin, clock = { now: () => Date.now() }, deadlineMs = LIMITS.processingMs, logger = console }) {
+export function buildApp({
+  config,
+  paymentPlugin,
+  clock = { now: () => Date.now() },
+  sanctionsClock,
+  deadlineMs = LIMITS.processingMs,
+  logger = console,
+  entitySanctionsScreen,
+  ofacFetch = globalThis.fetch,
+}) {
   const app = Fastify({
     logger: false,
     bodyLimit: LIMITS.bodyBytes,
     trustProxy: true,
+  });
+  const screenEntity = entitySanctionsScreen ?? createEntitySanctionsScreen({
+    fetchImpl: ofacFetch,
+    clock: sanctionsClock ?? clock,
   });
 
   app.addHook("onResponse", async (request, reply) => {
@@ -221,6 +235,15 @@ export function buildApp({ config, paymentPlugin, clock = { now: () => Date.now(
         at: new Date(clock.now()).toISOString(),
       });
       return reply.send(result);
+    } catch (error) {
+      const { statusCode, body } = classifyError(error);
+      return reply.status(statusCode).send(body);
+    }
+  });
+
+  app.post("/v1/entity-sanctions-screen", async (request, reply) => {
+    try {
+      return reply.send(await screenEntity(request.body));
     } catch (error) {
       const { statusCode, body } = classifyError(error);
       return reply.status(statusCode).send(body);
