@@ -40,7 +40,7 @@ function priceAmount(value) {
   return parsed.toFixed(6);
 }
 
-function paidOperation({ operationId, summary, description, price, schema, example, outputSchema = GENERIC_OBJECT_OUTPUT, tags }) {
+function paidOperation({ operationId, summary, description, price, schema, example, outputSchema = GENERIC_OBJECT_OUTPUT, tags, extraResponses = {} }) {
   return {
     operationId,
     summary,
@@ -76,6 +76,7 @@ function paidOperation({ operationId, summary, description, price, schema, examp
       "402": { description: "Payment Required" },
       "408": { description: "Processing timeout" },
       "413": { description: "Request exceeds service limits" },
+      ...extraResponses,
     },
   };
 }
@@ -88,8 +89,8 @@ export function buildOpenApiDocument(config) {
     info: {
       title: "Hermes Agent Commerce API",
       version,
-      description: "Paid agent utilities for counterparty availability and deterministic JSON/CSV data-quality work.",
-      "x-guidance": "All eight POST operations are pay-per-call x402 resources on Base using USDC. Choose the narrowest operation that matches the task. Send the documented JSON request body; an unpaid call returns HTTP 402 with the runtime payment challenge, then retry with a valid x402 payment. Dataset operations accept JSON records or CSV text. No MPP payment support is advertised by this API yet.",
+      description: "Paid agent utilities for counterparty availability, OFAC sanctions screening, and deterministic JSON/CSV data-quality work.",
+      "x-guidance": "All nine POST operations are pay-per-call x402 resources on Base using USDC. Choose the narrowest operation that matches the task. Send the documented JSON request body; an unpaid call returns HTTP 402 with the runtime payment challenge, then retry with a valid x402 payment. Dataset operations accept JSON records or CSV text. The sanctions screen returns candidate matches from authoritative OFAC SDN source files and is not a legal compliance determination. No MPP payment support is advertised by this API yet.",
     },
     servers: [{ url: PUBLIC_ORIGIN }],
     paths: {
@@ -124,6 +125,72 @@ export function buildOpenApiDocument(config) {
             },
             required: ["country", "timezone", "local", "business"],
             additionalProperties: true,
+          },
+        }),
+      },
+      "/v1/entity-sanctions-screen": {
+        post: paidOperation({
+          operationId: "entitySanctionsScreen",
+          summary: "Screen an entity or person against OFAC SDN",
+          description: "Screens a person or organization name against authoritative U.S. Treasury OFAC SDN primary names and aliases, returns deterministic exact or fuzzy candidate scores plus programs and published addresses, and supports optional country and entity-type filtering. The result is informational and is not a legal compliance determination.",
+          price: config.x402SanctionsScreenPrice ?? "$0.02",
+          tags: ["Compliance"],
+          schema: {
+            type: "object",
+            properties: {
+              name: {
+                type: "string",
+                minLength: 1,
+                maxLength: 200,
+                description: "Person, organization, vessel, or other entity name to screen.",
+              },
+              country: {
+                type: "string",
+                description: "Optional country filter matched against OFAC-published addresses.",
+              },
+              entity_type: {
+                type: "string",
+                enum: ["individual", "entity", "vessel", "aircraft"],
+                description: "Optional OFAC entity-type filter.",
+              },
+            },
+            required: ["name"],
+          },
+          example: { name: "ACME SHIPPING LLC" },
+          outputSchema: {
+            type: "object",
+            properties: {
+              schema_version: { type: "string" },
+              query: { type: "object", additionalProperties: true },
+              matches_found: { type: "boolean" },
+              candidates: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    uid: { type: "string" },
+                    name: { type: "string" },
+                    entity_type: { type: ["string", "null"] },
+                    programs: { type: "array", items: { type: "string" } },
+                    score: { type: "integer", minimum: 0, maximum: 100 },
+                    match_type: { type: "string", enum: ["primary_exact", "alias_exact", "fuzzy"] },
+                    matched_name: { type: "string" },
+                    aliases: { type: "array", items: { type: "object", additionalProperties: true } },
+                    addresses: { type: "array", items: { type: "object", additionalProperties: true } },
+                    remarks: { type: ["string", "null"] },
+                  },
+                  required: ["uid", "name", "score", "match_type", "matched_name"],
+                  additionalProperties: true,
+                },
+              },
+              source: { type: "object", additionalProperties: true },
+              warnings: { type: "array", items: { type: "string" } },
+            },
+            required: ["schema_version", "query", "matches_found", "candidates", "source", "warnings"],
+            additionalProperties: true,
+          },
+          extraResponses: {
+            "503": { description: "Authoritative OFAC source unavailable" },
           },
         }),
       },
