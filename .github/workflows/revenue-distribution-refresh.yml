@@ -1,0 +1,98 @@
+name: Revenue Distribution Refresh
+
+on:
+  pull_request:
+    branches:
+      - feat/hermes-commerce-control-plane
+    paths:
+      - '.github/workflows/revenue-distribution-refresh.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: AgentCash search audit
+        shell: bash
+        run: |
+          set +e
+          for q in \
+            'OFAC sanctions screening person organization' \
+            'company domain intelligence DNS RDAP mail security' \
+            'dependency vulnerability exact package version OSV' \
+            'package maintenance npm pypi latest deprecated yanked'
+          do
+            echo "=== AGENTCASH SEARCH: $q ==="
+            npx -y agentcash@latest search "$q" --format json
+            echo "SEARCH_EXIT=$?"
+          done
+          exit 0
+      - name: Refresh Agent402 and verify buyer-facing prices
+        shell: bash
+        run: |
+          node <<'NODE'
+          const origin = 'https://hermes-counterparty-api.onrender.com';
+          const safeJson = async (res) => {
+            const text = await res.text();
+            try { return JSON.parse(text); } catch { return { raw: text.slice(0, 4000) }; }
+          };
+          const reg = await fetch('https://agent402.tools/api/index/register', {
+            method: 'POST', headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ origin }),
+          });
+          console.log('AGENT402_REGISTER', JSON.stringify({ status: reg.status, body: await safeJson(reg) }, null, 2));
+          const tasks = [
+            ['VULN','dependency vulnerability exact package version OSV'],
+            ['PACKAGE','package maintenance npm pypi latest deprecated yanked'],
+          ];
+          for (const [label, q] of tasks) {
+            const r = await fetch('https://agent402.tools/api/route?q=' + encodeURIComponent(q) + '&include=external');
+            const body = await safeJson(r);
+            const hermes = Array.isArray(body?.results) ? body.results.find(x => x?.seller === origin) : null;
+            console.log('AGENT402_ROUTE_' + label, JSON.stringify({ status: r.status, hermes }, null, 2));
+          }
+          NODE
+      - name: Retry 402 Index for Products 12 and 13
+        shell: bash
+        run: |
+          node <<'NODE'
+          const services = [
+            {
+              url: 'https://hermes-counterparty-api.onrender.com/v1/dependency-vulnerability-check',
+              name: 'Hermes Dependency Vulnerability Check',
+              probe_body: JSON.stringify({ ecosystem: 'npm', package: 'fastify', version: '5.6.0' }),
+              description: 'Check one exact dependency version against OSV and return vulnerability IDs, CVE aliases, severity, affected ranges, fixed versions, references, and provenance.',
+              category: 'software-security',
+            },
+            {
+              url: 'https://hermes-counterparty-api.onrender.com/v1/package-maintenance-snapshot',
+              name: 'Hermes Package Maintenance Snapshot',
+              probe_body: JSON.stringify({ ecosystem: 'npm', package: 'is-number', version: '7.0.0' }),
+              description: 'Exact npm or PyPI package/version maintenance snapshot with latest release, release age, deprecation or yanked status, license, repository, and runtime constraints.',
+              category: 'developer-intelligence',
+            },
+          ];
+          for (const svc of services) {
+            const r = await fetch('https://402index.io/api/v1/register', {
+              method: 'POST', headers: { 'content-type': 'application/json' },
+              body: JSON.stringify({
+                ...svc,
+                protocol: 'x402',
+                http_method: 'POST',
+                price_usd: 0.005,
+                payment_asset: 'USDC',
+                payment_network: 'Base',
+                provider: 'Hermes Commerce',
+              }),
+            });
+            const text = await r.text();
+            let body; try { body = JSON.parse(text); } catch { body = { raw: text.slice(0, 4000) }; }
+            console.log('INDEX402_REGISTER', JSON.stringify({ url: svc.url, status: r.status, body }, null, 2));
+          }
+          NODE
