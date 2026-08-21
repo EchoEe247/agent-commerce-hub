@@ -50,7 +50,18 @@ jobs:
         run: |
           set -euo pipefail
           TARGET='https://hermes-counterparty-api.onrender.com'
-          echo '=== DISCOVER ==='
+          echo '=== DISCOVER ORIGIN ==='
           npx -y @agentcash/discovery@latest discover "$TARGET"
-          echo '=== CHECK ==='
-          npx -y @agentcash/discovery@latest check "$TARGET"
+          for PATHNAME in \
+            /v1/counterparty-availability \
+            /v1/profile \
+            /v1/duplicate-audit \
+            /v1/quality-gate \
+            /v1/schema-drift \
+            /v1/data-contract-check \
+            /v1/clean-normalize \
+            /v1/repair-plan
+          do
+            echo "=== CHECK $PATHNAME ==="
+            npx -y @agentcash/discovery@latest check "$TARGET$PATHNAME"
+          done
