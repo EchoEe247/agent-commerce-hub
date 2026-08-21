@@ -118,3 +118,46 @@ jobs:
         if: github.event_name == 'pull_request'
         working-directory: products/drafts/data-quality-profiler
         run: node scripts/sec-source-smoke.mjs
+      - name: Inspect Agent402 external routing (temporary)
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: |
+          node <<'NODE'
+          const host = 'hermes-counterparty-api.onrender.com';
+          const origin = `https://${host}`;
+          const get = async (url) => {
+            const r = await fetch(url, {headers:{accept:'application/json','cache-control':'no-cache'}});
+            const text = await r.text();
+            let body; try { body = JSON.parse(text); } catch { body = text; }
+            return {status:r.status, body};
+          };
+          const sellerChecks = [];
+          for (let i = 0; i < 6; i++) {
+            const r = await get(`https://agent402.tools/api/index?seller=${encodeURIComponent(host)}&t=${Date.now()}-${i}`);
+            sellerChecks.push({status:r.status, toolCount:r.body?.toolCount, routable:r.body?.routable, health:r.body?.health, originResponded:r.body?.originResponded, discoveryPath:r.body?.discoveryPath, origin:r.body?.origin});
+            await new Promise(resolve => setTimeout(resolve, 250));
+          }
+          const queries = [
+            ['ofac', 'OFAC sanctions screening person organization'],
+            ['domain', 'company domain intelligence DNS RDAP DMARC website'],
+            ['sec', 'SEC company snapshot ticker CIK 10-K 10-Q financial facts'],
+          ];
+          const routes = {};
+          for (const [key,q] of queries) {
+            const r = await get(`https://agent402.tools/api/route?q=${encodeURIComponent(q)}&include=external&top=25&t=${Date.now()}`);
+            const rows = Array.isArray(r.body?.results) ? r.body.results : [];
+            const ours = rows.map((x,idx)=>({idx:idx+1,...x})).filter(x => String(x.seller||'').replace(/\/+$/,'') === origin);
+            routes[key] = {status:r.status, count:r.body?.count, sellers:r.body?.sellers, ours:ours.map(x=>({rank:x.idx,name:x.name,route:x.route,price:x.price,score:x.score,health:x.health,payable:x.payable,networks:x.networks}))};
+          }
+          const toolSearch = await get(`https://agent402.tools/api/index/tools?q=${encodeURIComponent('Hermes SEC Company Snapshot')}&source=external&limit=100&t=${Date.now()}`);
+          const toolRows = Array.isArray(toolSearch.body?.tools) ? toolSearch.body.tools : Array.isArray(toolSearch.body?.results) ? toolSearch.body.results : [];
+          const toolMatches = toolRows.filter(x => String(x.seller||x.origin||x.source||'').includes(host) || String(x.url||'').includes(host));
+          const out = {checked_at:new Date().toISOString(), sellerChecks, routes, indexTools:{status:toolSearch.status,total:toolSearch.body?.total ?? toolSearch.body?.count ?? null,matches:toolMatches.slice(0,10)}};
+          console.log('AGENT402_DIAGNOSTIC=' + JSON.stringify(out));
+          if (sellerChecks.some(x => x.status !== 200 || x.toolCount !== 11 || x.routable !== true || x.origin !== origin)) {
+            throw new Error('Agent402 seller drill-down is not consistently healthy/indexed');
+          }
+          if (!routes.ofac.ours.length || !routes.domain.ours.length || !routes.sec.ours.length) {
+            throw new Error('One or more Hermes products are absent from Agent402 external route top-25');
+          }
+          NODE
