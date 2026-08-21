@@ -5,6 +5,8 @@ import {
   qualityGate,
   schemaDrift,
   dataContractCheck,
+  cleanNormalize,
+  repairPlan,
 } from "../src/dataset/operations.mjs";
 
 const duplicateInput = {
@@ -177,4 +179,100 @@ test("dataContractCheck rejects malformed contracts", () => {
     () => dataContractCheck({ dataset: { format: "json", records: [] }, contract: { allow_extra_fields: "yes" } }),
     /INVALID_DATASET/
   );
+});
+
+test("cleanNormalize trims strings, converts blanks to null, then removes transformed duplicates", () => {
+  const result = cleanNormalize({
+    format: "json",
+    records: [
+      { id: 1, name: "  Alice  ", note: "   " },
+      { id: 1, name: "Alice", note: null },
+      { id: 2, name: " Bob ", note: "ok" },
+    ],
+  });
+  assert.equal(result.schema_version, "1.0");
+  assert.equal(result.original_record_count, 3);
+  assert.equal(result.cleaned_record_count, 2);
+  assert.equal(result.removed_duplicate_rows, 1);
+  assert.deepEqual(result.transformations, {
+    trimmed_strings: 3,
+    blanks_to_null: 1,
+    duplicates_removed: 1,
+  });
+  assert.deepEqual(result.records, [
+    { id: 1, name: "Alice", note: null },
+    { id: 2, name: "Bob", note: "ok" },
+  ]);
+  assert.match(result.schema_fingerprint, /^sha256:[a-f0-9]{64}$/);
+});
+
+test("cleanNormalize options can disable each conservative transformation", () => {
+  const input = {
+    format: "json",
+    records: [
+      { id: 1, value: "  " },
+      { id: 1, value: "  " },
+    ],
+    options: { trim_strings: false, blank_to_null: false, deduplicate: false },
+  };
+  const result = cleanNormalize(input);
+  assert.equal(result.cleaned_record_count, 2);
+  assert.equal(result.removed_duplicate_rows, 0);
+  assert.deepEqual(result.records, input.records);
+  assert.deepEqual(result.transformations, {
+    trimmed_strings: 0,
+    blanks_to_null: 0,
+    duplicates_removed: 0,
+  });
+});
+
+test("cleanNormalize rejects non-boolean options", () => {
+  assert.throws(
+    () => cleanNormalize({ format: "json", records: [], options: { trim_strings: "yes" } }),
+    /INVALID_DATASET/
+  );
+  assert.throws(
+    () => cleanNormalize({ format: "json", records: [], options: { blank_to_null: 1 } }),
+    /INVALID_DATASET/
+  );
+  assert.throws(
+    () => cleanNormalize({ format: "json", records: [], options: { deduplicate: null } }),
+    /INVALID_DATASET/
+  );
+});
+
+test("repairPlan orders deterministic actions from profile evidence", () => {
+  const result = repairPlan({
+    format: "json",
+    records: [
+      { id: 1, value: "1", constant: "x" },
+      { id: 1, value: "1", constant: "x" },
+      { id: 2, value: 2, constant: "x" },
+      { id: null, value: null, constant: "x" },
+    ],
+  });
+  assert.equal(result.schema_version, "1.0");
+  assert.match(result.schema_fingerprint, /^sha256:[a-f0-9]{64}$/);
+  assert.ok(Number.isInteger(result.quality_score));
+  assert.deepEqual(result.actions.map((action) => action.code), [
+    "DEDUPLICATE_ROWS",
+    "RESOLVE_MISSING_VALUES",
+    "NORMALIZE_FIELD_TYPES",
+    "REPAIR_IDENTIFIER_INTEGRITY",
+    "REVIEW_CONSTANT_FIELDS",
+  ]);
+  assert.equal(result.issues.duplicate_rows, 1);
+  assert.equal(result.issues.missing_values, 2);
+  assert.deepEqual(result.issues.mixed_type_fields, ["value"]);
+  assert.deepEqual(result.issues.identifier_integrity_fields, ["id"]);
+  assert.deepEqual(result.issues.constant_fields, ["constant"]);
+});
+
+test("repairPlan returns no actions for a clean varied dataset", () => {
+  const result = repairPlan({
+    format: "json",
+    records: [{ id: 1, value: 10 }, { id: 2, value: 20 }, { id: 3, value: 30 }],
+  });
+  assert.deepEqual(result.actions, []);
+  assert.equal(result.quality_score, 100);
 });
