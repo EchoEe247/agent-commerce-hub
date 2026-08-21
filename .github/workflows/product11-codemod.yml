@@ -17,20 +17,56 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: feat/sec-company-snapshot
-      - name: Add Product 11 price config
+      - name: Publish Product 11 commercial surface
         shell: bash
         run: |
           python - <<'PY'
           from pathlib import Path
-          p = Path('products/drafts/data-quality-profiler/src/config.mjs')
+
+          # Agent402 manifest
+          p = Path('products/drafts/data-quality-profiler/src/app.mjs')
           s = p.read_text()
-          if 'x402SecCompanyPrice:' not in s:
-              s = s.replace('    x402CompanyDomainPrice: env.X402_COMPANY_DOMAIN_PRICE ?? "$0.02",\n', '    x402CompanyDomainPrice: env.X402_COMPANY_DOMAIN_PRICE ?? "$0.02",\n    x402SecCompanyPrice: env.X402_SEC_COMPANY_PRICE ?? "$0.02",\n', 1)
+          if 'const secCompanyPrice = config.x402SecCompanyPrice' not in s:
+              s = s.replace('    const companyDomainPrice = config.x402CompanyDomainPrice ?? "$0.02";\n', '    const companyDomainPrice = config.x402CompanyDomainPrice ?? "$0.02";\n    const secCompanyPrice = config.x402SecCompanyPrice ?? "$0.02";\n', 1)
+          s = s.replace('    const businessIntelligencePrices = [localePrice, companyDomainPrice];', '    const businessIntelligencePrices = [localePrice, companyDomainPrice, secCompanyPrice];')
+          s = s.replace('    const description = "Agent-ready paid utilities for company/domain intelligence, OFAC sanctions screening, JSON and CSV data quality, schema compatibility, deterministic cleanup, repair planning, and practical counterparty contact-window checks.";', '    const description = "Agent-ready paid utilities for SEC company snapshots, company/domain intelligence, OFAC sanctions screening, JSON and CSV data quality, schema compatibility, deterministic cleanup, repair planning, and practical counterparty contact-window checks.";')
+          if '${SELLER_ORIGIN}/v1/sec-company-snapshot' not in s:
+              s = s.replace('        { url: `${SELLER_ORIGIN}/v1/company-domain-intelligence`, method: "POST" },\n', '        { url: `${SELLER_ORIGIN}/v1/company-domain-intelligence`, method: "POST" },\n        { url: `${SELLER_ORIGIN}/v1/sec-company-snapshot`, method: "POST" },\n', 1)
+          s = s.replace('        tools: 10,', '        tools: 11,', 1)
+          s = s.replace('            tools: 2,\n            priceRange: businessIntelligencePriceRange,', '            tools: 3,\n            priceRange: businessIntelligencePriceRange,', 1)
+          sec_endpoint = '''        {\n          name: "sec-company-snapshot-edgar-filings-xbrl",\n          method: "POST",\n          path: "/v1/sec-company-snapshot",\n          url: `${SELLER_ORIGIN}/v1/sec-company-snapshot`,\n          summary: "SEC EDGAR company snapshot with identity, recent filings, and sourced XBRL facts.",\n          description: "Resolve a ticker or CIK to canonical SEC identity, latest 10-K, 10-Q, and 8-K filing metadata and URLs, plus selected SEC XBRL facts for revenue, net income, assets, liabilities, and shares outstanding.",\n          price_usd: priceNumber(secCompanyPrice),\n          network,\n        },\n'''
+          if 'name: "sec-company-snapshot-edgar-filings-xbrl"' not in s:
+              marker = '''        {\n          name: "ofac-sdn-entity-sanctions-screen",\n'''
+              s = s.replace(marker, sec_endpoint + marker, 1)
+          p.write_text(s)
+
+          # OpenAPI
+          p = Path('products/drafts/data-quality-profiler/src/openapi.mjs')
+          s = p.read_text()
+          s = s.replace('All ten POST operations are pay-per-call x402 resources', 'All eleven POST operations are pay-per-call x402 resources')
+          s = s.replace('Paid agent utilities for counterparty availability, company/domain intelligence, OFAC sanctions screening, and deterministic JSON/CSV data-quality work.', 'Paid agent utilities for counterparty availability, SEC company snapshots, company/domain intelligence, OFAC sanctions screening, and deterministic JSON/CSV data-quality work.')
+          sec_openapi = '''      "/v1/sec-company-snapshot": {\n        post: paidOperation({\n          operationId: "secCompanySnapshot",\n          summary: "SEC EDGAR company identity, filings, and XBRL snapshot",\n          description: "Resolve exactly one ticker or CIK using official SEC data and return canonical company identity, latest 10-K, 10-Q, and 8-K filing metadata with SEC archive URLs, plus selected sourced XBRL facts for revenue, net income, assets, liabilities, and shares outstanding.",\n          price: config.x402SecCompanyPrice ?? "$0.02",\n          tags: ["Business Intelligence"],\n          schema: {\n            type: "object",\n            properties: {\n              ticker: { type: "string", minLength: 1, maxLength: 20, description: "US public-company ticker, for example AAPL." },\n              cik: { type: ["string", "integer"], description: "SEC Central Index Key, 1 to 10 digits." },\n            },\n            oneOf: [\n              { required: ["ticker"] },\n              { required: ["cik"] },\n            ],\n          },\n          example: { ticker: "AAPL" },\n          outputSchema: {\n            type: "object",\n            properties: {\n              schema_version: { type: "string" },\n              query: { type: "object", additionalProperties: true },\n              company: { type: "object", additionalProperties: true },\n              filings: { type: "object", additionalProperties: true },\n              facts: { type: "object", additionalProperties: true },\n              source: { type: "object", additionalProperties: true },\n              warnings: { type: "array", items: { type: "string" } },\n            },\n            required: ["schema_version", "query", "company", "filings", "facts", "source", "warnings"],\n            additionalProperties: true,\n          },\n          extraResponses: {\n            "404": { description: "SEC company not found" },\n            "503": { description: "Required SEC source unavailable" },\n          },\n        }),\n      },\n'''
+          if '"/v1/sec-company-snapshot"' not in s:
+              marker = '      "/v1/profile": {\n'
+              s = s.replace(marker, sec_openapi + marker, 1)
+          p.write_text(s)
+
+          # x402 + Bazaar
+          p = Path('products/drafts/data-quality-profiler/src/payments/x402-plugin.mjs')
+          s = p.read_text()
+          sec_bazaar = '''    const secCompanyBazaarExtension = declareDiscoveryExtension({\n      bodyType: "json",\n      input: { ticker: "AAPL" },\n      inputSchema: {\n        type: "object",\n        properties: {\n          ticker: { type: "string", minLength: 1, maxLength: 20, description: "US public-company ticker, for example AAPL" },\n          cik: { type: ["string", "integer"], description: "SEC Central Index Key, 1 to 10 digits" },\n        },\n        oneOf: [\n          { required: ["ticker"] },\n          { required: ["cik"] },\n        ],\n      },\n      output: {\n        example: {\n          schema_version: "1.0",\n          query: { ticker: "AAPL", cik: null, resolved_cik: "0000320193" },\n          company: { cik: "0000320193", name: "Apple Inc.", ticker: "AAPL", exchange: "Nasdaq", sic: "3571" },\n          filings: { latest_10_k: null, latest_10_q: null, latest_8_k: null },\n          facts: { revenue: null, net_income: null, assets: null, liabilities: null, shares_outstanding: null },\n          source: { provider: "SEC EDGAR" },\n          warnings: [],\n        },\n      },\n    });\n\n'''
+          if 'const secCompanyBazaarExtension' not in s:
+              marker = '    const duplicateAuditBazaarExtension = declareDiscoveryExtension({\n'
+              s = s.replace(marker, sec_bazaar + marker, 1)
+          sec_route = '''      "POST /v1/sec-company-snapshot": protectedRoute(\n        config,\n        config.x402SecCompanyPrice,\n        "Resolve a ticker or CIK to official SEC EDGAR company identity, recent filings, and selected XBRL facts",\n        secCompanyBazaarExtension\n      ),\n'''
+          if '"POST /v1/sec-company-snapshot"' not in s:
+              marker = '      "POST /v1/duplicate-audit": protectedRoute(\n'
+              s = s.replace(marker, sec_route + marker, 1)
           p.write_text(s)
           PY
           git config user.name 'github-actions[bot]'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
-          git add products/drafts/data-quality-profiler/src/config.mjs
-          git commit -m 'feat: add Product 11 price config' || true
+          git add products/drafts/data-quality-profiler/src/app.mjs products/drafts/data-quality-profiler/src/openapi.mjs products/drafts/data-quality-profiler/src/payments/x402-plugin.mjs
+          git commit -m 'feat: publish Product 11 commercial surface' || true
           git push origin HEAD:feat/sec-company-snapshot
-# retrigger-price
+# retrigger-commercial
