@@ -5,6 +5,7 @@ import { classifyError } from "./errors.mjs";
 import { buildCounterpartyAvailability } from "./counterparty-availability.mjs";
 import { createEntitySanctionsScreen } from "./entity-sanctions-screen.mjs";
 import { createCompanyDomainIntelligence } from "./company-domain-intelligence.mjs";
+import { createSecCompanySnapshot } from "./sec-company-snapshot.mjs";
 import { buildOpenApiDocument } from "./openapi.mjs";
 import {
   duplicateAudit,
@@ -28,6 +29,8 @@ export function buildApp({
   entitySanctionsScreen,
   companyDomainIntelligence,
   secCompanySnapshot,
+  secFetch = globalThis.fetch,
+  secClock,
   domainResolver,
   domainPageRequester,
   rdapFetch = globalThis.fetch,
@@ -49,7 +52,10 @@ export function buildApp({
     rdapFetch,
     clock: domainClock ?? clock,
   });
-  const inspectSecCompany = secCompanySnapshot;
+  const inspectSecCompany = secCompanySnapshot ?? createSecCompanySnapshot({
+    fetchImpl: secFetch,
+    clock: secClock ?? clock,
+  });
 
   app.addHook("onResponse", async (request, reply) => {
     if (!request.raw.profilerLog) return;
@@ -307,7 +313,6 @@ export function buildApp({
 
   app.post("/v1/sec-company-snapshot", async (request, reply) => {
     try {
-      if (typeof inspectSecCompany !== "function") throw new Error("SEC_SOURCE_UNAVAILABLE: SEC snapshot service is not configured");
       return reply.send(await inspectSecCompany(request.body));
     } catch (error) {
       const { statusCode, body } = classifyError(error);
