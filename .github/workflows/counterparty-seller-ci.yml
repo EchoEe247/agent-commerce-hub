@@ -24,6 +24,7 @@ on:
       - 'products/drafts/data-quality-profiler/test/entity-sanctions-x402.test.mjs'
       - 'products/drafts/data-quality-profiler/test/company-domain-intelligence.test.mjs'
       - 'products/drafts/data-quality-profiler/test/sec-company-snapshot.test.mjs'
+      - 'products/drafts/data-quality-profiler/test/sec-company-snapshot-errors.test.mjs'
       - 'products/drafts/data-quality-profiler/test/sec-company-snapshot-x402.test.mjs'
       - 'products/drafts/data-quality-profiler/test/counterparty-api.test.mjs'
       - 'products/drafts/data-quality-profiler/test/openapi-discovery.test.mjs'
@@ -50,6 +51,7 @@ on:
       - 'products/drafts/data-quality-profiler/test/entity-sanctions-x402.test.mjs'
       - 'products/drafts/data-quality-profiler/test/company-domain-intelligence.test.mjs'
       - 'products/drafts/data-quality-profiler/test/sec-company-snapshot.test.mjs'
+      - 'products/drafts/data-quality-profiler/test/sec-company-snapshot-errors.test.mjs'
       - 'products/drafts/data-quality-profiler/test/sec-company-snapshot-x402.test.mjs'
       - 'products/drafts/data-quality-profiler/test/counterparty-api.test.mjs'
       - 'products/drafts/data-quality-profiler/test/openapi-discovery.test.mjs'
@@ -93,6 +95,7 @@ jobs:
           if [ -f test/entity-sanctions-x402.test.mjs ]; then TESTS+=(test/entity-sanctions-x402.test.mjs); fi
           if [ -f test/company-domain-intelligence.test.mjs ]; then TESTS+=(test/company-domain-intelligence.test.mjs); fi
           if [ -f test/sec-company-snapshot.test.mjs ]; then TESTS+=(test/sec-company-snapshot.test.mjs); fi
+          if [ -f test/sec-company-snapshot-errors.test.mjs ]; then TESTS+=(test/sec-company-snapshot-errors.test.mjs); fi
           if [ -f test/sec-company-snapshot-x402.test.mjs ]; then TESTS+=(test/sec-company-snapshot-x402.test.mjs); fi
           node --test "${TESTS[@]}"
       - name: Full profiler suite (PR gate)
