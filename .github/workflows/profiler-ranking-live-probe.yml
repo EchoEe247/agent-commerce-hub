@@ -1,0 +1,147 @@
+name: Profiler Ranking Live Probe
+
+on:
+  push:
+    branches:
+      - tdd/agent402-profiler-ranking-20260820
+    paths:
+      - .github/workflows/profiler-ranking-live-probe.yml
+  pull_request:
+    branches:
+      - feat/hermes-commerce-control-plane
+    paths:
+      - .github/workflows/profiler-ranking-live-probe.yml
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Run observable tests and live probes
+        shell: bash
+        run: |
+          set +e
+          mkdir -p research/raw/agent402-profiler-ranking
+
+          (
+            cd products/drafts/data-quality-profiler
+            npm ci
+            node --test \
+              test/counterparty-availability.test.mjs \
+              test/counterparty-api.test.mjs \
+              test/config.test.mjs
+          ) > /tmp/tests.log 2>&1
+          TEST_EXIT=$?
+
+          MANIFEST_CODE=$(curl -sS --max-time 60 \
+            -o /tmp/manifest.json \
+            -w '%{http_code}' \
+            'https://hermes-counterparty-api.onrender.com/.well-known/x402')
+          CURL_EXIT=$?
+          if [ ! -f /tmp/manifest.json ]; then echo '{}' > /tmp/manifest.json; fi
+
+          node <<'NODE'
+          const fs = require('node:fs');
+          const ORIGIN = 'https://hermes-counterparty-api.onrender.com';
+          const queries = [
+            'profile JSON CSV dataset quality missing values duplicates type conflicts',
+            'validate CSV data before ETL or AI agent use',
+            'find missing values duplicate rows and inconsistent data types',
+          ];
+          const summaries = [];
+          for (const query of queries) {
+            try {
+              const response = await fetch('https://agent402.tools/api/route', {
+                method: 'POST',
+                headers: { 'content-type': 'application/json' },
+                body: JSON.stringify({ query, top: 10, include: 'external' }),
+                signal: AbortSignal.timeout(60000),
+              });
+              const text = await response.text();
+              let data = {};
+              try { data = JSON.parse(text); } catch {}
+              const results = Array.isArray(data?.results) ? data.results : [];
+              const index = results.findIndex((r) => r?.seller === ORIGIN);
+              const hit = index >= 0 ? results[index] : null;
+              summaries.push({
+                query,
+                httpStatus: response.status,
+                found: index >= 0,
+                rank: index >= 0 ? index + 1 : null,
+                score: hit?.score ?? hit?.why?.score ?? null,
+                slug: hit?.slug ?? null,
+                name: hit?.name ?? null,
+                priceUsd: hit?.priceUsd ?? hit?.price ?? null,
+                matchedOn: hit?.why?.matchedOn ?? null,
+                health: hit?.health ?? hit?.why?.health ?? null,
+                top3: results.slice(0, 3).map((r, i) => ({
+                  rank: i + 1,
+                  seller: r?.seller ?? null,
+                  slug: r?.slug ?? null,
+                  score: r?.score ?? r?.why?.score ?? null,
+                  priceUsd: r?.priceUsd ?? r?.price ?? null,
+                })),
+                responseError: response.ok ? null : text.slice(0, 500),
+              });
+            } catch (error) {
+              summaries.push({ query, found: false, rank: null, error: String(error?.message || error), top3: [] });
+            }
+          }
+          fs.writeFileSync('/tmp/ranking-summary.json', JSON.stringify({
+            allFound: summaries.every((x) => x.found),
+            queries: summaries,
+          }, null, 2));
+          NODE
+
+          TEST_EXIT="$TEST_EXIT" MANIFEST_CODE="$MANIFEST_CODE" CURL_EXIT="$CURL_EXIT" node <<'NODE'
+          const fs = require('node:fs');
+          const expectedName = 'validate-json-csv-data-quality-profile-missing-duplicate-types';
+          const expectedSummary = 'Validate and profile JSON or CSV datasets before ETL, RAG, analytics, or AI agent use; find missing values, duplicates and duplicate rows, inconsistent data types and type conflicts, infer field types, and return a deterministic quality score plus schema fingerprint.';
+          let manifest = {};
+          try { manifest = JSON.parse(fs.readFileSync('/tmp/manifest.json', 'utf8')); } catch {}
+          const profiler = (manifest.endpoints || []).find((x) => x.path === '/v1/profile') || null;
+          const ranking = JSON.parse(fs.readFileSync('/tmp/ranking-summary.json', 'utf8'));
+          const testLog = fs.existsSync('/tmp/tests.log') ? fs.readFileSync('/tmp/tests.log', 'utf8') : '';
+          const evidence = {
+            observedAt: new Date().toISOString(),
+            productionCommit: 'eed85dfa2e91d9b041758dab6f25c12b101e3db1',
+            origin: 'https://hermes-counterparty-api.onrender.com',
+            focusedTests: {
+              exitCode: Number(process.env.TEST_EXIT),
+              pass: Number(process.env.TEST_EXIT) === 0,
+              tail: testLog.slice(-3000),
+            },
+            manifestProbe: {
+              curlExit: Number(process.env.CURL_EXIT),
+              httpStatus: Number(process.env.MANIFEST_CODE || 0),
+              expectedMetadataPresent: !!profiler && profiler.name === expectedName && profiler.summary === expectedSummary && profiler.price_usd === 0.02 && profiler.network === 'eip155:8453',
+              profiler: profiler ? {
+                name: profiler.name,
+                summary: profiler.summary,
+                method: profiler.method,
+                path: profiler.path,
+                priceUsd: profiler.price_usd,
+                network: profiler.network,
+              } : null,
+              serviceToolCount: manifest?.capabilities?.tools ?? null,
+              priceRange: manifest?.payment?.x402?.priceRange ?? null,
+              payTo: manifest?.payment?.x402?.payTo ?? null,
+            },
+            agent402: ranking,
+          };
+          fs.writeFileSync('research/raw/agent402-profiler-ranking/latest.json', JSON.stringify(evidence, null, 2) + '\n');
+          NODE
+
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git add research/raw/agent402-profiler-ranking/latest.json
+          git commit -m 'chore: record observable profiler ranking verification'
+          git push origin HEAD:tdd/agent402-profiler-ranking-20260820
