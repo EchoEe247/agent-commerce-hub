@@ -1,0 +1,60 @@
+name: Apply AgentCash OpenAPI Green
+
+on:
+  push:
+    branches:
+      - feat/openapi-agentcash-discovery
+    paths:
+      - '.github/workflows/openapi-agentcash-apply-green.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/openapi-agentcash-discovery
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Wire OpenAPI route
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('products/drafts/data-quality-profiler/src/app.mjs')
+          text = path.read_text()
+          import_anchor = 'import { buildCounterpartyAvailability } from "./counterparty-availability.mjs";\n'
+          import_line = 'import { buildOpenApiDocument } from "./openapi.mjs";\n'
+          health_anchor = '''  app.get("/health", async () => ({\n    ok: true,\n    service: "data-quality-profiler",\n    version: config.serviceVersion,\n  }));\n\n'''
+          openapi_route = '''  app.get("/openapi.json", async (_request, reply) => (\n    reply.type("application/json").send(buildOpenApiDocument(config))\n  ));\n\n'''
+          assert import_line not in text, 'OpenAPI import already present'
+          assert text.count(import_anchor) == 1, 'import anchor not found exactly once'
+          assert '/openapi.json' not in text, 'OpenAPI route already present'
+          assert text.count(health_anchor) == 1, 'health anchor not found exactly once'
+          text = text.replace(import_anchor, import_anchor + import_line)
+          text = text.replace(health_anchor, health_anchor + openapi_route)
+          path.write_text(text)
+          PY
+      - name: Verify GREEN before commit
+        working-directory: products/drafts/data-quality-profiler
+        run: |
+          set -euo pipefail
+          npm ci
+          node --test test/*.test.mjs
+          node --check src/app.mjs
+          node --check src/openapi.mjs
+      - name: Commit verified route
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add products/drafts/data-quality-profiler/src/app.mjs
+          git diff --cached --check
+          git commit -m 'feat: expose AgentCash OpenAPI discovery route'
+          git push origin HEAD:feat/openapi-agentcash-discovery
