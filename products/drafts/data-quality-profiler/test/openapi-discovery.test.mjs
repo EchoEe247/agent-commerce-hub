@@ -8,6 +8,7 @@ const EARNING_WALLET = "0x2BD7c4e294B09E9a853168a58712498D03A45B01";
 const ROUTES = [
   ["/v1/counterparty-availability", "counterpartyAvailability", "0.030000"],
   ["/v1/entity-sanctions-screen", "entitySanctionsScreen", "0.020000"],
+  ["/v1/company-domain-intelligence", "companyDomainIntelligence", "0.020000"],
   ["/v1/profile", "profileDataset", "0.020000"],
   ["/v1/duplicate-audit", "duplicateAudit", "0.005000"],
   ["/v1/quality-gate", "qualityGate", "0.010000"],
@@ -24,6 +25,7 @@ function app() {
       x402Price: "$0.02",
       x402LocalePrice: "$0.03",
       x402SanctionsScreenPrice: "$0.02",
+      x402CompanyDomainPrice: "$0.02",
       x402DuplicateAuditPrice: "$0.005",
       x402QualityGatePrice: "$0.01",
       x402SchemaDriftPrice: "$0.015",
@@ -37,7 +39,7 @@ function app() {
   });
 }
 
-test("GET /openapi.json publishes nine AgentCash-compatible x402 operations", async () => {
+test("GET /openapi.json publishes ten AgentCash-compatible x402 operations", async () => {
   const server = app();
   const response = await server.inject({ method: "GET", url: "/openapi.json" });
 
@@ -50,7 +52,7 @@ test("GET /openapi.json publishes nine AgentCash-compatible x402 operations", as
     assert.equal(document.info.title, "Hermes Agent Commerce API");
     assert.equal(document.info.version, "0.1.0");
     assert.match(document.info["x-guidance"], /x402/i);
-    assert.match(document.info["x-guidance"], /nine POST operations/i);
+    assert.match(document.info["x-guidance"], /ten POST operations/i);
     assert.deepEqual(document.servers, [{ url: PUBLIC_ORIGIN }]);
     assert.deepEqual(Object.keys(document.paths).sort(), ROUTES.map(([path]) => path).sort());
 
@@ -82,6 +84,15 @@ test("GET /openapi.json publishes nine AgentCash-compatible x402 operations", as
     assert.match(sanctions.description, /OFAC/i);
     assert.match(sanctions.description, /not a legal compliance determination/i);
     assert.equal(sanctions.responses["503"].description, "Authoritative OFAC source unavailable");
+
+    const companyDomain = document.paths["/v1/company-domain-intelligence"].post;
+    const companySchema = companyDomain.requestBody.content["application/json"].schema;
+    assert.deepEqual(companySchema.required, ["domain"]);
+    assert.equal(companySchema.properties.domain.type, "string");
+    assert.match(companyDomain.description, /DNS/i);
+    assert.match(companyDomain.description, /RDAP/i);
+    assert.match(companyDomain.description, /website/i);
+    assert.deepEqual(companyDomain.tags, ["Business Intelligence"]);
   } finally {
     await server.close();
   }
