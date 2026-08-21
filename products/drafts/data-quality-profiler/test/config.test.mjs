@@ -11,8 +11,8 @@ test("defaults to local unpaid development mode", () => {
   assert.equal(cfg.x402SanctionsScreenPrice, "$0.02");
   assert.equal(cfg.x402CompanyDomainPrice, "$0.02");
   assert.equal(cfg.x402SecCompanyPrice, "$0.02");
-  assert.equal(cfg.x402DependencyVulnerabilityPrice, "$0.015");
-  assert.equal(cfg.x402PackageMaintenancePrice, "$0.015");
+  assert.equal(cfg.x402DependencyVulnerabilityPrice, "$0.005");
+  assert.equal(cfg.x402PackageMaintenancePrice, "$0.005");
   assert.equal(cfg.x402DuplicateAuditPrice, "$0.005");
   assert.equal(cfg.x402QualityGatePrice, "$0.01");
   assert.equal(cfg.x402SchemaDriftPrice, "$0.015");
@@ -65,8 +65,8 @@ test("allows Base mainnet only when explicitly unlocked", () => {
   assert.equal(cfg.x402SanctionsScreenPrice, "$0.02");
   assert.equal(cfg.x402CompanyDomainPrice, "$0.02");
   assert.equal(cfg.x402SecCompanyPrice, "$0.02");
-  assert.equal(cfg.x402DependencyVulnerabilityPrice, "$0.015");
-  assert.equal(cfg.x402PackageMaintenancePrice, "$0.015");
+  assert.equal(cfg.x402DependencyVulnerabilityPrice, "$0.005");
+  assert.equal(cfg.x402PackageMaintenancePrice, "$0.005");
 });
 
 test("rejects arbitrary non-Sepolia, non-Base networks (fail-closed)", () => {
