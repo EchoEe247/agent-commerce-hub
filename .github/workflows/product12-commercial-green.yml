@@ -1,0 +1,89 @@
+name: Product 12 Commercial Green
+
+on:
+  push:
+    branches:
+      - feat/product12-dependency-vulnerability
+    paths:
+      - '.github/workflows/product12-commercial-green.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/product12-dependency-vulnerability
+      - name: Wire Product 12 discovery and x402 surfaces
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          # OpenAPI
+          p = Path('products/drafts/data-quality-profiler/src/openapi.mjs')
+          s = p.read_text()
+          s = s.replace(
+            'description: "Paid agent utilities for counterparty availability, SEC company snapshots, company/domain intelligence, OFAC sanctions screening, and deterministic JSON/CSV data-quality work.",',
+            'description: "Paid agent utilities for dependency vulnerability checks, counterparty availability, SEC company snapshots, company/domain intelligence, OFAC sanctions screening, and deterministic JSON/CSV data-quality work.",'
+          )
+          s = s.replace('All eleven POST operations are pay-per-call', 'All twelve POST operations are pay-per-call')
+          anchor = '''      "/v1/profile": {\n        post: paidOperation({'''
+          block = '''      "/v1/dependency-vulnerability-check": {\n        post: paidOperation({\n          operationId: "dependencyVulnerabilityCheck",\n          summary: "Check an exact dependency version for known OSV vulnerabilities",\n          description: "Checks one exact package version against the public OSV vulnerability database and returns normalized OSV IDs, CVE aliases, severity records, affected ranges, known fixed versions, references, and source provenance.",\n          price: config.x402DependencyVulnerabilityPrice ?? "$0.015",\n          tags: ["Software Security"],\n          schema: {\n            type: "object",\n            properties: {\n              ecosystem: { type: "string", minLength: 1, maxLength: 100, description: "OSV ecosystem name such as npm, PyPI, Maven, Go, or RubyGems." },\n              package: { type: "string", minLength: 1, maxLength: 300, description: "Exact package name in the selected ecosystem." },\n              version: { type: "string", minLength: 1, maxLength: 200, description: "Exact package version to check." },\n            },\n            required: ["ecosystem", "package", "version"],\n          },\n          example: { ecosystem: "npm", package: "fastify", version: "5.6.0" },\n          outputSchema: {\n            type: "object",\n            properties: {\n              schema_version: { type: "string" },\n              query: { type: "object", additionalProperties: true },\n              vulnerable: { type: "boolean" },\n              vulnerability_count: { type: "integer" },\n              vulnerabilities: { type: "array", items: { type: "object", additionalProperties: true } },\n              source: { type: "object", additionalProperties: true },\n              warnings: { type: "array", items: { type: "string" } },\n            },\n            required: ["schema_version", "query", "vulnerable", "vulnerability_count", "vulnerabilities", "source", "warnings"],\n            additionalProperties: true,\n          },\n          extraResponses: {\n            "503": { description: "OSV source unavailable" },\n          },\n        }),\n      },\n'''
+          assert s.count(anchor) == 1
+          s = s.replace(anchor, block + anchor)
+          p.write_text(s)
+
+          # Agent402 manifest
+          p = Path('products/drafts/data-quality-profiler/src/app.mjs')
+          s = p.read_text()
+          old = '    const secCompanyPrice = config.x402SecCompanyPrice ?? "$0.02";\n'
+          new = old + '    const dependencyVulnerabilityPrice = config.x402DependencyVulnerabilityPrice ?? "$0.015";\n'
+          assert s.count(old) == 1
+          s = s.replace(old, new)
+          s = s.replace(
+            'const priceRange = buildPriceRange([...businessIntelligencePrices, sanctionsPrice, ...dataQualityPrices]);',
+            'const priceRange = buildPriceRange([...businessIntelligencePrices, sanctionsPrice, dependencyVulnerabilityPrice, ...dataQualityPrices]);'
+          )
+          s = s.replace(
+            'const description = "Agent-ready paid utilities for SEC company snapshots, company/domain intelligence, OFAC sanctions screening, JSON and CSV data quality, schema compatibility, deterministic cleanup, repair planning, and practical counterparty contact-window checks.";',
+            'const description = "Agent-ready paid utilities for dependency vulnerability checks, SEC company snapshots, company/domain intelligence, OFAC sanctions screening, JSON and CSV data quality, schema compatibility, deterministic cleanup, repair planning, and practical counterparty contact-window checks.";'
+          )
+          old = '        { url: `${SELLER_ORIGIN}/v1/sec-company-snapshot`, method: "POST" },\n'
+          new = old + '        { url: `${SELLER_ORIGIN}/v1/dependency-vulnerability-check`, method: "POST" },\n'
+          assert s.count(old) == 1
+          s = s.replace(old, new)
+          s = s.replace('        tools: 11,', '        tools: 12,')
+          category_anchor = '''          {\n            key: "data-quality",\n            label: "Data Quality",'''
+          security_category = '''          {\n            key: "software-security",\n            label: "Software Security",\n            tools: 1,\n            priceRange: dependencyVulnerabilityPrice,\n          },\n'''
+          assert s.count(category_anchor) == 1
+          s = s.replace(category_anchor, security_category + category_anchor)
+          endpoint_anchor = '''        {\n          name: "validate-json-csv-data-quality-profile-missing-duplicate-types",'''
+          endpoint_block = '''        {\n          name: "dependency-vulnerability-check-osv-exact-version",\n          method: "POST",\n          path: "/v1/dependency-vulnerability-check",\n          url: `${SELLER_ORIGIN}/v1/dependency-vulnerability-check`,\n          summary: "Check an exact dependency version for known OSV vulnerabilities",\n          description: "Checks one exact package version against OSV and returns normalized vulnerability identifiers, CVE aliases, severity records, affected ranges, known fixed versions, references, and source provenance.",\n          price_usd: priceNumber(dependencyVulnerabilityPrice),\n          network,\n        },\n'''
+          assert s.count(endpoint_anchor) == 1
+          s = s.replace(endpoint_anchor, endpoint_block + endpoint_anchor)
+          p.write_text(s)
+
+          # x402/Bazaar
+          p = Path('products/drafts/data-quality-profiler/src/payments/x402-plugin.mjs')
+          s = p.read_text()
+          anchor = '''    const duplicateAuditBazaarExtension = declareDiscoveryExtension({'''
+          extension = '''    const dependencyVulnerabilityBazaarExtension = declareDiscoveryExtension({\n      bodyType: "json",\n      input: { ecosystem: "npm", package: "fastify", version: "5.6.0" },\n      inputSchema: {\n        type: "object",\n        properties: {\n          ecosystem: { type: "string", minLength: 1, maxLength: 100, description: "OSV ecosystem name such as npm, PyPI, Maven, Go, or RubyGems" },\n          package: { type: "string", minLength: 1, maxLength: 300, description: "Exact package name" },\n          version: { type: "string", minLength: 1, maxLength: 200, description: "Exact package version" },\n        },\n        required: ["ecosystem", "package", "version"],\n      },\n      output: {\n        example: {\n          schema_version: "1.0",\n          query: { ecosystem: "npm", package: "fastify", version: "5.6.0" },\n          vulnerable: false,\n          vulnerability_count: 0,\n          vulnerabilities: [],\n          source: { provider: "OSV.dev", api_url: "https://api.osv.dev/v1/query" },\n          warnings: [],\n        },\n      },\n    });\n\n'''
+          assert s.count(anchor) == 1
+          s = s.replace(anchor, extension + anchor)
+          route_anchor = '''      "POST /v1/duplicate-audit": protectedRoute('''
+          route = '''      "POST /v1/dependency-vulnerability-check": protectedRoute(\n        config,\n        config.x402DependencyVulnerabilityPrice,\n        "Check one exact package version against OSV for known vulnerabilities, CVE aliases, affected ranges, and fixed versions",\n        dependencyVulnerabilityBazaarExtension\n      ),\n'''
+          assert s.count(route_anchor) == 1
+          s = s.replace(route_anchor, route + route_anchor)
+          p.write_text(s)
+          PY
+          git diff --check
+          git diff -- products/drafts/data-quality-profiler/src/openapi.mjs products/drafts/data-quality-profiler/src/app.mjs products/drafts/data-quality-profiler/src/payments/x402-plugin.mjs
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add products/drafts/data-quality-profiler/src/openapi.mjs products/drafts/data-quality-profiler/src/app.mjs products/drafts/data-quality-profiler/src/payments/x402-plugin.mjs
+          git commit -m "feat: publish Product 12 commercial surfaces"
+          git push origin HEAD:feat/product12-dependency-vulnerability
