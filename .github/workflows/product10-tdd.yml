@@ -1,4 +1,4 @@
-name: Product 10 TDD Reporter
+name: Product 10 Final Verification
 
 on:
   push:
@@ -6,25 +6,13 @@ on:
       - feat/company-domain-intelligence
     paths:
       - '.github/workflows/product10-tdd.yml'
-      - 'products/drafts/data-quality-profiler/src/company-domain-intelligence.mjs'
-      - 'products/drafts/data-quality-profiler/src/app.mjs'
-      - 'products/drafts/data-quality-profiler/src/openapi.mjs'
-      - 'products/drafts/data-quality-profiler/src/config.mjs'
-      - 'products/drafts/data-quality-profiler/src/errors.mjs'
-      - 'products/drafts/data-quality-profiler/src/payments/x402-plugin.mjs'
-      - 'products/drafts/data-quality-profiler/test/company-domain-intelligence.test.mjs'
-      - 'products/drafts/data-quality-profiler/test/company-domain-default-website.test.mjs'
-      - 'products/drafts/data-quality-profiler/test/company-domain-x402.test.mjs'
-      - 'products/drafts/data-quality-profiler/test/config.test.mjs'
-      - 'products/drafts/data-quality-profiler/test/openapi-discovery.test.mjs'
-      - 'products/drafts/data-quality-profiler/test/agent402-manifest.test.mjs'
-      - 'products/drafts/data-quality-profiler/test/x402-plugin.test.mjs'
+      - 'products/drafts/data-quality-profiler/**'
 
 permissions:
   contents: write
 
 jobs:
-  product10-tdd:
+  product10-final-verification:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -34,39 +22,40 @@ jobs:
       - name: Install dependencies
         working-directory: products/drafts/data-quality-profiler
         run: npm ci
-      - name: Run Product 10 tests and persist receipt
+      - name: Run syntax and full-suite verification and persist receipt
         shell: bash
         run: |
           set -uo pipefail
           cd products/drafts/data-quality-profiler
           set +e
-          node --test \
-            test/company-domain-intelligence.test.mjs \
-            test/company-domain-default-website.test.mjs \
-            test/company-domain-x402.test.mjs \
-            test/config.test.mjs \
-            test/openapi-discovery.test.mjs \
-            test/agent402-manifest.test.mjs \
-            test/x402-plugin.test.mjs \
-            > /tmp/product10-test.log 2>&1
+          {
+            node --check src/company-domain-intelligence.mjs &&
+            node --check src/app.mjs &&
+            node --check src/openapi.mjs &&
+            node --check src/config.mjs &&
+            node --check src/errors.mjs &&
+            node --check src/payments/x402-plugin.mjs &&
+            npm test
+          } > /tmp/product10-final.log 2>&1
           code=$?
           set -e
           TEST_EXIT_CODE="$code" node <<'NODE'
           const fs = require('node:fs');
           const code = Number(process.env.TEST_EXIT_CODE);
-          const output = fs.readFileSync('/tmp/product10-test.log', 'utf8');
+          const output = fs.readFileSync('/tmp/product10-final.log', 'utf8');
           const receipt = {
             observed_at: new Date().toISOString(),
             status: code === 0 ? 'PASS' : 'FAIL',
             exit_code: code,
-            output_tail: output.split('\n').slice(-180).join('\n'),
+            verification: 'syntax + npm test',
+            output_tail: output.split('\n').slice(-240).join('\n'),
           };
-          fs.writeFileSync('../../../product10-tdd-result.json', JSON.stringify(receipt, null, 2) + '\n');
+          fs.writeFileSync('../../../product10-final-verification.json', JSON.stringify(receipt, null, 2) + '\n');
           NODE
           cd ../../..
           git config user.name 'github-actions[bot]'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
-          git add product10-tdd-result.json
-          git commit -m "test: record Product 10 TDD result" || true
+          git add product10-final-verification.json
+          git commit -m "test: record Product 10 final verification" || true
           git push origin HEAD:feat/company-domain-intelligence
           exit "$code"
