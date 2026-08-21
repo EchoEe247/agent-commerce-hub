@@ -1,0 +1,126 @@
+name: Product 12 Publish
+
+on:
+  pull_request:
+    branches:
+      - feat/hermes-commerce-control-plane
+    paths:
+      - '.github/workflows/product12-publish.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Register Agent402 origin once
+        shell: bash
+        run: |
+          set -euo pipefail
+          status="$(curl --silent --show-error -o /tmp/agent402.json -w '%{http_code}' \
+            -X POST 'https://agent402.tools/api/index/register' \
+            -H 'content-type: application/json' \
+            --data '{"origin":"https://hermes-counterparty-api.onrender.com"}')"
+          STATUS="$status" node <<'NODE'
+          const fs = require('fs');
+          const status = Number(process.env.STATUS);
+          const body = JSON.parse(fs.readFileSync('/tmp/agent402.json', 'utf8'));
+          if (status !== 200) throw new Error(`Agent402 register HTTP ${status}: ${JSON.stringify(body)}`);
+          if (body.listed !== true) throw new Error(`Agent402 did not list origin: ${JSON.stringify(body)}`);
+          if (body.origin !== 'https://hermes-counterparty-api.onrender.com') throw new Error(`Agent402 returned wrong origin: ${body.origin}`);
+          if (body.toolCount !== undefined && Number(body.toolCount) < 12) throw new Error(`Agent402 saw only ${body.toolCount} tools`);
+          console.log(JSON.stringify({
+            marketplace: 'Agent402',
+            registration: 'PASS',
+            listed: body.listed,
+            origin: body.origin,
+            tool_count: body.toolCount ?? null,
+            networks: body.networks ?? null,
+            routable: body.routable ?? null,
+            health: body.health ?? null
+          }));
+          NODE
+
+      - name: Register Product 12 with 402 Index
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat >/tmp/register.json <<'JSON'
+          {
+            "url":"https://hermes-counterparty-api.onrender.com/v1/dependency-vulnerability-check",
+            "name":"Hermes Dependency Vulnerability Check",
+            "protocol":"x402",
+            "http_method":"POST",
+            "probe_body":"{\"ecosystem\":\"npm\",\"package\":\"fastify\",\"version\":\"5.6.0\"}",
+            "description":"Check one exact dependency version against OSV.dev and return normalized vulnerability IDs, CVE aliases, severity records, queried-package affected ranges, known fixed versions, references, and source provenance.",
+            "price_usd":0.015,
+            "payment_asset":"USDC",
+            "payment_network":"Base",
+            "category":"software-security",
+            "provider":"Hermes Commerce"
+          }
+          JSON
+          status="$(curl --silent --show-error -o /tmp/402index.json -w '%{http_code}' \
+            -X POST 'https://402index.io/api/v1/register' \
+            -H 'content-type: application/json' \
+            --data-binary @/tmp/register.json)"
+          STATUS="$status" node <<'NODE'
+          const fs = require('fs');
+          const status = Number(process.env.STATUS);
+          const body = JSON.parse(fs.readFileSync('/tmp/402index.json', 'utf8'));
+          if (status !== 201) throw new Error(`402 Index register HTTP ${status}: ${JSON.stringify(body)}`);
+          const service = body.service ?? body.data ?? body;
+          const id = service.id ?? body.id ?? null;
+          if (!id) throw new Error(`402 Index registration returned no service id: ${JSON.stringify(body)}`);
+          const url = service.url ?? body.url ?? null;
+          if (url && url !== 'https://hermes-counterparty-api.onrender.com/v1/dependency-vulnerability-check') throw new Error(`402 Index returned wrong URL: ${url}`);
+          fs.writeFileSync('/tmp/402index-id.txt', String(id));
+          console.log(JSON.stringify({
+            marketplace: '402 Index',
+            registration: 'PASS',
+            service_id: id,
+            url,
+            status: service.status ?? body.status ?? null,
+            health_status: service.health_status ?? body.health_status ?? null,
+            probe_status: service.probe_status ?? body.probe_status ?? null,
+            approval_reason: service.approval_reason ?? body.approval_reason ?? null
+          }));
+          NODE
+
+      - name: Verify 402 Index service record
+        shell: bash
+        run: |
+          set -euo pipefail
+          id="$(cat /tmp/402index-id.txt)"
+          status="$(curl --silent --show-error -o /tmp/402index-service.json -w '%{http_code}' \
+            "https://402index.io/api/v1/services/$id")"
+          STATUS="$status" node <<'NODE'
+          const fs = require('fs');
+          const status = Number(process.env.STATUS);
+          const body = JSON.parse(fs.readFileSync('/tmp/402index-service.json', 'utf8'));
+          if (status !== 200) throw new Error(`402 Index service lookup HTTP ${status}: ${JSON.stringify(body)}`);
+          const service = body.service ?? body.data ?? body;
+          if (service.url !== 'https://hermes-counterparty-api.onrender.com/v1/dependency-vulnerability-check') throw new Error(`wrong service URL: ${service.url}`);
+          if ((service.http_method ?? service.method) !== 'POST') throw new Error(`wrong method: ${service.http_method ?? service.method}`);
+          if (Number(service.price_usd) !== 0.015) throw new Error(`wrong price: ${service.price_usd}`);
+          if (String(service.protocol).toLowerCase() !== 'x402') throw new Error(`wrong protocol: ${service.protocol}`);
+          console.log(JSON.stringify({
+            marketplace: '402 Index',
+            verification: 'PASS',
+            service_id: service.id,
+            url: service.url,
+            protocol: service.protocol,
+            method: service.http_method ?? service.method,
+            price_usd: service.price_usd,
+            payment_asset: service.payment_asset,
+            payment_network: service.payment_network,
+            category: service.category,
+            provider: service.provider,
+            status: service.status ?? null,
+            health_status: service.health_status ?? null,
+            probe_status: service.probe_status ?? null,
+            approval_reason: service.approval_reason ?? null
+          }));
+          NODE
