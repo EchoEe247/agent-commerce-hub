@@ -6,6 +6,11 @@ on:
       - ops/product12-production-verify
     paths:
       - '.github/workflows/product12-production-verify.yml'
+  pull_request:
+    branches:
+      - feat/hermes-commerce-control-plane
+    paths:
+      - '.github/workflows/product12-production-verify.yml'
   workflow_dispatch:
 
 permissions:
