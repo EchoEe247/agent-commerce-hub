@@ -12,6 +12,7 @@ const PORTFOLIO_ROUTES = [
   ["/v1/entity-sanctions-screen", "ofac-sdn-entity-sanctions-screen", 0.02, /OFAC|sanctions/i],
   ["/v1/company-domain-intelligence", "company-domain-intelligence-dns-rdap-mail-website", 0.02, /domain|DNS|RDAP/i],
   ["/v1/sec-company-snapshot", "sec-company-snapshot-edgar-filings-xbrl", 0.02, /SEC|EDGAR/i],
+  ["/v1/dependency-vulnerability-check", "dependency-vulnerability-check-osv-exact-version", 0.015, /OSV|vulnerabilit/i],
   ["/v1/duplicate-audit", "duplicate-row-audit-json-csv", 0.005, /duplicate rows/i],
   ["/v1/quality-gate", "data-quality-pass-fail-gate-etl-rag", 0.01, /quality.*gate|pass.*fail/i],
   ["/v1/schema-drift", "schema-drift-added-removed-type-changes", 0.015, /schema drift/i],
@@ -29,6 +30,7 @@ function unpaidApp(options = {}) {
       x402SanctionsScreenPrice: "$0.02",
       x402CompanyDomainPrice: "$0.02",
       x402SecCompanyPrice: "$0.02",
+      x402DependencyVulnerabilityPrice: "$0.015",
       x402DuplicateAuditPrice: "$0.005",
       x402QualityGatePrice: "$0.01",
       x402SchemaDriftPrice: "$0.015",
@@ -106,7 +108,7 @@ test("GET /.well-known/x402 publishes twelve unique Agent402-compatible tools", 
   assert.match(profiler.description, /missing values/);
   assert.match(profiler.description, /schema fingerprint/);
 
-  assert.equal(body.endpoints.length, 11);
+  assert.equal(body.endpoints.length, 12);
   for (const [path, name, price, summaryPattern] of PORTFOLIO_ROUTES) {
     const endpoint = body.endpoints.find((candidate) => candidate.path === path);
     assert.ok(endpoint, `missing manifest endpoint ${path}`);
