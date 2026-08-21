@@ -79,14 +79,14 @@ export function buildApp({ config, paymentPlugin, clock = { now: () => Date.now(
       description,
       homepage: SELLER_ORIGIN,
       resources: [
-        `${SELLER_ORIGIN}/v1/counterparty-availability`,
-        `${SELLER_ORIGIN}/v1/profile`,
-        `${SELLER_ORIGIN}/v1/duplicate-audit`,
-        `${SELLER_ORIGIN}/v1/quality-gate`,
-        `${SELLER_ORIGIN}/v1/schema-drift`,
-        `${SELLER_ORIGIN}/v1/data-contract-check`,
-        `${SELLER_ORIGIN}/v1/clean-normalize`,
-        `${SELLER_ORIGIN}/v1/repair-plan`,
+        { url: `${SELLER_ORIGIN}/v1/counterparty-availability`, method: "POST" },
+        { url: `${SELLER_ORIGIN}/v1/profile`, method: "POST" },
+        { url: `${SELLER_ORIGIN}/v1/duplicate-audit`, method: "POST" },
+        { url: `${SELLER_ORIGIN}/v1/quality-gate`, method: "POST" },
+        { url: `${SELLER_ORIGIN}/v1/schema-drift`, method: "POST" },
+        { url: `${SELLER_ORIGIN}/v1/data-contract-check`, method: "POST" },
+        { url: `${SELLER_ORIGIN}/v1/clean-normalize`, method: "POST" },
+        { url: `${SELLER_ORIGIN}/v1/repair-plan`, method: "POST" },
       ],
       payment: {
         x402: {
