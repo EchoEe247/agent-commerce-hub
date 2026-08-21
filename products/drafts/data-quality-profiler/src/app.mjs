@@ -77,6 +77,7 @@ export function buildApp({
   app.get("/.well-known/x402", async () => {
     const network = config.x402Network ?? "eip155:8453";
     const localePrice = config.x402LocalePrice ?? "$0.03";
+    const sanctionsPrice = config.x402SanctionsScreenPrice ?? "$0.02";
     const profilerPrice = config.x402Price ?? "$0.02";
     const duplicatePrice = config.x402DuplicateAuditPrice ?? "$0.005";
     const qualityGatePrice = config.x402QualityGatePrice ?? "$0.01";
@@ -85,9 +86,9 @@ export function buildApp({
     const cleanNormalizePrice = config.x402CleanNormalizePrice ?? "$0.02";
     const repairPlanPrice = config.x402RepairPlanPrice ?? "$0.02";
     const dataQualityPrices = [profilerPrice, duplicatePrice, qualityGatePrice, schemaDriftPrice, dataContractPrice, cleanNormalizePrice, repairPlanPrice];
-    const priceRange = buildPriceRange([localePrice, ...dataQualityPrices]);
+    const priceRange = buildPriceRange([localePrice, sanctionsPrice, ...dataQualityPrices]);
     const dataQualityPriceRange = buildPriceRange(dataQualityPrices);
-    const description = "Agent-ready paid utilities for JSON and CSV data quality, schema compatibility, deterministic cleanup, repair planning, and practical counterparty contact-window checks.";
+    const description = "Agent-ready paid utilities for OFAC sanctions screening, JSON and CSV data quality, schema compatibility, deterministic cleanup, repair planning, and practical counterparty contact-window checks.";
 
     return {
       spec: "agent402-service-manifest/1",
@@ -99,6 +100,7 @@ export function buildApp({
       homepage: SELLER_ORIGIN,
       resources: [
         { url: `${SELLER_ORIGIN}/v1/counterparty-availability`, method: "POST" },
+        { url: `${SELLER_ORIGIN}/v1/entity-sanctions-screen`, method: "POST" },
         { url: `${SELLER_ORIGIN}/v1/profile`, method: "POST" },
         { url: `${SELLER_ORIGIN}/v1/duplicate-audit`, method: "POST" },
         { url: `${SELLER_ORIGIN}/v1/quality-gate`, method: "POST" },
@@ -120,13 +122,19 @@ export function buildApp({
         },
       },
       capabilities: {
-        tools: 8,
+        tools: 9,
         categories: [
           {
             key: "business-intelligence",
             label: "Business Intelligence",
             tools: 1,
             priceRange: localePrice,
+          },
+          {
+            key: "compliance",
+            label: "Compliance Screening",
+            tools: 1,
+            priceRange: sanctionsPrice,
           },
           {
             key: "data-quality",
@@ -145,6 +153,16 @@ export function buildApp({
           summary: "Counterparty availability and contact-window brief",
           description: "Returns local time, public-holiday status, business-day status, business days remaining this week, and the next practical local contact time.",
           price_usd: priceNumber(localePrice),
+          network,
+        },
+        {
+          name: "ofac-sdn-entity-sanctions-screen",
+          method: "POST",
+          path: "/v1/entity-sanctions-screen",
+          url: `${SELLER_ORIGIN}/v1/entity-sanctions-screen`,
+          summary: "Screen a person or organization name against the U.S. Treasury OFAC SDN list with deterministic exact and fuzzy candidate scoring.",
+          description: "Checks OFAC SDN primary names and aliases, returns matched programs and published addresses, and supports optional country and entity-type filtering. The result is informational and is not a legal compliance determination.",
+          price_usd: priceNumber(sanctionsPrice),
           network,
         },
         {
