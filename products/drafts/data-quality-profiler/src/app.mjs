@@ -108,6 +108,7 @@ export function buildApp({
     const sanctionsPrice = config.x402SanctionsScreenPrice ?? "$0.02";
     const companyDomainPrice = config.x402CompanyDomainPrice ?? "$0.02";
     const secCompanyPrice = config.x402SecCompanyPrice ?? "$0.02";
+    const dependencyVulnerabilityPrice = config.x402DependencyVulnerabilityPrice ?? "$0.015";
     const profilerPrice = config.x402Price ?? "$0.02";
     const duplicatePrice = config.x402DuplicateAuditPrice ?? "$0.005";
     const qualityGatePrice = config.x402QualityGatePrice ?? "$0.01";
@@ -117,10 +118,10 @@ export function buildApp({
     const repairPlanPrice = config.x402RepairPlanPrice ?? "$0.02";
     const businessIntelligencePrices = [localePrice, companyDomainPrice, secCompanyPrice];
     const dataQualityPrices = [profilerPrice, duplicatePrice, qualityGatePrice, schemaDriftPrice, dataContractPrice, cleanNormalizePrice, repairPlanPrice];
-    const priceRange = buildPriceRange([...businessIntelligencePrices, sanctionsPrice, ...dataQualityPrices]);
+    const priceRange = buildPriceRange([...businessIntelligencePrices, sanctionsPrice, dependencyVulnerabilityPrice, ...dataQualityPrices]);
     const businessIntelligencePriceRange = buildPriceRange(businessIntelligencePrices);
     const dataQualityPriceRange = buildPriceRange(dataQualityPrices);
-    const description = "Agent-ready paid utilities for SEC company snapshots, company/domain intelligence, OFAC sanctions screening, JSON and CSV data quality, schema compatibility, deterministic cleanup, repair planning, and practical counterparty contact-window checks.";
+    const description = "Agent-ready paid utilities for dependency vulnerability checks, SEC company snapshots, company/domain intelligence, OFAC sanctions screening, JSON and CSV data quality, schema compatibility, deterministic cleanup, repair planning, and practical counterparty contact-window checks.";
 
     return {
       spec: "agent402-service-manifest/1",
@@ -135,6 +136,7 @@ export function buildApp({
         { url: `${SELLER_ORIGIN}/v1/entity-sanctions-screen`, method: "POST" },
         { url: `${SELLER_ORIGIN}/v1/company-domain-intelligence`, method: "POST" },
         { url: `${SELLER_ORIGIN}/v1/sec-company-snapshot`, method: "POST" },
+        { url: `${SELLER_ORIGIN}/v1/dependency-vulnerability-check`, method: "POST" },
         { url: `${SELLER_ORIGIN}/v1/profile`, method: "POST" },
         { url: `${SELLER_ORIGIN}/v1/duplicate-audit`, method: "POST" },
         { url: `${SELLER_ORIGIN}/v1/quality-gate`, method: "POST" },
@@ -156,7 +158,7 @@ export function buildApp({
         },
       },
       capabilities: {
-        tools: 11,
+        tools: 12,
         categories: [
           {
             key: "business-intelligence",
@@ -169,6 +171,12 @@ export function buildApp({
             label: "Compliance Screening",
             tools: 1,
             priceRange: sanctionsPrice,
+          },
+          {
+            key: "software-security",
+            label: "Software Security",
+            tools: 1,
+            priceRange: dependencyVulnerabilityPrice,
           },
           {
             key: "data-quality",
@@ -217,6 +225,16 @@ export function buildApp({
           summary: "OFAC sanctions screening for a person or organization",
           description: "Checks OFAC SDN primary names and aliases, returns matched programs and published addresses, and supports optional country and entity-type filtering. The result is informational and is not a legal compliance determination.",
           price_usd: priceNumber(sanctionsPrice),
+          network,
+        },
+        {
+          name: "dependency-vulnerability-check-osv-exact-version",
+          method: "POST",
+          path: "/v1/dependency-vulnerability-check",
+          url: `${SELLER_ORIGIN}/v1/dependency-vulnerability-check`,
+          summary: "Check an exact dependency version for known OSV vulnerabilities",
+          description: "Checks one exact package version against OSV and returns normalized vulnerability identifiers, CVE aliases, severity records, affected ranges, known fixed versions, references, and source provenance.",
+          price_usd: priceNumber(dependencyVulnerabilityPrice),
           network,
         },
         {

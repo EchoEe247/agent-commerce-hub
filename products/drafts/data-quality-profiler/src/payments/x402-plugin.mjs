@@ -188,6 +188,31 @@ export function buildPaymentPlugin(config) {
       },
     });
 
+    const dependencyVulnerabilityBazaarExtension = declareDiscoveryExtension({
+      bodyType: "json",
+      input: { ecosystem: "npm", package: "fastify", version: "5.6.0" },
+      inputSchema: {
+        type: "object",
+        properties: {
+          ecosystem: { type: "string", minLength: 1, maxLength: 100, description: "OSV ecosystem name such as npm, PyPI, Maven, Go, or RubyGems" },
+          package: { type: "string", minLength: 1, maxLength: 300, description: "Exact package name" },
+          version: { type: "string", minLength: 1, maxLength: 200, description: "Exact package version" },
+        },
+        required: ["ecosystem", "package", "version"],
+      },
+      output: {
+        example: {
+          schema_version: "1.0",
+          query: { ecosystem: "npm", package: "fastify", version: "5.6.0" },
+          vulnerable: false,
+          vulnerability_count: 0,
+          vulnerabilities: [],
+          source: { provider: "OSV.dev", api_url: "https://api.osv.dev/v1/query" },
+          warnings: [],
+        },
+      },
+    });
+
     const duplicateAuditBazaarExtension = declareDiscoveryExtension({
       bodyType: "json",
       input: { format: "json", records: [{ id: 1 }, { id: 1 }] },
@@ -381,6 +406,12 @@ export function buildPaymentPlugin(config) {
         config.x402SecCompanyPrice,
         "Resolve a ticker or CIK to official SEC EDGAR company identity, recent filings, and selected XBRL facts",
         secCompanyBazaarExtension
+      ),
+      "POST /v1/dependency-vulnerability-check": protectedRoute(
+        config,
+        config.x402DependencyVulnerabilityPrice,
+        "Check one exact package version against OSV for known vulnerabilities, CVE aliases, affected ranges, and fixed versions",
+        dependencyVulnerabilityBazaarExtension
       ),
       "POST /v1/duplicate-audit": protectedRoute(
         config,
