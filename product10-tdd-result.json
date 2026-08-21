@@ -1,6 +1,6 @@
 {
-  "observed_at": "2026-08-21T05:07:36.960Z",
-  "status": "FAIL",
-  "exit_code": 1,
-  "output_tail": "✖ POST /v1/company-domain-intelligence delegates to the company domain service (74.750499ms)\nℹ tests 1\nℹ suites 0\nℹ pass 0\nℹ fail 1\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 204.360481\n\n✖ failing tests:\n\ntest at test/company-domain-intelligence.test.mjs:16:1\n✖ POST /v1/company-domain-intelligence delegates to the company domain service (74.750499ms)\n  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n  \n  404 !== 200\n  \n      at TestContext.<anonymous> (file:///home/runner/work/agent-commerce-hub/agent-commerce-hub/products/drafts/data-quality-profiler/test/company-domain-intelligence.test.mjs:44:12)\n      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\n      at async Test.run (node:internal/test_runner/test:1389:7)\n      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {\n    generatedMessage: true,\n    code: 'ERR_ASSERTION',\n    actual: 404,\n    expected: 200,\n    operator: 'strictEqual',\n    diff: 'simple'\n  }\n"
+  "observed_at": "2026-08-21T05:09:26.109Z",
+  "status": "PASS",
+  "exit_code": 0,
+  "output_tail": "✔ POST /v1/company-domain-intelligence delegates to the company domain service (52.59522ms)\nℹ tests 1\nℹ suites 0\nℹ pass 1\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 138.595461\n"
 }
