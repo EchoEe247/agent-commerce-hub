@@ -1,0 +1,181 @@
+name: Product 13 Commercial Patch
+
+on:
+  push:
+    branches:
+      - feat/product13-package-maintenance
+    paths:
+      - '.github/workflows/product13-commercial-patch.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/product13-package-maintenance
+      - name: Wire Product 13 commercial surfaces
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          # Agent402 manifest
+          p = Path('products/drafts/data-quality-profiler/src/app.mjs')
+          s = p.read_text()
+          s = s.replace(
+              '    const dependencyVulnerabilityPrice = config.x402DependencyVulnerabilityPrice ?? "$0.015";\n    const profilerPrice = config.x402Price ?? "$0.02";',
+              '    const dependencyVulnerabilityPrice = config.x402DependencyVulnerabilityPrice ?? "$0.015";\n    const packageMaintenancePrice = config.x402PackageMaintenancePrice ?? "$0.015";\n    const profilerPrice = config.x402Price ?? "$0.02";', 1)
+          s = s.replace(
+              '    const priceRange = buildPriceRange([...businessIntelligencePrices, sanctionsPrice, dependencyVulnerabilityPrice, ...dataQualityPrices]);',
+              '    const priceRange = buildPriceRange([...businessIntelligencePrices, sanctionsPrice, dependencyVulnerabilityPrice, packageMaintenancePrice, ...dataQualityPrices]);', 1)
+          s = s.replace(
+              '    const description = "Agent-ready paid utilities for dependency vulnerability checks, SEC company snapshots, company/domain intelligence, OFAC sanctions screening, JSON and CSV data quality, schema compatibility, deterministic cleanup, repair planning, and practical counterparty contact-window checks.";',
+              '    const description = "Agent-ready paid utilities for package maintenance intelligence, dependency vulnerability checks, SEC company snapshots, company/domain intelligence, OFAC sanctions screening, JSON and CSV data quality, schema compatibility, deterministic cleanup, repair planning, and practical counterparty contact-window checks.";', 1)
+          s = s.replace(
+              '        { url: `${SELLER_ORIGIN}/v1/dependency-vulnerability-check`, method: "POST" },\n        { url: `${SELLER_ORIGIN}/v1/profile`, method: "POST" },',
+              '        { url: `${SELLER_ORIGIN}/v1/dependency-vulnerability-check`, method: "POST" },\n        { url: `${SELLER_ORIGIN}/v1/package-maintenance-snapshot`, method: "POST" },\n        { url: `${SELLER_ORIGIN}/v1/profile`, method: "POST" },', 1)
+          s = s.replace('        tools: 12,', '        tools: 13,', 1)
+          category_anchor = '''          {
+            key: "software-security",
+            label: "Software Security",
+            tools: 1,
+            priceRange: dependencyVulnerabilityPrice,
+          },
+'''
+          category_new = category_anchor + '''          {
+            key: "developer-intelligence",
+            label: "Developer Intelligence",
+            tools: 1,
+            priceRange: packageMaintenancePrice,
+          },
+'''
+          if category_anchor not in s: raise SystemExit('app category anchor missing')
+          s = s.replace(category_anchor, category_new, 1)
+          endpoint_anchor = '''        {
+          name: "dependency-vulnerability-check-osv-exact-version",
+          method: "POST",
+          path: "/v1/dependency-vulnerability-check",
+          url: `${SELLER_ORIGIN}/v1/dependency-vulnerability-check`,
+          summary: "Check an exact dependency version for known OSV vulnerabilities",
+          description: "Checks one exact package version against OSV and returns normalized vulnerability identifiers, CVE aliases, severity records, affected ranges, known fixed versions, references, and source provenance.",
+          price_usd: priceNumber(dependencyVulnerabilityPrice),
+          network,
+        },
+'''
+          endpoint_new = endpoint_anchor + '''        {
+          name: "package-maintenance-snapshot-npm-pypi-release-metadata",
+          method: "POST",
+          path: "/v1/package-maintenance-snapshot",
+          url: `${SELLER_ORIGIN}/v1/package-maintenance-snapshot`,
+          summary: "Package maintenance snapshot for an exact npm or PyPI version",
+          description: "Checks one exact npm or PyPI package version and returns the latest release, release ages, npm deprecation or PyPI yanked status, license, repository/homepage, and Node or Python runtime constraints with registry provenance.",
+          price_usd: priceNumber(packageMaintenancePrice),
+          network,
+        },
+'''
+          if endpoint_anchor not in s: raise SystemExit('app endpoint anchor missing')
+          s = s.replace(endpoint_anchor, endpoint_new, 1)
+          p.write_text(s)
+
+          # OpenAPI
+          p = Path('products/drafts/data-quality-profiler/src/openapi.mjs')
+          s = p.read_text()
+          s = s.replace(
+              '      description: "Paid agent utilities for dependency vulnerability checks, counterparty availability, SEC company snapshots, company/domain intelligence, OFAC sanctions screening, and deterministic JSON/CSV data-quality work.",',
+              '      description: "Paid agent utilities for package maintenance intelligence, dependency vulnerability checks, counterparty availability, SEC company snapshots, company/domain intelligence, OFAC sanctions screening, and deterministic JSON/CSV data-quality work.",', 1)
+          s = s.replace('      "x-guidance": "All twelve POST operations are pay-per-call x402 resources on Base using USDC.', '      "x-guidance": "All thirteen POST operations are pay-per-call x402 resources on Base using USDC.', 1)
+          openapi_block = '''      "/v1/package-maintenance-snapshot": {
+        post: paidOperation({
+          operationId: "packageMaintenanceSnapshot",
+          summary: "Package maintenance snapshot for an exact npm or PyPI version",
+          description: "Checks one exact npm or PyPI package version and returns the current/latest release relationship, release timestamps and ages, npm deprecation or PyPI yanked status, license, repository/homepage, Node or Python runtime constraints, and public registry provenance.",
+          price: config.x402PackageMaintenancePrice ?? "$0.015",
+          tags: ["Developer Intelligence"],
+          schema: {
+            type: "object",
+            properties: {
+              ecosystem: { type: "string", enum: ["npm", "PyPI"], description: "Package registry ecosystem." },
+              package: { type: "string", minLength: 1, maxLength: 300, description: "Exact package name." },
+              version: { type: "string", minLength: 1, maxLength: 200, description: "Exact package version to inspect." },
+            },
+            required: ["ecosystem", "package", "version"],
+          },
+          example: { ecosystem: "npm", package: "fastify", version: "5.6.0" },
+          outputSchema: {
+            type: "object",
+            properties: {
+              schema_version: { type: "string" },
+              query: { type: "object", additionalProperties: true },
+              package: { type: "object", additionalProperties: true },
+              release: { type: "object", additionalProperties: true },
+              source: { type: "object", additionalProperties: true },
+              warnings: { type: "array", items: { type: "string" } },
+            },
+            required: ["schema_version", "query", "package", "release", "source", "warnings"],
+            additionalProperties: true,
+          },
+          extraResponses: {
+            "404": { description: "Package or exact version not found" },
+            "503": { description: "Package registry source unavailable" },
+          },
+        }),
+      },
+'''
+          anchor = '      "/v1/profile": {\n'
+          if anchor not in s: raise SystemExit('openapi profile anchor missing')
+          s = s.replace(anchor, openapi_block + anchor, 1)
+          p.write_text(s)
+
+          # x402/Bazaar
+          p = Path('products/drafts/data-quality-profiler/src/payments/x402-plugin.mjs')
+          s = p.read_text()
+          bazaar_anchor = '    const duplicateAuditBazaarExtension = declareDiscoveryExtension({\n'
+          bazaar_block = '''    const packageMaintenanceBazaarExtension = declareDiscoveryExtension({
+      bodyType: "json",
+      input: { ecosystem: "npm", package: "fastify", version: "5.6.0" },
+      inputSchema: {
+        type: "object",
+        properties: {
+          ecosystem: { type: "string", enum: ["npm", "PyPI"], description: "npm or PyPI registry ecosystem" },
+          package: { type: "string", minLength: 1, maxLength: 300, description: "Exact package name" },
+          version: { type: "string", minLength: 1, maxLength: 200, description: "Exact package version" },
+        },
+        required: ["ecosystem", "package", "version"],
+      },
+      output: {
+        example: {
+          schema_version: "1.0",
+          query: { ecosystem: "npm", package: "fastify", version: "5.6.0" },
+          package: { name: "fastify", requested_version: "5.6.0", latest_version: "5.6.0", requested_is_latest: true, deprecated: false, yanked: false, license: "MIT", runtime: { node: ">=20", python: null } },
+          release: { requested_published_at: null, latest_published_at: null, package_created_at: null, requested_age_days: null, latest_release_age_days: null },
+          source: { provider: "npm registry", metadata_url: "https://registry.npmjs.org/fastify" },
+          warnings: [],
+        },
+      },
+    });
+
+'''
+          if bazaar_anchor not in s: raise SystemExit('bazaar anchor missing')
+          s = s.replace(bazaar_anchor, bazaar_block + bazaar_anchor, 1)
+          route_anchor = '''      "POST /v1/duplicate-audit": protectedRoute(
+'''
+          route_block = '''      "POST /v1/package-maintenance-snapshot": protectedRoute(
+        config,
+        config.x402PackageMaintenancePrice,
+        "Check one exact npm or PyPI package version for latest release, release age, deprecation or yanked status, license, and runtime constraints",
+        packageMaintenanceBazaarExtension
+      ),
+'''
+          if route_anchor not in s: raise SystemExit('payment route anchor missing')
+          s = s.replace(route_anchor, route_block + route_anchor, 1)
+          p.write_text(s)
+          PY
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add products/drafts/data-quality-profiler/src/app.mjs products/drafts/data-quality-profiler/src/openapi.mjs products/drafts/data-quality-profiler/src/payments/x402-plugin.mjs
+          git commit -m 'feat: publish Product 13 commercial surfaces'
+          git push origin HEAD:feat/product13-package-maintenance
