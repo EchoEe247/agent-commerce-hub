@@ -4,6 +4,7 @@ import { LIMITS } from "./dataset/limits.mjs";
 import { classifyError } from "./errors.mjs";
 import { buildCounterpartyAvailability } from "./counterparty-availability.mjs";
 import { createEntitySanctionsScreen } from "./entity-sanctions-screen.mjs";
+import { createCompanyDomainIntelligence } from "./company-domain-intelligence.mjs";
 import { buildOpenApiDocument } from "./openapi.mjs";
 import {
   duplicateAudit,
@@ -26,6 +27,10 @@ export function buildApp({
   logger = console,
   entitySanctionsScreen,
   companyDomainIntelligence,
+  domainResolver,
+  domainPageRequester,
+  rdapFetch = globalThis.fetch,
+  domainClock,
   ofacFetch = globalThis.fetch,
 }) {
   const app = Fastify({
@@ -36,6 +41,12 @@ export function buildApp({
   const screenEntity = entitySanctionsScreen ?? createEntitySanctionsScreen({
     fetchImpl: ofacFetch,
     clock: sanctionsClock ?? clock,
+  });
+  const inspectCompanyDomain = companyDomainIntelligence ?? createCompanyDomainIntelligence({
+    resolver: domainResolver,
+    pageRequester: domainPageRequester,
+    rdapFetch,
+    clock: domainClock ?? clock,
   });
 
   app.addHook("onResponse", async (request, reply) => {
@@ -271,8 +282,7 @@ export function buildApp({
 
   app.post("/v1/company-domain-intelligence", async (request, reply) => {
     try {
-      if (!companyDomainIntelligence) throw new Error("INTERNAL_ERROR: company domain service is unavailable");
-      return reply.send(await companyDomainIntelligence(request.body));
+      return reply.send(await inspectCompanyDomain(request.body));
     } catch (error) {
       const { statusCode, body } = classifyError(error);
       return reply.status(statusCode).send(body);
