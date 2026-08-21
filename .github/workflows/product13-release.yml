@@ -1,0 +1,176 @@
+name: Product 13 Release Verification
+
+on:
+  push:
+    branches:
+      - ops/product13-release
+    paths:
+      - '.github/workflows/product13-release.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  verify-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ops/product13-release
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Verify production and publish discovery
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const origin = 'https://hermes-counterparty-api.onrender.com';
+          const endpoint = `${origin}/v1/package-maintenance-snapshot`;
+          const expected = {
+            commit: 'd5729ead3c222f9a03d9553fd625b74cacc381c3',
+            network: 'eip155:8453',
+            amount: '15000',
+            asset: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
+            payTo: '0x2BD7c4e294B09E9a853168a58712498D03A45B01',
+          };
+          const receipt = {
+            checked_at: new Date().toISOString(),
+            origin,
+            endpoint,
+            expected_commit: expected.commit,
+            paid_call_executed: false,
+            checks: {},
+            agent402: null,
+            index402: null,
+            errors: [],
+          };
+          const safeJson = async (res) => {
+            const text = await res.text();
+            try { return JSON.parse(text); } catch { return { raw: text.slice(0, 4000) }; }
+          };
+          const decodeHeader = (value) => {
+            let normalized = value.replace(/-/g, '+').replace(/_/g, '/');
+            while (normalized.length % 4) normalized += '=';
+            return JSON.parse(Buffer.from(normalized, 'base64').toString('utf8'));
+          };
+          try {
+            const healthRes = await fetch(`${origin}/health`);
+            const health = await safeJson(healthRes);
+            receipt.checks.health = { status: healthRes.status, body: health };
+            if (healthRes.status !== 200 || health?.ok !== true) throw new Error(`health failed: ${healthRes.status}`);
+
+            const openapiRes = await fetch(`${origin}/openapi.json`);
+            const openapi = await safeJson(openapiRes);
+            const op = openapi?.paths?.['/v1/package-maintenance-snapshot']?.post;
+            receipt.checks.openapi = {
+              status: openapiRes.status,
+              paths: Object.keys(openapi?.paths ?? {}).length,
+              product13_present: Boolean(op),
+              operation_id: op?.operationId ?? null,
+              price_amount: op?.['x-payment-info']?.price?.amount ?? null,
+            };
+            if (openapiRes.status !== 200 || receipt.checks.openapi.paths !== 13 || !op || receipt.checks.openapi.price_amount !== '0.015000') {
+              throw new Error('OpenAPI Product 13 verification failed');
+            }
+
+            const manifestRes = await fetch(`${origin}/.well-known/x402`);
+            const manifest = await safeJson(manifestRes);
+            const manifestEndpoint = (manifest?.endpoints ?? []).find((item) => item?.path === '/v1/package-maintenance-snapshot');
+            receipt.checks.manifest = {
+              status: manifestRes.status,
+              resources: (manifest?.resources ?? []).length,
+              tools: manifest?.capabilities?.tools ?? null,
+              product13_present: Boolean(manifestEndpoint),
+              product13_price_usd: manifestEndpoint?.price_usd ?? null,
+              product13_network: manifestEndpoint?.network ?? null,
+            };
+            if (manifestRes.status !== 200 || receipt.checks.manifest.resources !== 13 || receipt.checks.manifest.tools !== 13 || !manifestEndpoint) {
+              throw new Error('Agent402 manifest Product 13 verification failed');
+            }
+
+            const unpaidRes = await fetch(endpoint, {
+              method: 'POST',
+              headers: { 'content-type': 'application/json' },
+              body: JSON.stringify({ ecosystem: 'npm', package: 'is-number', version: '7.0.0' }),
+            });
+            const paymentHeader = unpaidRes.headers.get('payment-required');
+            if (!paymentHeader) throw new Error('PAYMENT-REQUIRED header missing');
+            const payment = decodeHeader(paymentHeader);
+            const quote = payment?.accepts?.[0] ?? {};
+            const bazaar = payment?.extensions?.bazaar ?? null;
+            receipt.checks.unpaid_challenge = {
+              status: unpaidRes.status,
+              x402_version: payment?.x402Version ?? null,
+              scheme: quote?.scheme ?? null,
+              network: quote?.network ?? null,
+              amount: quote?.amount ?? null,
+              asset: quote?.asset ?? null,
+              pay_to: quote?.payTo ?? null,
+              bazaar_present: Boolean(bazaar),
+              bazaar_method: bazaar?.info?.input?.method ?? null,
+              bazaar_body_type: bazaar?.info?.input?.bodyType ?? null,
+            };
+            if (
+              unpaidRes.status !== 402 || payment?.x402Version !== 2 || quote?.scheme !== 'exact' ||
+              quote?.network !== expected.network || quote?.amount !== expected.amount ||
+              String(quote?.asset ?? '').toLowerCase() !== expected.asset.toLowerCase() ||
+              String(quote?.payTo ?? '').toLowerCase() !== expected.payTo.toLowerCase() || !bazaar
+            ) throw new Error('Production Product 13 x402 challenge mismatch');
+
+            let agent402 = null;
+            for (let attempt = 1; attempt <= 4; attempt += 1) {
+              const res = await fetch('https://agent402.tools/api/index/register', {
+                method: 'POST',
+                headers: { 'content-type': 'application/json' },
+                body: JSON.stringify({ origin }),
+              });
+              const body = await safeJson(res);
+              agent402 = { attempt, status: res.status, body };
+              if (res.status === 200 && body?.listed === true && body?.routable === true && body?.toolCount === 13) break;
+              await new Promise((resolve) => setTimeout(resolve, 2500));
+            }
+            receipt.agent402 = agent402;
+
+            const indexRes = await fetch('https://402index.io/api/v1/register', {
+              method: 'POST',
+              headers: { 'content-type': 'application/json' },
+              body: JSON.stringify({
+                url: endpoint,
+                name: 'Hermes Package Maintenance Snapshot',
+                protocol: 'x402',
+                http_method: 'POST',
+                probe_body: JSON.stringify({ ecosystem: 'npm', package: 'is-number', version: '7.0.0' }),
+                description: 'Exact npm or PyPI package/version maintenance snapshot with latest release, release age, deprecation or yanked status, license, repository, and runtime constraints.',
+                price_usd: 0.015,
+                payment_asset: 'USDC',
+                payment_network: 'Base',
+                category: 'developer-intelligence',
+                provider: 'Hermes Commerce',
+              }),
+            });
+            receipt.index402 = { status: indexRes.status, body: await safeJson(indexRes) };
+          } catch (error) {
+            receipt.errors.push(String(error?.stack ?? error));
+          }
+          const agentBody = receipt.agent402?.body ?? {};
+          receipt.success = receipt.errors.length === 0
+            && receipt.checks?.unpaid_challenge?.status === 402
+            && receipt.agent402?.status === 200
+            && agentBody?.listed === true
+            && agentBody?.routable === true
+            && agentBody?.toolCount === 13
+            && receipt.index402?.status === 201;
+          fs.writeFileSync('product13-release-result.json', JSON.stringify(receipt, null, 2) + '\n');
+          console.log(JSON.stringify(receipt, null, 2));
+          NODE
+      - name: Commit release receipt
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add product13-release-result.json
+          git commit -m 'ops: record Product 13 release verification'
+          git push origin HEAD:ops/product13-release
+      - name: Enforce successful release receipt
+        run: node -e "const r=require('./product13-release-result.json'); if(!r.success){console.error(JSON.stringify(r,null,2)); process.exit(1)}"
