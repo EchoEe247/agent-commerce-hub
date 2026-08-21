@@ -7,6 +7,7 @@ const EARNING_WALLET = "0x2BD7c4e294B09E9a853168a58712498D03A45B01";
 
 const ROUTES = [
   ["/v1/counterparty-availability", "counterpartyAvailability", "0.030000"],
+  ["/v1/entity-sanctions-screen", "entitySanctionsScreen", "0.020000"],
   ["/v1/profile", "profileDataset", "0.020000"],
   ["/v1/duplicate-audit", "duplicateAudit", "0.005000"],
   ["/v1/quality-gate", "qualityGate", "0.010000"],
@@ -22,6 +23,7 @@ function app() {
       serviceVersion: "0.1.0",
       x402Price: "$0.02",
       x402LocalePrice: "$0.03",
+      x402SanctionsScreenPrice: "$0.02",
       x402DuplicateAuditPrice: "$0.005",
       x402QualityGatePrice: "$0.01",
       x402SchemaDriftPrice: "$0.015",
@@ -35,7 +37,7 @@ function app() {
   });
 }
 
-test("GET /openapi.json publishes eight AgentCash-compatible x402 operations", async () => {
+test("GET /openapi.json publishes nine AgentCash-compatible x402 operations", async () => {
   const server = app();
   const response = await server.inject({ method: "GET", url: "/openapi.json" });
 
@@ -48,6 +50,7 @@ test("GET /openapi.json publishes eight AgentCash-compatible x402 operations", a
     assert.equal(document.info.title, "Hermes Agent Commerce API");
     assert.equal(document.info.version, "0.1.0");
     assert.match(document.info["x-guidance"], /x402/i);
+    assert.match(document.info["x-guidance"], /nine POST operations/i);
     assert.deepEqual(document.servers, [{ url: PUBLIC_ORIGIN }]);
     assert.deepEqual(Object.keys(document.paths).sort(), ROUTES.map(([path]) => path).sort());
 
@@ -71,6 +74,14 @@ test("GET /openapi.json publishes eight AgentCash-compatible x402 operations", a
       const outputSchema = operation.responses["200"].content["application/json"].schema;
       assert.equal(outputSchema.type, "object");
     }
+
+    const sanctions = document.paths["/v1/entity-sanctions-screen"].post;
+    const sanctionsSchema = sanctions.requestBody.content["application/json"].schema;
+    assert.ok(sanctionsSchema.required.includes("name"));
+    assert.equal(sanctionsSchema.properties.name.type, "string");
+    assert.match(sanctions.description, /OFAC/i);
+    assert.match(sanctions.description, /not a legal compliance determination/i);
+    assert.equal(sanctions.responses["503"].description, "Authoritative OFAC source unavailable");
   } finally {
     await server.close();
   }
