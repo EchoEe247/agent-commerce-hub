@@ -1,0 +1,82 @@
+name: Product 12 Production Verify
+
+on:
+  push:
+    branches:
+      - ops/product12-production-verify
+    paths:
+      - '.github/workflows/product12-production-verify.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify unpaid production surface
+        shell: bash
+        env:
+          ORIGIN: https://hermes-counterparty-api.onrender.com
+          EXPECTED_WALLET: '0x2BD7c4e294B09E9a853168a58712498D03A45B01'
+        run: |
+          set -euo pipefail
+
+          curl --fail --silent --show-error "$ORIGIN/health" -o /tmp/health.json
+          curl --fail --silent --show-error "$ORIGIN/openapi.json" -o /tmp/openapi.json
+          curl --fail --silent --show-error "$ORIGIN/.well-known/x402" -o /tmp/manifest.json
+
+          status="$(curl --silent --show-error -D /tmp/headers.txt -o /tmp/body.json -w '%{http_code}' \
+            -H 'content-type: application/json' \
+            --data '{"ecosystem":"npm","package":"fastify","version":"5.6.0"}' \
+            "$ORIGIN/v1/dependency-vulnerability-check")"
+
+          STATUS="$status" node <<'NODE'
+          const fs = require('fs');
+          const health = JSON.parse(fs.readFileSync('/tmp/health.json', 'utf8'));
+          const openapi = JSON.parse(fs.readFileSync('/tmp/openapi.json', 'utf8'));
+          const manifest = JSON.parse(fs.readFileSync('/tmp/manifest.json', 'utf8'));
+          const headers = fs.readFileSync('/tmp/headers.txt', 'utf8');
+          const status = Number(process.env.STATUS);
+          const wallet = process.env.EXPECTED_WALLET;
+          if (health.ok !== true) throw new Error('health not ok');
+          const paths = Object.keys(openapi.paths || {});
+          if (paths.length !== 12) throw new Error(`expected 12 OpenAPI paths, got ${paths.length}`);
+          const op = openapi.paths['/v1/dependency-vulnerability-check']?.post;
+          if (!op) throw new Error('Product 12 missing from OpenAPI');
+          if (op.operationId !== 'dependencyVulnerabilityCheck') throw new Error('wrong operationId');
+          if (op['x-payment-info']?.price?.amount !== '0.015000') throw new Error('wrong OpenAPI price');
+          if (manifest.resources?.length !== 12 || manifest.capabilities?.tools !== 12) throw new Error('manifest tool count is not 12');
+          const endpoint = manifest.endpoints?.find(x => x.path === '/v1/dependency-vulnerability-check');
+          if (!endpoint) throw new Error('Product 12 missing from Agent402 manifest');
+          if (endpoint.price_usd !== 0.015) throw new Error('wrong manifest price');
+          if (status !== 402) throw new Error(`unpaid Product 12 expected 402, got ${status}`);
+          const match = headers.match(/^payment-required:\s*(.+)$/im);
+          if (!match) throw new Error('PAYMENT-REQUIRED header missing');
+          const decoded = JSON.parse(Buffer.from(match[1].trim(), 'base64').toString('utf8'));
+          const quote = decoded.accepts?.[0];
+          if (decoded.x402Version !== 2) throw new Error('x402 version is not 2');
+          if (quote?.scheme !== 'exact') throw new Error('x402 scheme is not exact');
+          if (quote?.network !== 'eip155:8453') throw new Error(`wrong network ${quote?.network}`);
+          if (quote?.amount !== '15000') throw new Error(`wrong amount ${quote?.amount}`);
+          if ((quote?.payTo || '').toLowerCase() !== wallet.toLowerCase()) throw new Error(`wrong payTo ${quote?.payTo}`);
+          if (!decoded.extensions?.bazaar) throw new Error('Bazaar extension missing');
+          console.log(JSON.stringify({
+            production_verification: 'PASS',
+            health_ok: true,
+            openapi_paths: paths.length,
+            manifest_resources: manifest.resources.length,
+            manifest_tools: manifest.capabilities.tools,
+            product12_operation_id: op.operationId,
+            product12_price: op['x-payment-info'].price.amount,
+            unpaid_status: status,
+            x402_version: decoded.x402Version,
+            scheme: quote.scheme,
+            network: quote.network,
+            amount: quote.amount,
+            pay_to: quote.payTo,
+            bazaar_present: true,
+            paid_call_executed: false
+          }));
+          NODE
