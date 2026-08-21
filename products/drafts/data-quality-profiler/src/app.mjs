@@ -6,6 +6,7 @@ import { buildCounterpartyAvailability } from "./counterparty-availability.mjs";
 import { createEntitySanctionsScreen } from "./entity-sanctions-screen.mjs";
 import { createCompanyDomainIntelligence } from "./company-domain-intelligence.mjs";
 import { createSecCompanySnapshot } from "./sec-company-snapshot.mjs";
+import { createDependencyVulnerabilityCheck } from "./dependency-vulnerability-check.mjs";
 import { buildOpenApiDocument } from "./openapi.mjs";
 import {
   duplicateAudit,
@@ -30,6 +31,8 @@ export function buildApp({
   companyDomainIntelligence,
   secCompanySnapshot,
   dependencyVulnerabilityCheck,
+  osvFetch = globalThis.fetch,
+  osvClock,
   secFetch = globalThis.fetch,
   secClock,
   domainResolver,
@@ -57,7 +60,10 @@ export function buildApp({
     fetchImpl: secFetch,
     clock: secClock ?? clock,
   });
-  const inspectDependency = dependencyVulnerabilityCheck;
+  const inspectDependency = dependencyVulnerabilityCheck ?? createDependencyVulnerabilityCheck({
+    fetchImpl: osvFetch,
+    clock: osvClock ?? clock,
+  });
 
   app.addHook("onResponse", async (request, reply) => {
     if (!request.raw.profilerLog) return;
