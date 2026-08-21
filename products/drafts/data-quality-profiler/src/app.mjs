@@ -31,6 +31,7 @@ export function buildApp({
   companyDomainIntelligence,
   secCompanySnapshot,
   dependencyVulnerabilityCheck,
+  packageMaintenanceSnapshot,
   osvFetch = globalThis.fetch,
   osvClock,
   secFetch = globalThis.fetch,
@@ -64,6 +65,7 @@ export function buildApp({
     fetchImpl: osvFetch,
     clock: osvClock ?? clock,
   });
+  const inspectPackageMaintenance = packageMaintenanceSnapshot;
 
   app.addHook("onResponse", async (request, reply) => {
     if (!request.raw.profilerLog) return;
@@ -361,6 +363,15 @@ export function buildApp({
   app.post("/v1/dependency-vulnerability-check", async (request, reply) => {
     try {
       return reply.send(await inspectDependency(request.body));
+    } catch (error) {
+      const { statusCode, body } = classifyError(error);
+      return reply.status(statusCode).send(body);
+    }
+  });
+
+  app.post("/v1/package-maintenance-snapshot", async (request, reply) => {
+    try {
+      return reply.send(await inspectPackageMaintenance(request.body));
     } catch (error) {
       const { statusCode, body } = classifyError(error);
       return reply.status(statusCode).send(body);
