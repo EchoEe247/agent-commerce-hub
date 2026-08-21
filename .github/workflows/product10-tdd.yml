@@ -13,6 +13,7 @@ on:
       - 'products/drafts/data-quality-profiler/src/errors.mjs'
       - 'products/drafts/data-quality-profiler/src/payments/x402-plugin.mjs'
       - 'products/drafts/data-quality-profiler/test/company-domain-intelligence.test.mjs'
+      - 'products/drafts/data-quality-profiler/test/config.test.mjs'
 
 permissions:
   contents: write
@@ -28,13 +29,13 @@ jobs:
       - name: Install dependencies
         working-directory: products/drafts/data-quality-profiler
         run: npm ci
-      - name: Run Product 10 test and persist receipt
+      - name: Run Product 10 tests and persist receipt
         shell: bash
         run: |
           set -uo pipefail
           cd products/drafts/data-quality-profiler
           set +e
-          node --test test/company-domain-intelligence.test.mjs > /tmp/product10-test.log 2>&1
+          node --test test/company-domain-intelligence.test.mjs test/config.test.mjs > /tmp/product10-test.log 2>&1
           code=$?
           set -e
           TEST_EXIT_CODE="$code" node <<'NODE'
@@ -45,7 +46,7 @@ jobs:
             observed_at: new Date().toISOString(),
             status: code === 0 ? 'PASS' : 'FAIL',
             exit_code: code,
-            output_tail: output.split('\n').slice(-80).join('\n'),
+            output_tail: output.split('\n').slice(-100).join('\n'),
           };
           fs.writeFileSync('../../../product10-tdd-result.json', JSON.stringify(receipt, null, 2) + '\n');
           NODE
@@ -56,5 +57,3 @@ jobs:
           git commit -m "test: record Product 10 TDD result" || true
           git push origin HEAD:feat/company-domain-intelligence
           exit "$code"
-
-# Explicit retrigger after workflow-authored runtime wiring.
