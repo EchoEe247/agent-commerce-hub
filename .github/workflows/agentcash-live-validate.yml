@@ -1,0 +1,77 @@
+name: AgentCash Live Production Validation
+
+on:
+  push:
+    branches:
+      - ops/agentcash-live-validate
+    paths:
+      - '.github/workflows/agentcash-live-validate.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ops/agentcash-live-validate
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Verify live OpenAPI document
+        shell: bash
+        run: |
+          set -euo pipefail
+          TARGET='https://hermes-counterparty-api.onrender.com'
+          curl --fail --silent --show-error --max-time 30 "$TARGET/openapi.json" > /tmp/openapi.json
+          node - <<'NODE'
+          const fs = require('fs');
+          const doc = JSON.parse(fs.readFileSync('/tmp/openapi.json', 'utf8'));
+          const expected = {
+            '/v1/counterparty-availability': '0.030000',
+            '/v1/profile': '0.020000',
+            '/v1/duplicate-audit': '0.005000',
+            '/v1/quality-gate': '0.010000',
+            '/v1/schema-drift': '0.015000',
+            '/v1/data-contract-check': '0.015000',
+            '/v1/clean-normalize': '0.020000',
+            '/v1/repair-plan': '0.020000',
+          };
+          if (doc.openapi !== '3.1.0') throw new Error('OpenAPI version mismatch');
+          if (Object.keys(doc.paths || {}).length !== 8) throw new Error('Expected exactly 8 paths');
+          for (const [path, amount] of Object.entries(expected)) {
+            const op = doc.paths?.[path]?.post;
+            if (!op) throw new Error(`Missing POST ${path}`);
+            if (op?.['x-payment-info']?.price?.amount !== amount) throw new Error(`Price mismatch ${path}`);
+            const encoded = JSON.stringify(op['x-payment-info']);
+            if (encoded.toLowerCase().includes('mpp')) throw new Error(`Unexpected MPP claim ${path}`);
+          }
+          NODE
+      - name: Official AgentCash discovery validation
+        shell: bash
+        run: |
+          set -euo pipefail
+          TARGET='https://hermes-counterparty-api.onrender.com'
+          npx -y @agentcash/discovery@latest discover "$TARGET" | tee /tmp/agentcash-discover.txt
+          npx -y @agentcash/discovery@latest check "$TARGET" | tee /tmp/agentcash-check.txt
+      - name: Record proof
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            echo 'AGENTCASH_LIVE_VALIDATION=PASS'
+            echo 'PRODUCTION_COMMIT=2a59c7366959d0706dd3499c13aa35a27d3f4811'
+            echo 'TARGET=https://hermes-counterparty-api.onrender.com'
+            echo 'OPENAPI_PATHS=8'
+            echo '--- discover ---'
+            cat /tmp/agentcash-discover.txt
+            echo '--- check ---'
+            cat /tmp/agentcash-check.txt
+          } > .agentcash-live-proof.txt
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add .agentcash-live-proof.txt
+          git commit -m 'test: record live AgentCash validation proof'
+          git push origin HEAD:ops/agentcash-live-validate
