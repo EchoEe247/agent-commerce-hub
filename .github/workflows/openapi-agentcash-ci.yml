@@ -1,0 +1,34 @@
+name: OpenAPI AgentCash Discovery CI
+
+on:
+  push:
+    branches:
+      - feat/openapi-agentcash-discovery
+  pull_request:
+    branches:
+      - feat/hermes-commerce-control-plane
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install
+        working-directory: products/drafts/data-quality-profiler
+        run: npm ci
+      - name: Full tests
+        working-directory: products/drafts/data-quality-profiler
+        run: node --test test/*.test.mjs
+      - name: Syntax checks
+        working-directory: products/drafts/data-quality-profiler
+        run: |
+          node --check src/app.mjs
+          if [ -f src/openapi.mjs ]; then node --check src/openapi.mjs; fi
+      - name: AgentCash package version
+        run: npx -y @agentcash/discovery@latest --version || true
