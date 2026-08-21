@@ -1,5 +1,5 @@
 name: Counterparty Seller CI
-# Product 13 seller gate: package maintenance snapshot
+# Product 13 final clean gate: package maintenance snapshot
 
 on:
   push:
