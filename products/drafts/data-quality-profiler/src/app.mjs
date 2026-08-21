@@ -29,6 +29,7 @@ export function buildApp({
   entitySanctionsScreen,
   companyDomainIntelligence,
   secCompanySnapshot,
+  dependencyVulnerabilityCheck,
   secFetch = globalThis.fetch,
   secClock,
   domainResolver,
@@ -56,6 +57,7 @@ export function buildApp({
     fetchImpl: secFetch,
     clock: secClock ?? clock,
   });
+  const inspectDependency = dependencyVulnerabilityCheck;
 
   app.addHook("onResponse", async (request, reply) => {
     if (!request.raw.profilerLog) return;
@@ -326,6 +328,15 @@ export function buildApp({
   app.post("/v1/sec-company-snapshot", async (request, reply) => {
     try {
       return reply.send(await inspectSecCompany(request.body));
+    } catch (error) {
+      const { statusCode, body } = classifyError(error);
+      return reply.status(statusCode).send(body);
+    }
+  });
+
+  app.post("/v1/dependency-vulnerability-check", async (request, reply) => {
+    try {
+      return reply.send(await inspectDependency(request.body));
     } catch (error) {
       const { statusCode, body } = classifyError(error);
       return reply.status(statusCode).send(body);
