@@ -85,6 +85,63 @@ jobs:
           if [ -f test/entity-sanctions-x402.test.mjs ]; then TESTS+=(test/entity-sanctions-x402.test.mjs); fi
           if [ -f test/company-domain-intelligence.test.mjs ]; then TESTS+=(test/company-domain-intelligence.test.mjs); fi
           node --test "${TESTS[@]}"
+      - name: Product 10 live production probe (temporary)
+        if: github.event_name == 'pull_request'
+        run: |
+          node <<'NODE'
+          const origin = 'https://hermes-counterparty-api.onrender.com';
+          const expectedPayTo = '0x2BD7c4e294B09E9a853168a58712498D03A45B01';
+          const receipt = { verified: false, origin, paid_call_executed: false };
+          let failed = false;
+          const check = (value, message) => { if (!value) { failed = true; (receipt.errors ??= []).push(message); } };
+          const healthRes = await fetch(`${origin}/health`);
+          const health = await healthRes.json();
+          receipt.health_ok = healthRes.status === 200 && health.ok === true;
+          check(receipt.health_ok, `health status ${healthRes.status}`);
+          const openapiRes = await fetch(`${origin}/openapi.json`);
+          const openapi = await openapiRes.json();
+          const product = openapi.paths?.['/v1/company-domain-intelligence']?.post;
+          receipt.openapi_paths = Object.keys(openapi.paths ?? {}).length;
+          receipt.product10_openapi = Boolean(product);
+          receipt.price_usd = Number(product?.['x-payment-info']?.price?.amount);
+          check(receipt.openapi_paths === 10, `OpenAPI paths ${receipt.openapi_paths}`);
+          check(receipt.product10_openapi, 'Product 10 absent from OpenAPI');
+          check(receipt.price_usd === 0.02, `OpenAPI price ${receipt.price_usd}`);
+          const manifestRes = await fetch(`${origin}/.well-known/x402`);
+          const manifest = await manifestRes.json();
+          receipt.manifest_tools = manifest.capabilities?.tools;
+          receipt.manifest_resources = manifest.resources?.length;
+          receipt.product10_manifest = Boolean(manifest.endpoints?.some((entry) => entry.path === '/v1/company-domain-intelligence'));
+          check(receipt.manifest_tools === 10, `manifest tools ${receipt.manifest_tools}`);
+          check(receipt.manifest_resources === 10, `manifest resources ${receipt.manifest_resources}`);
+          check(receipt.product10_manifest, 'Product 10 absent from manifest');
+          const unpaid = await fetch(`${origin}/v1/company-domain-intelligence`, {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ domain: 'example.com' }),
+          });
+          receipt.unpaid_status = unpaid.status;
+          const encoded = unpaid.headers.get('payment-required');
+          check(unpaid.status === 402, `unpaid status ${unpaid.status}`);
+          check(Boolean(encoded), 'PAYMENT-REQUIRED missing');
+          if (encoded) {
+            const challenge = JSON.parse(Buffer.from(encoded, 'base64').toString('utf8'));
+            const accepted = challenge.accepts?.[0] ?? {};
+            receipt.x402_version = challenge.x402Version;
+            receipt.challenge_amount_atomic = accepted.amount;
+            receipt.challenge_network = accepted.network;
+            receipt.challenge_pay_to = accepted.payTo;
+            receipt.challenge_scheme = accepted.scheme;
+            check(challenge.x402Version === 2, `x402 version ${challenge.x402Version}`);
+            check(accepted.amount === '20000', `amount ${accepted.amount}`);
+            check(accepted.network === 'eip155:8453', `network ${accepted.network}`);
+            check(String(accepted.payTo).toLowerCase() === expectedPayTo.toLowerCase(), `payTo ${accepted.payTo}`);
+            check(accepted.scheme === 'exact', `scheme ${accepted.scheme}`);
+          }
+          receipt.verified = !failed;
+          console.log(`PRODUCT10_LIVE_RECEIPT=${JSON.stringify(receipt)}`);
+          if (failed) process.exit(1);
+          NODE
       - name: Full profiler suite (PR gate)
         if: github.event_name == 'pull_request'
         working-directory: products/drafts/data-quality-profiler
