@@ -165,3 +165,25 @@ test("rejects IP literals and special-use hostnames before any network lookup", 
 
   assert.equal(networkCalls, 0);
 });
+
+test("rejects domains resolving to private or non-routable addresses before website fetch", async () => {
+  const { createCompanyDomainIntelligence } = await loadCompanyDomainModule();
+  let pageCalls = 0;
+  const resolver = {
+    resolve4: async () => ["10.0.0.7"],
+    resolve6: async () => [],
+    resolveMx: async () => [],
+    resolveTxt: async () => [],
+  };
+  const inspect = createCompanyDomainIntelligence({
+    resolver,
+    pageRequester: async () => { pageCalls += 1; return null; },
+    rdapFetch: async () => ({ ok: false, status: 404 }),
+  });
+
+  await assert.rejects(
+    inspect({ domain: "assets.attacker.com" }),
+    (error) => error instanceof Error && /^UNSAFE_DOMAIN_TARGET:/.test(error.message)
+  );
+  assert.equal(pageCalls, 0);
+});
