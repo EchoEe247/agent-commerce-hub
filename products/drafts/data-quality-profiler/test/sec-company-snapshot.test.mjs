@@ -2,6 +2,8 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { buildApp } from "../src/app.mjs";
 
+// Product #11 runtime contract.
+
 test("POST /v1/sec-company-snapshot delegates to the SEC snapshot service", async () => {
   const calls = [];
   const app = buildApp({
