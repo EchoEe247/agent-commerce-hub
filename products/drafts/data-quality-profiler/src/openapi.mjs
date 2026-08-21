@@ -131,7 +131,7 @@ export function buildOpenApiDocument(config) {
       "/v1/entity-sanctions-screen": {
         post: paidOperation({
           operationId: "entitySanctionsScreen",
-          summary: "Screen an entity or person against OFAC SDN",
+          summary: "OFAC sanctions screening for a person or organization",
           description: "Screens a person or organization name against authoritative U.S. Treasury OFAC SDN primary names and aliases, returns deterministic exact or fuzzy candidate scores plus programs and published addresses, and supports optional country and entity-type filtering. The result is informational and is not a legal compliance determination.",
           price: config.x402SanctionsScreenPrice ?? "$0.02",
           tags: ["Compliance"],
@@ -236,7 +236,7 @@ export function buildOpenApiDocument(config) {
       "/v1/sec-company-snapshot": {
         post: paidOperation({
           operationId: "secCompanySnapshot",
-          summary: "SEC EDGAR company identity, filings, and XBRL snapshot",
+          summary: "SEC company snapshot by ticker or CIK with filings and financial facts",
           description: "Resolve exactly one ticker or CIK using official SEC data and return canonical company identity, latest 10-K, 10-Q, and 8-K filing metadata with SEC archive URLs, plus selected sourced XBRL facts for revenue, net income, assets, liabilities, and shares outstanding.",
           price: config.x402SecCompanyPrice ?? "$0.02",
           tags: ["Business Intelligence"],
