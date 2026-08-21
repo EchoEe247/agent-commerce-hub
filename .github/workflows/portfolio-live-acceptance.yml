@@ -1,0 +1,149 @@
+name: Portfolio Live Acceptance
+
+on:
+  pull_request:
+    branches:
+      - feat/hermes-commerce-control-plane
+
+permissions:
+  contents: read
+
+jobs:
+  accept-and-distribute:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate live seller and distribute Batch 1
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          BASE='https://hermes-counterparty-api.onrender.com'
+          PAY_TO='0x2bd7c4e294b09e9a853168a58712498d03a45b01'
+
+          echo '=== HEALTH ==='
+          curl -fsS "$BASE/health" | tee /tmp/health.json
+          echo
+          jq -e '.ok == true and .service == "data-quality-profiler"' /tmp/health.json >/dev/null
+
+          echo '=== LIVE SELLER MANIFEST ==='
+          curl -fsS "$BASE/.well-known/x402" | tee /tmp/manifest.json
+          echo
+          jq -e '
+            .spec == "agent402-service-manifest/1" and
+            .capabilities.tools == 8 and
+            (.resources | length) == 8 and
+            (.endpoints | length) == 8 and
+            .payment.x402.primaryNetwork == "eip155:8453" and
+            .payment.x402.priceRange == "$0.005-$0.03"
+          ' /tmp/manifest.json >/dev/null
+
+          probe() {
+            local path="$1"
+            local amount="$2"
+            local payload="$3"
+            local slug
+            slug="$(echo "$path" | tr '/-' '__')"
+            local headers="/tmp/${slug}.headers"
+            local body="/tmp/${slug}.body"
+
+            local status
+            status="$(curl -sS -D "$headers" -o "$body" -w '%{http_code}' \
+              -X POST "$BASE$path" \
+              -H 'Content-Type: application/json' \
+              --data "$payload")"
+
+            echo "$path HTTP=$status expected_amount=$amount"
+            if [ "$status" != '402' ]; then
+              cat "$body"
+              return 1
+            fi
+
+            local payment_header
+            payment_header="$(awk 'BEGIN{IGNORECASE=1} /^payment-required:/ {sub(/\r$/,""); sub(/^[^:]*:[[:space:]]*/,""); print; exit}' "$headers")"
+            if [ -z "$payment_header" ]; then
+              echo "missing PAYMENT-REQUIRED header for $path"
+              return 1
+            fi
+
+            PAYMENT_HEADER="$payment_header" node <<'NODE' > /tmp/decoded.json
+          const encoded = process.env.PAYMENT_HEADER;
+          const decoded = Buffer.from(encoded, 'base64').toString('utf8');
+          process.stdout.write(JSON.stringify(JSON.parse(decoded)));
+          NODE
+
+            jq -e --arg amount "$amount" --arg payTo "$PAY_TO" --arg base "$BASE" '
+              .x402Version == 2 and
+              (.accepts | length) > 0 and
+              .accepts[0].scheme == "exact" and
+              .accepts[0].network == "eip155:8453" and
+              .accepts[0].amount == $amount and
+              ((.accepts[0].payTo | ascii_downcase) == $payTo) and
+              (.resource.url | startswith($base + "/v1/")) and
+              (.resource.url | startswith("https://")) and
+              (.extensions.bazaar != null)
+            ' /tmp/decoded.json >/dev/null
+          }
+
+          echo '=== LIVE X402 PROBES ==='
+          probe '/v1/duplicate-audit' '5000' '{"format":"json","records":[{"id":1},{"id":1}]}'
+          probe '/v1/quality-gate' '10000' '{"format":"json","records":[{"id":1},{"id":2}]}'
+          probe '/v1/schema-drift' '15000' '{"baseline":{"format":"json","records":[{"id":1}]},"current":{"format":"json","records":[{"id":1,"name":"A"}]}}'
+          probe '/v1/data-contract-check' '15000' '{"dataset":{"format":"json","records":[{"id":1}]},"contract":{"required_fields":["id"],"field_types":{"id":"integer"},"allow_extra_fields":true}}'
+          probe '/v1/clean-normalize' '20000' '{"format":"json","records":[{"id":1,"name":" Alice "},{"id":1,"name":"Alice"}]}'
+          probe '/v1/repair-plan' '20000' '{"format":"json","records":[{"id":1},{"id":1}]}'
+
+          echo '=== AGENT402 SELLER DETAIL ==='
+          agent_status="$(curl -sS -o /tmp/agent402.json -w '%{http_code}' \
+            'https://agent402.tools/api/index?seller=hermes-counterparty-api.onrender.com')"
+          echo "Agent402 HTTP=$agent_status"
+          cat /tmp/agent402.json
+          echo
+          if [ "$agent_status" != '200' ]; then
+            exit 1
+          fi
+
+          register_402index() {
+            local path="$1"
+            local name="$2"
+            local price="$3"
+            local probe_body="$4"
+            local description="$5"
+
+            local request
+            request="$(jq -n \
+              --arg url "$BASE$path" \
+              --arg name "$name" \
+              --arg probe "$probe_body" \
+              --arg description "$description" \
+              --argjson price "$price" \
+              '{url:$url,name:$name,protocol:"x402",http_method:"POST",probe_body:$probe,description:$description,price_usd:$price,payment_asset:"USDC",payment_network:"Base",category:"data-quality",provider:"Hermes Commerce"}')"
+
+            local response_file="/tmp/register$(echo "$path" | tr '/-' '__').json"
+            local status
+            status="$(curl -sS -o "$response_file" -w '%{http_code}' \
+              -X POST 'https://402index.io/api/v1/register' \
+              -H 'Content-Type: application/json' \
+              --data "$request")"
+            echo "$path 402Index_HTTP=$status"
+            cat "$response_file"
+            echo
+            if [ "$status" != '200' ] && [ "$status" != '201' ]; then
+              return 1
+            fi
+          }
+
+          echo '=== 402 INDEX REGISTRATION ==='
+          failures=0
+          register_402index '/v1/duplicate-audit' 'Hermes Duplicate Row Audit' '0.005' '{"format":"json","records":[{"id":1},{"id":1}]}' 'Deterministic JSON and CSV duplicate-row audit with unique-row count, duplicate ratio, and repeated row indexes.' || failures=$((failures+1))
+          register_402index '/v1/quality-gate' 'Hermes Data Quality Gate' '0.01' '{"format":"json","records":[{"id":1},{"id":2}]}' 'Machine-actionable JSON and CSV quality pass/fail gate using score, missing-value, duplicate-row, and mixed-type thresholds.' || failures=$((failures+1))
+          register_402index '/v1/schema-drift' 'Hermes Schema Drift Detector' '0.015' '{"baseline":{"format":"json","records":[{"id":1}]},"current":{"format":"json","records":[{"id":1,"name":"A"}]}}' 'Deterministic schema-drift comparison for added, removed, type-changed, nullable, and breaking changes between datasets.' || failures=$((failures+1))
+          register_402index '/v1/data-contract-check' 'Hermes Data Contract Check' '0.015' '{"dataset":{"format":"json","records":[{"id":1}]},"contract":{"required_fields":["id"],"field_types":{"id":"integer"},"allow_extra_fields":true}}' 'JSON and CSV data-contract compatibility check for required fields, expected types, extra fields, and incompatibility reasons.' || failures=$((failures+1))
+          register_402index '/v1/clean-normalize' 'Hermes Clean Normalize' '0.02' '{"format":"json","records":[{"id":1,"name":" Alice "},{"id":1,"name":"Alice"}]}' 'Conservative deterministic JSON and CSV cleanup: trim strings, convert blanks to null, and remove exact duplicates without semantic guessing.' || failures=$((failures+1))
+          register_402index '/v1/repair-plan' 'Hermes Dataset Repair Plan' '0.02' '{"format":"json","records":[{"id":1},{"id":1}]}' 'Deterministic machine-readable repair plan for duplicate rows, missing values, mixed types, identifier integrity, and constant fields.' || failures=$((failures+1))
+
+          if [ "$failures" -ne 0 ]; then
+            echo "402 Index registration failures=$failures"
+            exit 1
+          fi
+
+          echo 'LIVE_ACCEPTANCE_AND_DISTRIBUTION=PASS'
