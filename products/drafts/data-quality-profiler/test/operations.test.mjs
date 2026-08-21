@@ -105,8 +105,8 @@ test("schemaDrift reports added, removed, type, and nullable changes determinist
   assert.deepEqual(result.type_changes, [{ field: "id", baseline_type: "integer", current_type: "string" }]);
   assert.deepEqual(result.nullable_changes, [{ field: "note", baseline_nullable: false, current_nullable: true }]);
   assert.equal(result.breaking_change, true);
-  assert.match(result.baseline_fingerprint, /^[a-f0-9]{64}$/);
-  assert.match(result.current_fingerprint, /^[a-f0-9]{64}$/);
+  assert.match(result.baseline_fingerprint, /^sha256:[a-f0-9]{64}$/);
+  assert.match(result.current_fingerprint, /^sha256:[a-f0-9]{64}$/);
 });
 
 test("schemaDrift treats additive-only schema change as non-breaking", () => {
