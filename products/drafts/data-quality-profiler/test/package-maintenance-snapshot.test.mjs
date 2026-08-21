@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { buildApp } from "../src/app.mjs";
 
-// Product #13 route/service seam.
+// Product #13 route/service seam plus npm runtime contract.
 test("POST /v1/package-maintenance-snapshot delegates to the package maintenance service", async () => {
   const calls = [];
   const app = buildApp({
