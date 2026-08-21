@@ -1,6 +1,6 @@
 {
-  "observed_at": "2026-08-21T05:15:16.112Z",
-  "status": "FAIL",
-  "exit_code": 1,
-  "output_tail": "✔ POST /v1/company-domain-intelligence delegates to the company domain service (80.164709ms)\n✔ builds deterministic company and domain intelligence from DNS, RDAP, and website signals (12.86521ms)\n✔ rejects IP literals and special-use hostnames before any network lookup (2.030301ms)\n✖ rejects domains resolving to private or non-routable addresses before website fetch (1.211721ms)\nℹ tests 4\nℹ suites 0\nℹ pass 3\nℹ fail 1\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 255.883914\n\n✖ failing tests:\n\ntest at test/company-domain-intelligence.test.mjs:169:1\n✖ rejects domains resolving to private or non-routable addresses before website fetch (1.211721ms)\n  AssertionError [ERR_ASSERTION]: Missing expected rejection.\n      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\n      at async TestContext.<anonymous> (file:///home/runner/work/agent-commerce-hub/agent-commerce-hub/products/drafts/data-quality-profiler/test/company-domain-intelligence.test.mjs:184:3)\n      at async Test.run (node:internal/test_runner/test:1389:7)\n      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {\n    generatedMessage: false,\n    code: 'ERR_ASSERTION',\n    actual: undefined,\n    operator: 'rejects',\n    diff: 'simple'\n  }\n"
+  "observed_at": "2026-08-21T05:16:33.589Z",
+  "status": "PASS",
+  "exit_code": 0,
+  "output_tail": "✔ POST /v1/company-domain-intelligence delegates to the company domain service (73.224539ms)\n✔ builds deterministic company and domain intelligence from DNS, RDAP, and website signals (9.69906ms)\n✔ rejects IP literals and special-use hostnames before any network lookup (1.331487ms)\n✔ rejects domains resolving to private or non-routable addresses before website fetch (0.825871ms)\nℹ tests 4\nℹ suites 0\nℹ pass 4\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 218.783266\n"
 }
