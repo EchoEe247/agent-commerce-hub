@@ -8,12 +8,27 @@ const INDEX402_VERIFICATION_HASH = "38c7d63638e26a694fdf51fd1b213221e26d73044847
 const PROFILER_ROUTING_NAME = "validate-json-csv-data-quality-profile-missing-duplicate-types";
 const PROFILER_ROUTING_SUMMARY = "Validate and profile JSON or CSV datasets before ETL, RAG, analytics, or AI agent use; find missing values, duplicates and duplicate rows, inconsistent data types and type conflicts, infer field types, and return a deterministic quality score plus schema fingerprint.";
 
+const PORTFOLIO_ROUTES = [
+  ["/v1/duplicate-audit", "duplicate-row-audit-json-csv", 0.005, /duplicate rows/i],
+  ["/v1/quality-gate", "data-quality-pass-fail-gate-etl-rag", 0.01, /quality.*gate|pass.*fail/i],
+  ["/v1/schema-drift", "schema-drift-added-removed-type-changes", 0.015, /schema drift/i],
+  ["/v1/data-contract-check", "data-contract-schema-compatibility-check", 0.015, /data contract/i],
+  ["/v1/clean-normalize", "clean-normalize-json-csv-deduplicate-trim", 0.02, /clean.*normalize|deduplicate/i],
+  ["/v1/repair-plan", "dataset-repair-plan-missing-duplicates-mixed-types", 0.02, /repair plan/i],
+];
+
 function unpaidApp(options = {}) {
   return buildApp({
     config: {
       serviceVersion: "0.1.0",
       x402Price: "$0.02",
       x402LocalePrice: "$0.03",
+      x402DuplicateAuditPrice: "$0.005",
+      x402QualityGatePrice: "$0.01",
+      x402SchemaDriftPrice: "$0.015",
+      x402DataContractPrice: "$0.015",
+      x402CleanNormalizePrice: "$0.02",
+      x402RepairPlanPrice: "$0.02",
       x402Network: "eip155:8453",
       x402PayTo: EARNING_WALLET,
     },
@@ -22,7 +37,7 @@ function unpaidApp(options = {}) {
   });
 }
 
-test("GET /.well-known/x402 publishes Agent402/x402scan-compatible seller metadata", async () => {
+test("GET /.well-known/x402 publishes eight unique Agent402-compatible tools", async () => {
   const app = unpaidApp();
   const response = await app.inject({ method: "GET", url: "/.well-known/x402" });
   assert.equal(response.statusCode, 200);
@@ -33,21 +48,31 @@ test("GET /.well-known/x402 publishes Agent402/x402scan-compatible seller metada
   assert.equal(body.serviceVersion, "0.1.0");
   assert.equal(body.name, "Hermes Counterparty Availability");
   assert.equal(body.homepage, PUBLIC_ORIGIN);
+  assert.equal(body.resources.length, 8);
+  assert.equal(new Set(body.resources).size, 8);
   assert.deepEqual(body.resources, [
     `${PUBLIC_ORIGIN}/v1/counterparty-availability`,
     `${PUBLIC_ORIGIN}/v1/profile`,
+    `${PUBLIC_ORIGIN}/v1/duplicate-audit`,
+    `${PUBLIC_ORIGIN}/v1/quality-gate`,
+    `${PUBLIC_ORIGIN}/v1/schema-drift`,
+    `${PUBLIC_ORIGIN}/v1/data-contract-check`,
+    `${PUBLIC_ORIGIN}/v1/clean-normalize`,
+    `${PUBLIC_ORIGIN}/v1/repair-plan`,
   ]);
 
   assert.deepEqual(body.payment.x402.networks, ["eip155:8453"]);
   assert.equal(body.payment.x402.primaryNetwork, "eip155:8453");
   assert.equal(body.payment.x402.version, 2);
   assert.equal(body.payment.x402.currency, "USDC");
-  assert.equal(body.payment.x402.priceRange, "$0.02-$0.03");
+  assert.equal(body.payment.x402.priceRange, "$0.005-$0.03");
   assert.equal(body.payment.x402.payTo, EARNING_WALLET);
   assert.equal(body.payment.x402.nonCustodial, true);
 
-  assert.equal(body.capabilities.tools, 2);
+  assert.equal(body.capabilities.tools, 8);
   assert.deepEqual(body.capabilities.categories.map((category) => category.key), ["business-intelligence", "data-quality"]);
+  assert.equal(body.capabilities.categories.find((category) => category.key === "business-intelligence").tools, 1);
+  assert.equal(body.capabilities.categories.find((category) => category.key === "data-quality").tools, 7);
 
   const counterparty = body.endpoints.find((endpoint) => endpoint.path === "/v1/counterparty-availability");
   assert.equal(counterparty.method, "POST");
@@ -68,6 +93,18 @@ test("GET /.well-known/x402 publishes Agent402/x402scan-compatible seller metada
   assert.match(profiler.summary, /type conflicts/);
   assert.match(profiler.description, /missing values/);
   assert.match(profiler.description, /schema fingerprint/);
+
+  assert.equal(body.endpoints.length, 8);
+  for (const [path, name, price, summaryPattern] of PORTFOLIO_ROUTES) {
+    const endpoint = body.endpoints.find((candidate) => candidate.path === path);
+    assert.ok(endpoint, `missing manifest endpoint ${path}`);
+    assert.equal(endpoint.name, name);
+    assert.equal(endpoint.method, "POST");
+    assert.equal(endpoint.price_usd, price);
+    assert.equal(endpoint.network, "eip155:8453");
+    assert.match(endpoint.summary, summaryPattern);
+    assert.equal(endpoint.url, `${PUBLIC_ORIGIN}${path}`);
+  }
   await app.close();
 });
 
