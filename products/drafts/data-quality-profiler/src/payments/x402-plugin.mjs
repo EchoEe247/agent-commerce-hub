@@ -89,6 +89,47 @@ export function buildPaymentPlugin(config) {
       },
     });
 
+    const sanctionsBazaarExtension = declareDiscoveryExtension({
+      bodyType: "json",
+      input: { name: "ACME SHIPPING LLC" },
+      inputSchema: {
+        type: "object",
+        properties: {
+          name: {
+            type: "string",
+            minLength: 1,
+            maxLength: 200,
+            description: "Person, organization, vessel, or other entity name to screen against OFAC SDN",
+          },
+          country: {
+            type: "string",
+            description: "Optional country filter matched against OFAC-published addresses",
+          },
+          entity_type: {
+            type: "string",
+            enum: ["individual", "entity", "vessel", "aircraft"],
+            description: "Optional OFAC entity-type filter",
+          },
+        },
+        required: ["name"],
+      },
+      output: {
+        example: {
+          schema_version: "1.0",
+          query: {
+            name: "ACME SHIPPING LLC",
+            normalized_name: "acme shipping llc",
+            country: null,
+            entity_type: null,
+          },
+          matches_found: false,
+          candidates: [],
+          source: { provider: "OFAC", list: "SDN" },
+          warnings: ["Screening result is informational and is not a legal compliance determination."],
+        },
+      },
+    });
+
     const duplicateAuditBazaarExtension = declareDiscoveryExtension({
       bodyType: "json",
       input: { format: "json", records: [{ id: 1 }, { id: 1 }] },
@@ -264,6 +305,12 @@ export function buildPaymentPlugin(config) {
         config.x402LocalePrice,
         "Check whether a counterparty is reachable now using local time, national holidays, weekends, and business days remaining this week",
         counterpartyBazaarExtension
+      ),
+      "POST /v1/entity-sanctions-screen": protectedRoute(
+        config,
+        config.x402SanctionsScreenPrice,
+        "Screen a person or organization name against authoritative OFAC SDN data and return deterministic candidate matches; informational, not a legal compliance determination",
+        sanctionsBazaarExtension
       ),
       "POST /v1/duplicate-audit": protectedRoute(
         config,
