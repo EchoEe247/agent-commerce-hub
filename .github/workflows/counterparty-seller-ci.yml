@@ -118,3 +118,59 @@ jobs:
         if: github.event_name == 'pull_request'
         working-directory: products/drafts/data-quality-profiler
         run: node scripts/sec-source-smoke.mjs
+      - name: Inspect current public marketplace state
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: |
+          node <<'NODE'
+          const origin = 'https://hermes-counterparty-api.onrender.com';
+          const host = 'hermes-counterparty-api.onrender.com';
+          const wallet = '0x2BD7c4e294B09E9a853168a58712498D03A45B01'.toLowerCase();
+          const serviceId = 'b68cf45d-a194-47cb-802a-b005ec0dcbf6';
+          const getJson = async (url) => {
+            const r = await fetch(url, {headers:{accept:'application/json'}});
+            const text = await r.text();
+            let body; try { body = JSON.parse(text); } catch { body = text.slice(0,1000); }
+            return {status:r.status, body};
+          };
+          const containsNeedle = (v, needles) => {
+            try { const s = JSON.stringify(v).toLowerCase(); return needles.some(n => s.includes(n)); } catch { return false; }
+          };
+          const collectMatches = (v, needles, out=[], depth=0) => {
+            if (depth > 8 || out.length >= 30 || v == null) return out;
+            if (Array.isArray(v)) { for (const x of v) collectMatches(x, needles, out, depth+1); return out; }
+            if (typeof v === 'object') {
+              if (containsNeedle(v, needles)) out.push(v);
+              for (const x of Object.values(v)) collectMatches(x, needles, out, depth+1);
+            }
+            return out;
+          };
+          const manifest = await getJson(origin + '/.well-known/x402');
+          const index = await getJson('https://agent402.tools/api/index');
+          const leaderboard = await getJson('https://agent402.tools/api/leaderboard?top=5000&include=external');
+          const findQueries = ['SEC company snapshot','company filings financial facts','company domain intelligence','OFAC sanctions screen'];
+          const finds = {};
+          for (const q of findQueries) finds[q] = await getJson('https://agent402.tools/api/find?q=' + encodeURIComponent(q));
+          const idx402 = await getJson('https://402index.io/api/v1/services/' + serviceId);
+          const idx402Search = await getJson('https://402index.io/api/v1/services?q=' + encodeURIComponent('Hermes Commerce'));
+          const summary = {
+            checked_at: new Date().toISOString(),
+            production: {
+              manifest_status: manifest.status,
+              tools: manifest.body?.capabilities?.tools ?? null,
+              resources: manifest.body?.resources?.length ?? null,
+            },
+            agent402_index: {
+              status: index.status,
+              matches: collectMatches(index.body, [host.toLowerCase(), origin.toLowerCase(), wallet]).slice(0,12),
+            },
+            agent402_leaderboard: {
+              status: leaderboard.status,
+              matches: collectMatches(leaderboard.body, [host.toLowerCase(), wallet]).slice(0,12),
+            },
+            agent402_find: Object.fromEntries(Object.entries(finds).map(([q,r]) => [q,{status:r.status,matches:collectMatches(r.body,[host.toLowerCase(),'/v1/sec-company-snapshot','/v1/company-domain-intelligence','/v1/entity-sanctions-screen']).slice(0,8),raw:r.body}])),
+            index402_product11: {status: idx402.status, body: idx402.body},
+            index402_search: {status: idx402Search.status, matches: collectMatches(idx402Search.body,[host.toLowerCase(),'hermes']).slice(0,20)},
+          };
+          console.log('MARKETPLACE_STATE_JSON=' + JSON.stringify(summary));
+          NODE
