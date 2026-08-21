@@ -1,4 +1,5 @@
 name: Counterparty Seller CI
+# Product 12 seller gate: dependency vulnerability check
 
 on:
   push:
