@@ -1,5 +1,6 @@
 import { createSecCompanySnapshot } from "../src/sec-company-snapshot.mjs";
 
+// Live dependency check for Product #11 using only official SEC sources.
 const started = Date.now();
 const snapshot = createSecCompanySnapshot();
 const result = await snapshot({ ticker: "AAPL" });
