@@ -13,6 +13,7 @@ on:
       - 'products/drafts/data-quality-profiler/src/config.mjs'
       - 'products/drafts/data-quality-profiler/src/errors.mjs'
       - 'products/drafts/data-quality-profiler/src/payments/x402-plugin.mjs'
+      - 'products/drafts/data-quality-profiler/scripts/ofac-source-smoke.mjs'
       - 'products/drafts/data-quality-profiler/test/counterparty-availability.test.mjs'
       - 'products/drafts/data-quality-profiler/test/entity-sanctions-screen.test.mjs'
       - 'products/drafts/data-quality-profiler/test/entity-sanctions-source.test.mjs'
@@ -33,6 +34,7 @@ on:
       - 'products/drafts/data-quality-profiler/src/config.mjs'
       - 'products/drafts/data-quality-profiler/src/errors.mjs'
       - 'products/drafts/data-quality-profiler/src/payments/x402-plugin.mjs'
+      - 'products/drafts/data-quality-profiler/scripts/ofac-source-smoke.mjs'
       - 'products/drafts/data-quality-profiler/test/counterparty-availability.test.mjs'
       - 'products/drafts/data-quality-profiler/test/entity-sanctions-screen.test.mjs'
       - 'products/drafts/data-quality-profiler/test/entity-sanctions-source.test.mjs'
@@ -63,6 +65,7 @@ jobs:
         run: |
           node --check src/counterparty-availability.mjs
           if [ -f src/entity-sanctions-screen.mjs ]; then node --check src/entity-sanctions-screen.mjs; fi
+          if [ -f scripts/ofac-source-smoke.mjs ]; then node --check scripts/ofac-source-smoke.mjs; fi
           node --check src/app.mjs
           node --check src/openapi.mjs
           node --check src/config.mjs
@@ -79,3 +82,7 @@ jobs:
         if: github.event_name == 'pull_request'
         working-directory: products/drafts/data-quality-profiler
         run: npm test
+      - name: Live OFAC source smoke (PR gate)
+        if: github.event_name == 'pull_request'
+        working-directory: products/drafts/data-quality-profiler
+        run: node scripts/ofac-source-smoke.mjs
