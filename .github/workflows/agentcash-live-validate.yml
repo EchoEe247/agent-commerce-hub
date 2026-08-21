@@ -1,22 +1,18 @@
 name: AgentCash Live Production Validation
 
 on:
-  push:
+  pull_request:
     branches:
-      - ops/agentcash-live-validate
-    paths:
-      - '.github/workflows/agentcash-live-validate.yml'
+      - feat/hermes-commerce-control-plane
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   validate:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: ops/agentcash-live-validate
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
@@ -45,33 +41,16 @@ jobs:
             const op = doc.paths?.[path]?.post;
             if (!op) throw new Error(`Missing POST ${path}`);
             if (op?.['x-payment-info']?.price?.amount !== amount) throw new Error(`Price mismatch ${path}`);
-            const encoded = JSON.stringify(op['x-payment-info']);
-            if (encoded.toLowerCase().includes('mpp')) throw new Error(`Unexpected MPP claim ${path}`);
+            if (JSON.stringify(op['x-payment-info']).toLowerCase().includes('mpp')) throw new Error(`Unexpected MPP claim ${path}`);
           }
+          console.log('LIVE_OPENAPI_CHECK=PASS');
           NODE
       - name: Official AgentCash discovery validation
         shell: bash
         run: |
           set -euo pipefail
           TARGET='https://hermes-counterparty-api.onrender.com'
-          npx -y @agentcash/discovery@latest discover "$TARGET" | tee /tmp/agentcash-discover.txt
-          npx -y @agentcash/discovery@latest check "$TARGET" | tee /tmp/agentcash-check.txt
-      - name: Record proof
-        shell: bash
-        run: |
-          set -euo pipefail
-          {
-            echo 'AGENTCASH_LIVE_VALIDATION=PASS'
-            echo 'PRODUCTION_COMMIT=2a59c7366959d0706dd3499c13aa35a27d3f4811'
-            echo 'TARGET=https://hermes-counterparty-api.onrender.com'
-            echo 'OPENAPI_PATHS=8'
-            echo '--- discover ---'
-            cat /tmp/agentcash-discover.txt
-            echo '--- check ---'
-            cat /tmp/agentcash-check.txt
-          } > .agentcash-live-proof.txt
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add .agentcash-live-proof.txt
-          git commit -m 'test: record live AgentCash validation proof'
-          git push origin HEAD:ops/agentcash-live-validate
+          echo '=== DISCOVER ==='
+          npx -y @agentcash/discovery@latest discover "$TARGET"
+          echo '=== CHECK ==='
+          npx -y @agentcash/discovery@latest check "$TARGET"
