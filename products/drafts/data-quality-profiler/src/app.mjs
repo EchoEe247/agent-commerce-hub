@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { LIMITS } from "./dataset/limits.mjs";
 import { classifyError } from "./errors.mjs";
 import { buildCounterpartyAvailability } from "./counterparty-availability.mjs";
+import { buildOpenApiDocument } from "./openapi.mjs";
 import {
   duplicateAudit,
   qualityGate,
@@ -50,6 +51,10 @@ export function buildApp({ config, paymentPlugin, clock = { now: () => Date.now(
     service: "data-quality-profiler",
     version: config.serviceVersion,
   }));
+
+  app.get("/openapi.json", async (_request, reply) => (
+    reply.type("application/json").send(buildOpenApiDocument(config))
+  ));
 
   app.get("/.well-known/402index-verify.txt", async (_request, reply) => (
     reply.type("text/plain").send(INDEX402_VERIFICATION_HASH)
