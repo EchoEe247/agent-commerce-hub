@@ -56,3 +56,5 @@ jobs:
           git commit -m "test: record Product 10 TDD result" || true
           git push origin HEAD:feat/company-domain-intelligence
           exit "$code"
+
+# Explicit retrigger after workflow-authored runtime wiring.
