@@ -1,0 +1,162 @@
+name: Distribute Batch 1
+
+on:
+  push:
+    branches:
+      - ops/distribute-batch-1
+
+permissions:
+  contents: read
+
+jobs:
+  distribute:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify live manifest and x402 challenges
+        shell: bash
+        run: |
+          set -euo pipefail
+          ORIGIN='https://hermes-counterparty-api.onrender.com'
+
+          curl -fsS "$ORIGIN/.well-known/x402" -o /tmp/manifest.json
+          python3 - <<'PY'
+          import json
+          d=json.load(open('/tmp/manifest.json'))
+          assert d['capabilities']['tools'] == 8, d['capabilities']
+          assert len(d['resources']) == 8, d['resources']
+          print('LIVE_MANIFEST_TOOLS=', d['capabilities']['tools'])
+          print('LIVE_MANIFEST_PRICE_RANGE=', d['payment']['x402']['priceRange'])
+          for e in d['endpoints']:
+              print('LIVE_ENDPOINT', e['method'], e['path'], e['price_usd'], e['network'])
+          PY
+
+          probe() {
+            local path="$1"
+            local body="$2"
+            local headers bodyfile code
+            headers="$(mktemp)"
+            bodyfile="$(mktemp)"
+            code="$(curl -sS -D "$headers" -o "$bodyfile" -w '%{http_code}' \
+              -X POST "$ORIGIN$path" \
+              -H 'Content-Type: application/json' \
+              --data "$body")"
+            echo "LIVE_402 $path status=$code"
+            test "$code" = "402"
+            grep -qi '^payment-required:' "$headers"
+            rm -f "$headers" "$bodyfile"
+          }
+
+          probe '/v1/counterparty-availability' '{"country_code":"US","timezone":"America/Chicago"}'
+          probe '/v1/profile' '{"format":"json","records":[{"id":1},{"id":2}]}'
+          probe '/v1/duplicate-audit' '{"format":"json","records":[{"id":1},{"id":1}]}'
+          probe '/v1/quality-gate' '{"format":"json","records":[{"id":1},{"id":2}]}'
+          probe '/v1/schema-drift' '{"baseline":{"format":"json","records":[{"id":1}]},"current":{"format":"json","records":[{"id":1,"name":"A"}]}}'
+          probe '/v1/data-contract-check' '{"dataset":{"format":"json","records":[{"id":1}]},"contract":{"required_fields":["id"],"field_types":{"id":"integer"},"allow_extra_fields":true}}'
+          probe '/v1/clean-normalize' '{"format":"json","records":[{"id":1,"name":" Alice "},{"id":1,"name":"Alice"}]}'
+          probe '/v1/repair-plan' '{"format":"json","records":[{"id":1},{"id":1}]}'
+
+      - name: Inspect Agent402 seller state
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --max-time 30 -fsS \
+            'https://agent402.tools/api/index?seller=hermes-counterparty-api.onrender.com' \
+            -o /tmp/agent402.json
+          python3 - <<'PY'
+          import json
+          d=json.load(open('/tmp/agent402.json'))
+          print('AGENT402_ORIGIN=', d.get('origin'))
+          print('AGENT402_TOOL_COUNT=', d.get('toolCount'))
+          print('AGENT402_HEALTH=', d.get('health'))
+          print('AGENT402_ROUTABLE=', d.get('routable'))
+          print('AGENT402_ERROR=', d.get('error'))
+          routes=sorted({(t.get('method'),t.get('route'),t.get('price')) for t in d.get('tools',[])})
+          for method,route,price in routes:
+              print('AGENT402_ROUTE', method, route, price)
+          PY
+
+      - name: Register seven missing 402 Index services
+        shell: bash
+        run: |
+          set -euo pipefail
+          API='https://402index.io/api/v1/register'
+          ORIGIN='https://hermes-counterparty-api.onrender.com'
+
+          register() {
+            local path="$1" name="$2" description="$3" price="$4" category="$5" probe="$6"
+            local payload response code
+            payload="$(python3 - "$ORIGIN$path" "$name" "$description" "$price" "$category" "$probe" <<'PY'
+          import json,sys
+          print(json.dumps({
+            'url': sys.argv[1],
+            'name': sys.argv[2],
+            'protocol': 'x402',
+            'http_method': 'POST',
+            'probe_body': sys.argv[6],
+            'description': sys.argv[3],
+            'price_usd': float(sys.argv[4]),
+            'payment_asset': 'USDC',
+            'payment_network': 'Base',
+            'category': sys.argv[5],
+            'provider': 'Hermes Commerce',
+          }))
+          PY
+          )"
+            response="$(mktemp)"
+            code="$(curl -sS -o "$response" -w '%{http_code}' \
+              -X POST "$API" \
+              -H 'Content-Type: application/json' \
+              --data "$payload")"
+            echo "INDEX402_REGISTER $path status=$code"
+            cat "$response"
+            echo
+            if [[ "$code" != "200" && "$code" != "201" ]]; then
+              echo "registration failed for $path" >&2
+              exit 1
+            fi
+            rm -f "$response"
+          }
+
+          register '/v1/counterparty-availability' \
+            'Counterparty Availability & Contact Window' \
+            'Check local time, holidays, business-day status, business days remaining, and the next practical contact window for a counterparty.' \
+            '0.03' 'business-intelligence' \
+            '{"country_code":"US","timezone":"America/Chicago"}'
+
+          register '/v1/duplicate-audit' \
+            'JSON CSV Duplicate Row Audit' \
+            'Find exact duplicate rows in JSON or CSV, returning duplicate groups, indexes, unique-row count, and duplicate ratio.' \
+            '0.005' 'data-quality' \
+            '{"format":"json","records":[{"id":1},{"id":1}]}'
+
+          register '/v1/quality-gate' \
+            'ETL RAG Data Quality Pass Fail Gate' \
+            'Return a deterministic pass/fail decision for JSON or CSV using quality score, missing-value, duplicate-row, and mixed-type thresholds.' \
+            '0.01' 'data-quality' \
+            '{"format":"json","records":[{"id":1},{"id":2}]}'
+
+          register '/v1/schema-drift' \
+            'Schema Drift Detector' \
+            'Compare baseline and current JSON or CSV datasets for added fields, removed fields, type changes, nullable changes, fingerprints, and breaking changes.' \
+            '0.015' 'data-quality' \
+            '{"baseline":{"format":"json","records":[{"id":1}]},"current":{"format":"json","records":[{"id":1,"name":"A"}]}}'
+
+          register '/v1/data-contract-check' \
+            'Data Contract Compatibility Check' \
+            'Validate JSON or CSV against required fields, expected types, and extra-field policy; return deterministic compatibility reasons.' \
+            '0.015' 'data-quality' \
+            '{"dataset":{"format":"json","records":[{"id":1}]},"contract":{"required_fields":["id"],"field_types":{"id":"integer"},"allow_extra_fields":true}}'
+
+          register '/v1/clean-normalize' \
+            'JSON CSV Clean Normalize Deduplicate' \
+            'Conservatively clean JSON or CSV by trimming strings, converting blank strings to null, and removing exact duplicate rows without semantic guessing.' \
+            '0.02' 'data-quality' \
+            '{"format":"json","records":[{"id":1,"name":" Alice "},{"id":1,"name":"Alice"}]}'
+
+          register '/v1/repair-plan' \
+            'Deterministic Dataset Repair Plan' \
+            'Generate an ordered machine-readable repair plan for duplicate rows, missing values, mixed types, identifier integrity, and constant fields.' \
+            '0.02' 'data-quality' \
+            '{"format":"json","records":[{"id":1},{"id":1}]}'
