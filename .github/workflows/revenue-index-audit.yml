@@ -1,0 +1,72 @@
+name: Revenue Index Audit
+
+on:
+  pull_request:
+    branches:
+      - feat/hermes-commerce-control-plane
+    paths:
+      - '.github/workflows/revenue-index-audit.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Scan crawler-based x402 directories
+        shell: bash
+        run: |
+          node <<'NODE'
+          const origin = 'hermes-counterparty-api.onrender.com';
+          const heroPaths = [
+            '/v1/entity-sanctions-screen',
+            '/v1/company-domain-intelligence',
+            '/v1/dependency-vulnerability-check',
+            '/v1/package-maintenance-snapshot',
+          ];
+          const getJson = async (url) => {
+            const r = await fetch(url, { headers: { accept: 'application/json', 'user-agent': 'Hermes-Commerce-Distribution-Audit/1.0' } });
+            const text = await r.text();
+            let body; try { body = JSON.parse(text); } catch { body = text; }
+            return { status: r.status, body };
+          };
+
+          const listQueries = [origin, 'Hermes Commerce', 'OFAC sanctions', 'company domain intelligence', 'dependency vulnerability', 'package maintenance'];
+          for (const q of listQueries) {
+            const r = await getJson(`https://x402-list.com/api/v1/services?q=${encodeURIComponent(q)}&per_page=100`);
+            const data = Array.isArray(r.body?.data) ? r.body.data : [];
+            const matches = data.filter(x => String(x.base_url || '').includes(origin) || String(x.name || '').toLowerCase().includes('hermes commerce'));
+            console.log('X402_LIST_QUERY', JSON.stringify({ q, status:r.status, total:r.body?.meta?.total ?? null, hermes:matches.map(x => ({slug:x.slug,name:x.name,base_url:x.base_url,status:x.status,payment_ready:x.payment_ready,source:x.source,min_price_usd:x.min_price_usd})) }, null, 2));
+          }
+
+          let directMatches = [];
+          let directPages = 0;
+          for (let page = 1; page <= 60; page++) {
+            const r = await getJson(`https://x402.direct/api/services?page=${page}&limit=100&sort=newest`);
+            if (r.status !== 200) { console.log('X402_DIRECT_ERROR', JSON.stringify({page,status:r.status,body:r.body}, null, 2)); break; }
+            const rows = Array.isArray(r.body?.services) ? r.body.services : Array.isArray(r.body?.data) ? r.body.data : [];
+            directPages = page;
+            for (const x of rows) {
+              const hay = JSON.stringify(x).toLowerCase();
+              if (hay.includes(origin.toLowerCase())) directMatches.push(x);
+            }
+            const totalPages = Number(r.body?.pagination?.totalPages ?? r.body?.meta?.total_pages ?? 0);
+            if (rows.length === 0 || (totalPages && page >= totalPages) || rows.length < 100) break;
+          }
+          console.log('X402_DIRECT_SCAN', JSON.stringify({pages_scanned:directPages,hermes_count:directMatches.length,hermes:directMatches}, null, 2));
+
+          const result = {
+            origin,
+            hero_paths: heroPaths,
+            x402_list_found: false,
+            x402_direct_found: directMatches.length > 0,
+          };
+          const exact = await getJson(`https://x402-list.com/api/v1/services?q=${encodeURIComponent(origin)}&per_page=100`);
+          result.x402_list_found = (Array.isArray(exact.body?.data) ? exact.body.data : []).some(x => String(x.base_url || '').includes(origin));
+          console.log('INDEX_AUDIT_SUMMARY', JSON.stringify(result, null, 2));
+          NODE
