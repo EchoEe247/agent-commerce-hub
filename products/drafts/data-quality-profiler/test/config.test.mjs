@@ -8,6 +8,7 @@ test("defaults to local unpaid development mode", () => {
   assert.equal(cfg.x402Network, "eip155:84532");
   assert.equal(cfg.x402Price, "$0.02");
   assert.equal(cfg.x402LocalePrice, "$0.03");
+  assert.equal(cfg.x402SanctionsScreenPrice, "$0.02");
   assert.equal(cfg.x402DuplicateAuditPrice, "$0.005");
   assert.equal(cfg.x402QualityGatePrice, "$0.01");
   assert.equal(cfg.x402SchemaDriftPrice, "$0.015");
@@ -20,6 +21,7 @@ test("defaults to local unpaid development mode", () => {
 
 test("allows route-specific price overrides", () => {
   const cfg = loadConfig({
+    X402_SANCTIONS_SCREEN_PRICE: "$0.025",
     X402_DUPLICATE_AUDIT_PRICE: "$0.006",
     X402_QUALITY_GATE_PRICE: "$0.011",
     X402_SCHEMA_DRIFT_PRICE: "$0.016",
@@ -27,6 +29,7 @@ test("allows route-specific price overrides", () => {
     X402_CLEAN_NORMALIZE_PRICE: "$0.021",
     X402_REPAIR_PLAN_PRICE: "$0.022",
   });
+  assert.equal(cfg.x402SanctionsScreenPrice, "$0.025");
   assert.equal(cfg.x402DuplicateAuditPrice, "$0.006");
   assert.equal(cfg.x402QualityGatePrice, "$0.011");
   assert.equal(cfg.x402SchemaDriftPrice, "$0.016");
@@ -62,6 +65,7 @@ test("allows Base mainnet only when explicitly unlocked", () => {
   });
   assert.equal(cfg.x402Network, "eip155:8453");
   assert.equal(cfg.x402LocalePrice, "$0.03");
+  assert.equal(cfg.x402SanctionsScreenPrice, "$0.02");
 });
 
 test("rejects arbitrary non-Sepolia, non-Base networks (fail-closed)", () => {

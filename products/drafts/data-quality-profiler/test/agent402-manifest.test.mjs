@@ -10,6 +10,7 @@ function app() {
       serviceVersion: "0.1.0",
       x402Price: "$0.02",
       x402LocalePrice: "$0.03",
+      x402SanctionsScreenPrice: "$0.02",
       x402DuplicateAuditPrice: "$0.005",
       x402QualityGatePrice: "$0.01",
       x402SchemaDriftPrice: "$0.015",
@@ -29,8 +30,8 @@ test("manifest resources declare POST explicitly so Agent402 does not synthesize
   assert.equal(response.statusCode, 200);
   const body = response.json();
 
-  assert.equal(body.resources.length, 8);
-  assert.equal(new Set(body.resources.map((resource) => resource.url)).size, 8);
+  assert.equal(body.resources.length, 9);
+  assert.equal(new Set(body.resources.map((resource) => resource.url)).size, 9);
   for (const resource of body.resources) {
     assert.equal(resource.method, "POST");
     assert.match(resource.url, new RegExp(`^${PUBLIC_ORIGIN.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}/v1/`));
