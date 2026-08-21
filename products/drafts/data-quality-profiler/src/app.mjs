@@ -27,6 +27,7 @@ export function buildApp({
   logger = console,
   entitySanctionsScreen,
   companyDomainIntelligence,
+  secCompanySnapshot,
   domainResolver,
   domainPageRequester,
   rdapFetch = globalThis.fetch,
@@ -48,6 +49,7 @@ export function buildApp({
     rdapFetch,
     clock: domainClock ?? clock,
   });
+  const inspectSecCompany = secCompanySnapshot;
 
   app.addHook("onResponse", async (request, reply) => {
     if (!request.raw.profilerLog) return;
@@ -297,6 +299,16 @@ export function buildApp({
   app.post("/v1/company-domain-intelligence", async (request, reply) => {
     try {
       return reply.send(await inspectCompanyDomain(request.body));
+    } catch (error) {
+      const { statusCode, body } = classifyError(error);
+      return reply.status(statusCode).send(body);
+    }
+  });
+
+  app.post("/v1/sec-company-snapshot", async (request, reply) => {
+    try {
+      if (typeof inspectSecCompany !== "function") throw new Error("SEC_SOURCE_UNAVAILABLE: SEC snapshot service is not configured");
+      return reply.send(await inspectSecCompany(request.body));
     } catch (error) {
       const { statusCode, body } = classifyError(error);
       return reply.status(statusCode).send(body);
