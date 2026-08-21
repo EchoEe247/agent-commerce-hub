@@ -83,6 +83,7 @@ test("GET /openapi.json publishes eleven AgentCash-compatible x402 operations", 
     const sanctionsSchema = sanctions.requestBody.content["application/json"].schema;
     assert.ok(sanctionsSchema.required.includes("name"));
     assert.equal(sanctionsSchema.properties.name.type, "string");
+    assert.equal(sanctions.summary, "OFAC sanctions screening for a person or organization");
     assert.match(sanctions.description, /OFAC/i);
     assert.match(sanctions.description, /not a legal compliance determination/i);
     assert.equal(sanctions.responses["503"].description, "Authoritative OFAC source unavailable");
@@ -95,6 +96,9 @@ test("GET /openapi.json publishes eleven AgentCash-compatible x402 operations", 
     assert.match(companyDomain.description, /RDAP/i);
     assert.match(companyDomain.description, /website/i);
     assert.deepEqual(companyDomain.tags, ["Business Intelligence"]);
+
+    const sec = document.paths["/v1/sec-company-snapshot"].post;
+    assert.equal(sec.summary, "SEC company snapshot by ticker or CIK with filings and financial facts");
   } finally {
     await server.close();
   }
