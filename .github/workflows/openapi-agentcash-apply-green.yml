@@ -6,6 +6,13 @@ on:
       - feat/openapi-agentcash-discovery
     paths:
       - '.github/workflows/openapi-agentcash-apply-green.yml'
+  pull_request:
+    branches:
+      - feat/hermes-commerce-control-plane
+    paths:
+      - '.github/workflows/openapi-agentcash-apply-green.yml'
+      - 'products/drafts/data-quality-profiler/src/openapi.mjs'
+      - 'products/drafts/data-quality-profiler/test/openapi-discovery.test.mjs'
 
 permissions:
   contents: write
