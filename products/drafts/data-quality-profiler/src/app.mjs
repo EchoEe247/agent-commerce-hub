@@ -11,11 +11,12 @@ import {
   cleanNormalize,
   repairPlan,
 } from "./dataset/operations.mjs";
+import { registerThe402Webhook } from "./the402/webhook.mjs";
 
 const SELLER_ORIGIN = "https://hermes-counterparty-api.onrender.com";
 const INDEX402_VERIFICATION_HASH = "38c7d63638e26a694fdf51fd1b213221e26d73044847c5dac48bf4aa19756605";
 
-export function buildApp({ config, paymentPlugin, clock = { now: () => Date.now() }, deadlineMs = LIMITS.processingMs, logger = console }) {
+export function buildApp({ config, paymentPlugin, clock = { now: () => Date.now() }, deadlineMs = LIMITS.processingMs, logger = console, the402Fetch = globalThis.fetch }) {
   const app = Fastify({
     logger: false,
     bodyLimit: LIMITS.bodyBytes,
@@ -285,6 +286,8 @@ export function buildApp({ config, paymentPlugin, clock = { now: () => Date.now(
   registerDatasetOperation(app, "/v1/data-contract-check", dataContractCheck, clock, deadlineMs);
   registerDatasetOperation(app, "/v1/clean-normalize", cleanNormalize, clock, deadlineMs);
   registerDatasetOperation(app, "/v1/repair-plan", repairPlan, clock, deadlineMs);
+
+  registerThe402Webhook(app, { config, fetchImpl: the402Fetch });
 
   if (paymentPlugin) {
     paymentPlugin(app);
