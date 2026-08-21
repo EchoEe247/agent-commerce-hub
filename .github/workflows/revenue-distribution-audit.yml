@@ -1,0 +1,75 @@
+name: Revenue Distribution Audit
+
+on:
+  pull_request:
+    branches:
+      - feat/hermes-commerce-control-plane
+    paths:
+      - '.github/workflows/revenue-distribution-audit.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: AgentCash discovery audit
+        shell: bash
+        run: |
+          set +e
+          ORIGIN='https://hermes-counterparty-api.onrender.com'
+          echo '=== AGENTCASH DISCOVER ORIGIN ==='
+          npx -y @agentcash/discovery@latest discover "$ORIGIN"
+          echo "DISCOVER_EXIT=$?"
+          for endpoint in \
+            "$ORIGIN/v1/entity-sanctions-screen" \
+            "$ORIGIN/v1/company-domain-intelligence" \
+            "$ORIGIN/v1/dependency-vulnerability-check" \
+            "$ORIGIN/v1/package-maintenance-snapshot"
+          do
+            echo "=== AGENTCASH CHECK $endpoint ==="
+            npx -y @agentcash/discovery@latest check "$endpoint"
+            echo "CHECK_EXIT=$?"
+          done
+          exit 0
+      - name: Public marketplace and router audit
+        shell: bash
+        run: |
+          node <<'NODE'
+          const origin = 'https://hermes-counterparty-api.onrender.com';
+          const wallet = '0x2BD7c4e294B09E9a853168a58712498D03A45B01';
+          const safe = async (url) => {
+            try {
+              const r = await fetch(url, { headers: { accept: 'application/json' } });
+              const text = await r.text();
+              let body; try { body = JSON.parse(text); } catch { body = text.slice(0, 5000); }
+              return { status: r.status, body };
+            } catch (e) { return { status: 0, error: String(e) }; }
+          };
+          const contains = (value, needle) => JSON.stringify(value).toLowerCase().includes(needle.toLowerCase());
+          const index = await safe('https://agent402.tools/api/index');
+          console.log('AGENT402_INDEX', JSON.stringify({status:index.status, originFound: contains(index.body, origin), walletFound: contains(index.body, wallet)}, null, 2));
+          const leaderboard = await safe('https://agent402.tools/api/leaderboard?top=5000&include=external');
+          console.log('AGENT402_LEADERBOARD', JSON.stringify({status:leaderboard.status, originFound: contains(leaderboard.body, origin), walletFound: contains(leaderboard.body, wallet)}, null, 2));
+          const tasks = [
+            ['OFAC', 'screen a person or organization against OFAC sanctions'],
+            ['DOMAIN', 'company domain intelligence DNS RDAP mail security'],
+            ['VULN', 'check exact dependency version for vulnerabilities'],
+            ['PACKAGE', 'package maintenance latest version deprecated yanked npm pypi']
+          ];
+          for (const [label, task] of tasks) {
+            const url = 'https://agent402.tools/api/route?q=' + encodeURIComponent(task) + '&include=external';
+            const result = await safe(url);
+            console.log(`AGENT402_ROUTE_${label}`, JSON.stringify(result, null, 2));
+          }
+          for (const q of ['Hermes Commerce','OFAC sanctions','company domain intelligence','dependency vulnerability','package maintenance']) {
+            const result = await safe('https://402index.io/api/v1/services?protocol=x402&limit=50&q=' + encodeURIComponent(q));
+            const matches = Array.isArray(result.body?.services) ? result.body.services.filter(x => String(x.url||'').includes('hermes-counterparty-api.onrender.com') || String(x.provider||'').toLowerCase().includes('hermes')) : [];
+            console.log('INDEX402_SEARCH', JSON.stringify({q,status:result.status,total:result.body?.total ?? null,hermesMatches:matches}, null, 2));
+          }
+          NODE
