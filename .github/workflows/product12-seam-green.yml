@@ -1,0 +1,47 @@
+name: Product 12 Seam Green
+
+on:
+  push:
+    branches:
+      - feat/product12-dependency-vulnerability
+    paths:
+      - '.github/workflows/product12-seam-green.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/product12-dependency-vulnerability
+      - name: Add Product 12 injected route seam
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('products/drafts/data-quality-profiler/src/app.mjs')
+          s = p.read_text()
+          old = '  secCompanySnapshot,\n  secFetch = globalThis.fetch,'
+          new = '  secCompanySnapshot,\n  dependencyVulnerabilityCheck,\n  secFetch = globalThis.fetch,'
+          assert s.count(old) == 1
+          s = s.replace(old, new)
+          old = '''  const inspectSecCompany = secCompanySnapshot ?? createSecCompanySnapshot({\n    fetchImpl: secFetch,\n    clock: secClock ?? clock,\n  });\n'''
+          new = old + '  const inspectDependency = dependencyVulnerabilityCheck;\n'
+          assert s.count(old) == 1
+          s = s.replace(old, new)
+          old = '''  app.post("/v1/sec-company-snapshot", async (request, reply) => {\n    try {\n      return reply.send(await inspectSecCompany(request.body));\n    } catch (error) {\n      const { statusCode, body } = classifyError(error);\n      return reply.status(statusCode).send(body);\n    }\n  });\n'''
+          new = old + '''\n  app.post("/v1/dependency-vulnerability-check", async (request, reply) => {\n    try {\n      return reply.send(await inspectDependency(request.body));\n    } catch (error) {\n      const { statusCode, body } = classifyError(error);\n      return reply.status(statusCode).send(body);\n    }\n  });\n'''
+          assert s.count(old) == 1
+          s = s.replace(old, new)
+          p.write_text(s)
+          PY
+          git diff --check
+          git diff -- products/drafts/data-quality-profiler/src/app.mjs
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add products/drafts/data-quality-profiler/src/app.mjs
+          git commit -m "feat: add Product 12 route seam"
+          git push origin HEAD:feat/product12-dependency-vulnerability
