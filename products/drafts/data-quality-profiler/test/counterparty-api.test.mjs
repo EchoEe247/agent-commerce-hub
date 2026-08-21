@@ -9,6 +9,7 @@ const PROFILER_ROUTING_NAME = "validate-json-csv-data-quality-profile-missing-du
 const PROFILER_ROUTING_SUMMARY = "Validate and profile JSON or CSV datasets before ETL, RAG, analytics, or AI agent use; find missing values, duplicates and duplicate rows, inconsistent data types and type conflicts, infer field types, and return a deterministic quality score plus schema fingerprint.";
 
 const PORTFOLIO_ROUTES = [
+  ["/v1/entity-sanctions-screen", "ofac-sdn-entity-sanctions-screen", 0.02, /OFAC|sanctions/i],
   ["/v1/duplicate-audit", "duplicate-row-audit-json-csv", 0.005, /duplicate rows/i],
   ["/v1/quality-gate", "data-quality-pass-fail-gate-etl-rag", 0.01, /quality.*gate|pass.*fail/i],
   ["/v1/schema-drift", "schema-drift-added-removed-type-changes", 0.015, /schema drift/i],
@@ -23,6 +24,7 @@ function unpaidApp(options = {}) {
       serviceVersion: "0.1.0",
       x402Price: "$0.02",
       x402LocalePrice: "$0.03",
+      x402SanctionsScreenPrice: "$0.02",
       x402DuplicateAuditPrice: "$0.005",
       x402QualityGatePrice: "$0.01",
       x402SchemaDriftPrice: "$0.015",
@@ -37,7 +39,7 @@ function unpaidApp(options = {}) {
   });
 }
 
-test("GET /.well-known/x402 publishes eight unique Agent402-compatible tools", async () => {
+test("GET /.well-known/x402 publishes nine unique Agent402-compatible tools", async () => {
   const app = unpaidApp();
   const response = await app.inject({ method: "GET", url: "/.well-known/x402" });
   assert.equal(response.statusCode, 200);
@@ -48,10 +50,11 @@ test("GET /.well-known/x402 publishes eight unique Agent402-compatible tools", a
   assert.equal(body.serviceVersion, "0.1.0");
   assert.equal(body.name, "Hermes Counterparty Availability");
   assert.equal(body.homepage, PUBLIC_ORIGIN);
-  assert.equal(body.resources.length, 8);
-  assert.equal(new Set(body.resources.map((resource) => resource.url)).size, 8);
+  assert.equal(body.resources.length, 9);
+  assert.equal(new Set(body.resources.map((resource) => resource.url)).size, 9);
   assert.deepEqual(body.resources, [
     { url: `${PUBLIC_ORIGIN}/v1/counterparty-availability`, method: "POST" },
+    { url: `${PUBLIC_ORIGIN}/v1/entity-sanctions-screen`, method: "POST" },
     { url: `${PUBLIC_ORIGIN}/v1/profile`, method: "POST" },
     { url: `${PUBLIC_ORIGIN}/v1/duplicate-audit`, method: "POST" },
     { url: `${PUBLIC_ORIGIN}/v1/quality-gate`, method: "POST" },
@@ -69,9 +72,10 @@ test("GET /.well-known/x402 publishes eight unique Agent402-compatible tools", a
   assert.equal(body.payment.x402.payTo, EARNING_WALLET);
   assert.equal(body.payment.x402.nonCustodial, true);
 
-  assert.equal(body.capabilities.tools, 8);
-  assert.deepEqual(body.capabilities.categories.map((category) => category.key), ["business-intelligence", "data-quality"]);
+  assert.equal(body.capabilities.tools, 9);
+  assert.deepEqual(body.capabilities.categories.map((category) => category.key), ["business-intelligence", "compliance", "data-quality"]);
   assert.equal(body.capabilities.categories.find((category) => category.key === "business-intelligence").tools, 1);
+  assert.equal(body.capabilities.categories.find((category) => category.key === "compliance").tools, 1);
   assert.equal(body.capabilities.categories.find((category) => category.key === "data-quality").tools, 7);
 
   const counterparty = body.endpoints.find((endpoint) => endpoint.path === "/v1/counterparty-availability");
@@ -94,7 +98,7 @@ test("GET /.well-known/x402 publishes eight unique Agent402-compatible tools", a
   assert.match(profiler.description, /missing values/);
   assert.match(profiler.description, /schema fingerprint/);
 
-  assert.equal(body.endpoints.length, 8);
+  assert.equal(body.endpoints.length, 9);
   for (const [path, name, price, summaryPattern] of PORTFOLIO_ROUTES) {
     const endpoint = body.endpoints.find((candidate) => candidate.path === path);
     assert.ok(endpoint, `missing manifest endpoint ${path}`);
@@ -105,6 +109,9 @@ test("GET /.well-known/x402 publishes eight unique Agent402-compatible tools", a
     assert.match(endpoint.summary, summaryPattern);
     assert.equal(endpoint.url, `${PUBLIC_ORIGIN}${path}`);
   }
+
+  const sanctions = body.endpoints.find((endpoint) => endpoint.path === "/v1/entity-sanctions-screen");
+  assert.match(sanctions.description, /not a legal compliance determination/i);
   await app.close();
 });
 
