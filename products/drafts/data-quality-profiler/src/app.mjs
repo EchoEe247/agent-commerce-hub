@@ -151,7 +151,7 @@ export function buildApp({ config, paymentPlugin, clock = { now: () => Date.now(
         {
           name: "data-quality-pass-fail-gate-etl-rag",
           method: "POST",
-          path: "/v1/quality-gate`,
+          path: "/v1/quality-gate",
           url: `${SELLER_ORIGIN}/v1/quality-gate`,
           summary: "Data quality pass/fail gate for ETL, RAG, analytics, and AI agent workflows using score, missing, duplicate, and mixed-type thresholds.",
           description: "Returns a machine-actionable pass/fail decision with observed metrics, threshold checks, and deterministic failure reasons.",
