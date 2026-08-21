@@ -9,6 +9,14 @@ on:
       - 'products/drafts/data-quality-profiler/src/package-maintenance-snapshot.mjs'
       - 'products/drafts/data-quality-profiler/src/app.mjs'
       - '.github/workflows/product13-tdd.yml'
+  pull_request:
+    branches:
+      - feat/hermes-commerce-control-plane
+    paths:
+      - 'products/drafts/data-quality-profiler/test/package-maintenance-snapshot.test.mjs'
+      - 'products/drafts/data-quality-profiler/src/package-maintenance-snapshot.mjs'
+      - 'products/drafts/data-quality-profiler/src/app.mjs'
+      - '.github/workflows/product13-tdd.yml'
   workflow_dispatch:
 
 permissions:
