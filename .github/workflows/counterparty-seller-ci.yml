@@ -4,14 +4,20 @@ on:
   push:
     branches:
       - feat/hermes-commerce-control-plane
+      - feat/entity-sanctions-screen
     paths:
       - 'products/drafts/data-quality-profiler/src/counterparty-availability.mjs'
+      - 'products/drafts/data-quality-profiler/src/entity-sanctions-screen.mjs'
       - 'products/drafts/data-quality-profiler/src/app.mjs'
+      - 'products/drafts/data-quality-profiler/src/openapi.mjs'
       - 'products/drafts/data-quality-profiler/src/config.mjs'
       - 'products/drafts/data-quality-profiler/src/errors.mjs'
       - 'products/drafts/data-quality-profiler/src/payments/x402-plugin.mjs'
       - 'products/drafts/data-quality-profiler/test/counterparty-availability.test.mjs'
+      - 'products/drafts/data-quality-profiler/test/entity-sanctions-screen.test.mjs'
       - 'products/drafts/data-quality-profiler/test/counterparty-api.test.mjs'
+      - 'products/drafts/data-quality-profiler/test/openapi-discovery.test.mjs'
+      - 'products/drafts/data-quality-profiler/test/x402-plugin.test.mjs'
       - 'products/drafts/data-quality-profiler/test/config.test.mjs'
       - '.github/workflows/counterparty-seller-ci.yml'
   workflow_dispatch:
@@ -34,9 +40,14 @@ jobs:
         working-directory: products/drafts/data-quality-profiler
         run: |
           node --check src/counterparty-availability.mjs
+          if [ -f src/entity-sanctions-screen.mjs ]; then node --check src/entity-sanctions-screen.mjs; fi
           node --check src/app.mjs
+          node --check src/openapi.mjs
           node --check src/config.mjs
           node --check src/payments/x402-plugin.mjs
       - name: Focused seller tests
         working-directory: products/drafts/data-quality-profiler
-        run: node --test test/counterparty-availability.test.mjs test/counterparty-api.test.mjs test/config.test.mjs
+        run: |
+          TESTS=(test/counterparty-availability.test.mjs test/counterparty-api.test.mjs test/openapi-discovery.test.mjs test/x402-plugin.test.mjs test/config.test.mjs)
+          if [ -f test/entity-sanctions-screen.test.mjs ]; then TESTS+=(test/entity-sanctions-screen.test.mjs); fi
+          node --test "${TESTS[@]}"
