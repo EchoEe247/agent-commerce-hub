@@ -4,13 +4,20 @@ import { domainToASCII } from "node:url";
 
 const RDAP_BASE = "https://rdap.org/domain/";
 const BLOCKED_SUFFIXES = [".local", ".internal", ".test", ".invalid", ".example", ".onion", ".localhost", ".home", ".lan"];
+const MAX_WEBSITE_REDIRECTS = 4;
+const MAX_WEBSITE_BYTES = 512 * 1024;
+const WEBSITE_TIMEOUT_MS = 6000;
+const WEBSITE_USER_AGENT = "HermesCommerce/0.1 (+https://hermes-counterparty-api.onrender.com)";
 
 export function createCompanyDomainIntelligence({
   resolver = dns,
   pageRequester,
+  websiteFetch = globalThis.fetch,
   rdapFetch = globalThis.fetch,
   clock = { now: () => Date.now() },
 } = {}) {
+  const requestPage = pageRequester ?? createDefaultPageRequester({ resolver, fetchImpl: websiteFetch });
+
   return async function inspectCompanyDomain(payload) {
     const originalDomain = payload?.domain;
     const normalizedDomain = normalizeDomain(originalDomain);
@@ -26,8 +33,8 @@ export function createCompanyDomainIntelligence({
 
     const resolvedAddresses = [...addresses, ...ipv6Addresses];
     assertPublicResolvedAddresses(resolvedAddresses);
-    const page = pageRequester && resolvedAddresses.length > 0
-      ? await safePageRequest(() => pageRequester(`https://${normalizedDomain}/`))
+    const page = requestPage && resolvedAddresses.length > 0
+      ? await safePageRequest(() => requestPage(`https://${normalizedDomain}/`))
       : null;
 
     const website = buildWebsite(page, normalizedDomain);
@@ -106,6 +113,110 @@ async function safePageRequest(operation) {
   } catch {
     return null;
   }
+}
+
+function createDefaultPageRequester({ resolver, fetchImpl }) {
+  if (typeof fetchImpl !== "function") return null;
+
+  return async function requestPage(startUrl) {
+    let current = new URL(startUrl);
+    const redirectChain = [];
+
+    for (let hop = 0; hop <= MAX_WEBSITE_REDIRECTS; hop += 1) {
+      if (!["http:", "https:"].includes(current.protocol)) return null;
+      const hostname = normalizeDomain(current.hostname);
+      const [a, aaaa] = await Promise.all([
+        safeResolve(() => resolver.resolve4(hostname)),
+        safeResolve(() => resolver.resolve6(hostname)),
+      ]);
+      const resolved = [...a, ...aaaa];
+      if (resolved.length === 0) return null;
+      assertPublicResolvedAddresses(resolved);
+
+      const response = await fetchImpl(current.href, {
+        method: "GET",
+        redirect: "manual",
+        headers: {
+          accept: "text/html,application/xhtml+xml;q=0.9,*/*;q=0.1",
+          "user-agent": WEBSITE_USER_AGENT,
+        },
+        signal: AbortSignal.timeout(WEBSITE_TIMEOUT_MS),
+      });
+      if (!response) return null;
+
+      const status = Number(response.status);
+      const location = headerValue(response.headers, "location");
+      if ([301, 302, 303, 307, 308].includes(status) && location) {
+        if (hop >= MAX_WEBSITE_REDIRECTS) return null;
+        const next = new URL(location, current);
+        if (!["http:", "https:"].includes(next.protocol)) return null;
+        normalizeDomain(next.hostname);
+        redirectChain.push(current.href);
+        current = next;
+        continue;
+      }
+
+      const contentLength = Number(headerValue(response.headers, "content-length"));
+      if (Number.isFinite(contentLength) && contentLength > MAX_WEBSITE_BYTES) return null;
+      const contentType = headerValue(response.headers, "content-type");
+      if (contentType && !/\b(?:text\/html|application\/xhtml\+xml)\b/i.test(contentType)) return null;
+      const body = await readBoundedText(response, MAX_WEBSITE_BYTES);
+      if (body === null) return null;
+
+      return {
+        status_code: Number.isFinite(status) ? status : null,
+        final_url: current.href,
+        redirect_chain: redirectChain,
+        headers: response.headers ?? {},
+        body,
+      };
+    }
+
+    return null;
+  };
+}
+
+async function readBoundedText(response, maxBytes) {
+  const stream = response?.body;
+  if (stream && typeof stream.getReader === "function") {
+    const reader = stream.getReader();
+    const chunks = [];
+    let total = 0;
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const bytes = value instanceof Uint8Array ? value : new Uint8Array(value ?? []);
+        total += bytes.byteLength;
+        if (total > maxBytes) {
+          await reader.cancel().catch(() => {});
+          return null;
+        }
+        chunks.push(bytes);
+      }
+    } finally {
+      reader.releaseLock?.();
+    }
+    const combined = new Uint8Array(total);
+    let offset = 0;
+    for (const chunk of chunks) {
+      combined.set(chunk, offset);
+      offset += chunk.byteLength;
+    }
+    return new TextDecoder().decode(combined);
+  }
+
+  if (typeof response?.text !== "function") return "";
+  const text = await response.text();
+  return Buffer.byteLength(text, "utf8") <= maxBytes ? text : null;
+}
+
+function headerValue(headers, name) {
+  if (!headers) return null;
+  if (typeof headers.get === "function") return headers.get(name);
+  const target = name.toLowerCase();
+  const entry = Object.entries(headers).find(([key]) => key.toLowerCase() === target);
+  return entry ? String(entry[1]) : null;
 }
 
 function assertPublicResolvedAddresses(addresses) {
