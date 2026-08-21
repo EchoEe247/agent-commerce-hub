@@ -1,0 +1,84 @@
+name: AgentCash Live Verify
+
+on:
+  pull_request:
+    branches:
+      - feat/hermes-commerce-control-plane
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Fetch and validate live OpenAPI
+        shell: bash
+        run: |
+          set -euo pipefail
+          TARGET='https://hermes-counterparty-api.onrender.com'
+          curl --fail --show-error --silent --retry 3 --retry-delay 2 "$TARGET/openapi.json" -o /tmp/openapi.json
+          node <<'NODE'
+          const fs = require('fs');
+          const doc = JSON.parse(fs.readFileSync('/tmp/openapi.json', 'utf8'));
+          const expected = new Map([
+            ['/v1/counterparty-availability', '0.030000'],
+            ['/v1/profile', '0.020000'],
+            ['/v1/duplicate-audit', '0.005000'],
+            ['/v1/quality-gate', '0.010000'],
+            ['/v1/schema-drift', '0.015000'],
+            ['/v1/data-contract-check', '0.015000'],
+            ['/v1/clean-normalize', '0.020000'],
+            ['/v1/repair-plan', '0.020000'],
+          ]);
+          if (doc.openapi !== '3.1.0') throw new Error(`unexpected OpenAPI version: ${doc.openapi}`);
+          if (!doc.info?.['x-guidance']) throw new Error('missing info.x-guidance');
+          if (!Array.isArray(doc.servers) || doc.servers[0]?.url !== 'https://hermes-counterparty-api.onrender.com') throw new Error('unexpected server URL');
+          if (Object.keys(doc.paths || {}).length !== 8) throw new Error(`expected 8 paths, got ${Object.keys(doc.paths || {}).length}`);
+          for (const [path, amount] of expected) {
+            const op = doc.paths?.[path]?.post;
+            if (!op) throw new Error(`missing POST ${path}`);
+            if (!op.requestBody?.content?.['application/json']?.schema) throw new Error(`missing request schema ${path}`);
+            if (!op.responses?.['402']) throw new Error(`missing 402 response ${path}`);
+            const payment = op['x-payment-info'];
+            if (payment?.price?.mode !== 'fixed' || payment?.price?.currency !== 'USD' || payment?.price?.amount !== amount) throw new Error(`wrong price metadata ${path}: ${JSON.stringify(payment?.price)}`);
+            const protocols = payment?.protocols || [];
+            if (protocols.length !== 1 || !Object.prototype.hasOwnProperty.call(protocols[0], 'x402') || Object.prototype.hasOwnProperty.call(protocols[0], 'mpp')) throw new Error(`wrong protocols ${path}: ${JSON.stringify(protocols)}`);
+          }
+          console.log('LIVE_OPENAPI_VALIDATION=PASS');
+          console.log(`PATHS=${expected.size}`);
+          NODE
+      - name: AgentCash discover live origin
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx -y @agentcash/discovery@latest discover https://hermes-counterparty-api.onrender.com --json | tee /tmp/agentcash-discover.json
+          node <<'NODE'
+          const fs = require('fs');
+          const result = JSON.parse(fs.readFileSync('/tmp/agentcash-discover.json', 'utf8'));
+          if (!result.found) throw new Error(`AgentCash discovery did not find OpenAPI: ${JSON.stringify(result)}`);
+          const endpoints = result.endpoints || [];
+          if (endpoints.length !== 8) throw new Error(`AgentCash expected 8 endpoints, got ${endpoints.length}`);
+          const unpaid = endpoints.filter(e => e.price == null && e.payment == null && e.authMode !== 'paid');
+          console.log('AGENTCASH_DISCOVER=PASS');
+          console.log(`ENDPOINTS=${endpoints.length}`);
+          console.log(`DISCOVERY_WARNINGS=${(result.warnings || []).length}`);
+          NODE
+      - name: AgentCash check live paid endpoint
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx -y @agentcash/discovery@latest check https://hermes-counterparty-api.onrender.com/v1/quality-gate --json | tee /tmp/agentcash-check.json
+          node <<'NODE'
+          const fs = require('fs');
+          const result = JSON.parse(fs.readFileSync('/tmp/agentcash-check.json', 'utf8'));
+          const text = JSON.stringify(result);
+          if (!text.includes('x402')) throw new Error(`live check did not report x402: ${text}`);
+          if (!text.includes('0.01') && !text.includes('10000')) throw new Error(`live check did not report quality-gate price: ${text}`);
+          console.log('AGENTCASH_CHECK=PASS');
+          console.log(`CHECK_WARNINGS=${(result.warnings || []).length}`);
+          NODE
