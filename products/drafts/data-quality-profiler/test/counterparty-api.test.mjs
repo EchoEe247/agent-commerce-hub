@@ -43,7 +43,7 @@ function unpaidApp(options = {}) {
   });
 }
 
-test("GET /.well-known/x402 publishes eleven unique Agent402-compatible tools", async () => {
+test("GET /.well-known/x402 publishes twelve unique Agent402-compatible tools", async () => {
   const app = unpaidApp();
   const response = await app.inject({ method: "GET", url: "/.well-known/x402" });
   assert.equal(response.statusCode, 200);
@@ -54,13 +54,14 @@ test("GET /.well-known/x402 publishes eleven unique Agent402-compatible tools", 
   assert.equal(body.serviceVersion, "0.1.0");
   assert.equal(body.name, "Hermes Counterparty Availability");
   assert.equal(body.homepage, PUBLIC_ORIGIN);
-  assert.equal(body.resources.length, 11);
-  assert.equal(new Set(body.resources.map((resource) => resource.url)).size, 11);
+  assert.equal(body.resources.length, 12);
+  assert.equal(new Set(body.resources.map((resource) => resource.url)).size, 12);
   assert.deepEqual(body.resources, [
     { url: `${PUBLIC_ORIGIN}/v1/counterparty-availability`, method: "POST" },
     { url: `${PUBLIC_ORIGIN}/v1/entity-sanctions-screen`, method: "POST" },
     { url: `${PUBLIC_ORIGIN}/v1/company-domain-intelligence`, method: "POST" },
     { url: `${PUBLIC_ORIGIN}/v1/sec-company-snapshot`, method: "POST" },
+    { url: `${PUBLIC_ORIGIN}/v1/dependency-vulnerability-check`, method: "POST" },
     { url: `${PUBLIC_ORIGIN}/v1/profile`, method: "POST" },
     { url: `${PUBLIC_ORIGIN}/v1/duplicate-audit`, method: "POST" },
     { url: `${PUBLIC_ORIGIN}/v1/quality-gate`, method: "POST" },
@@ -78,10 +79,11 @@ test("GET /.well-known/x402 publishes eleven unique Agent402-compatible tools", 
   assert.equal(body.payment.x402.payTo, EARNING_WALLET);
   assert.equal(body.payment.x402.nonCustodial, true);
 
-  assert.equal(body.capabilities.tools, 11);
-  assert.deepEqual(body.capabilities.categories.map((category) => category.key), ["business-intelligence", "compliance", "data-quality"]);
+  assert.equal(body.capabilities.tools, 12);
+  assert.deepEqual(body.capabilities.categories.map((category) => category.key), ["business-intelligence", "compliance", "software-security", "data-quality"]);
   assert.equal(body.capabilities.categories.find((category) => category.key === "business-intelligence").tools, 3);
   assert.equal(body.capabilities.categories.find((category) => category.key === "compliance").tools, 1);
+  assert.equal(body.capabilities.categories.find((category) => category.key === "software-security").tools, 1);
   assert.equal(body.capabilities.categories.find((category) => category.key === "data-quality").tools, 7);
 
   const counterparty = body.endpoints.find((endpoint) => endpoint.path === "/v1/counterparty-availability");

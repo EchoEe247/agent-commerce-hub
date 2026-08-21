@@ -26,19 +26,19 @@ function app() {
   });
 }
 
-test("manifest exposes all eleven POST tools including Product 11", async () => {
+test("manifest exposes all twelve POST tools including Product 12", async () => {
   const instance = app();
   const response = await instance.inject({ method: "GET", url: "/.well-known/x402" });
   assert.equal(response.statusCode, 200);
   const body = response.json();
 
-  assert.equal(body.resources.length, 11);
-  assert.equal(new Set(body.resources.map((resource) => resource.url)).size, 11);
+  assert.equal(body.resources.length, 12);
+  assert.equal(new Set(body.resources.map((resource) => resource.url)).size, 12);
   for (const resource of body.resources) {
     assert.equal(resource.method, "POST");
     assert.match(resource.url, new RegExp(`^${PUBLIC_ORIGIN.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}/v1/`));
   }
-  assert.equal(body.capabilities.tools, 11);
+  assert.equal(body.capabilities.tools, 12);
   const business = body.capabilities.categories.find((category) => category.key === "business-intelligence");
   assert.equal(business.tools, 3);
   assert.equal(business.priceRange, "$0.02-$0.03");

@@ -4,8 +4,8 @@ import { buildApp } from "../src/app.mjs";
 
 const ORIGIN = "https://hermes-counterparty-api.onrender.com";
 
-// Product #11 discovery and paid-surface contract; portfolio totals are now eleven.
-test("Product 11 is published as the eleventh OpenAPI paid operation", async () => {
+// Product #11 remains stable while portfolio totals advance to twelve.
+test("Product 11 remains published after Product 12 in OpenAPI", async () => {
   const app = buildApp({
     config: {
       serviceVersion: "0.1.0",
@@ -16,8 +16,8 @@ test("Product 11 is published as the eleventh OpenAPI paid operation", async () 
   const response = await app.inject({ method: "GET", url: "/openapi.json" });
   assert.equal(response.statusCode, 200);
   const document = response.json();
-  assert.equal(Object.keys(document.paths).length, 11);
-  assert.match(document.info["x-guidance"], /eleven POST operations/i);
+  assert.equal(Object.keys(document.paths).length, 12);
+  assert.match(document.info["x-guidance"], /twelve POST operations/i);
   const operation = document.paths["/v1/sec-company-snapshot"]?.post;
   assert.ok(operation);
   assert.equal(operation.operationId, "secCompanySnapshot");
@@ -31,7 +31,7 @@ test("Product 11 is published as the eleventh OpenAPI paid operation", async () 
   await app.close();
 });
 
-test("Product 11 is published as the eleventh Agent402 manifest tool", async () => {
+test("Product 11 remains published after Product 12 in the Agent402 manifest", async () => {
   const app = buildApp({
     config: {
       serviceVersion: "0.1.0",
@@ -44,8 +44,8 @@ test("Product 11 is published as the eleventh Agent402 manifest tool", async () 
   const response = await app.inject({ method: "GET", url: "/.well-known/x402" });
   assert.equal(response.statusCode, 200);
   const body = response.json();
-  assert.equal(body.resources.length, 11);
-  assert.equal(body.capabilities.tools, 11);
+  assert.equal(body.resources.length, 12);
+  assert.equal(body.capabilities.tools, 12);
   assert.equal(body.capabilities.categories.find((category) => category.key === "business-intelligence").tools, 3);
   assert.ok(body.resources.some((resource) => resource.url === `${ORIGIN}/v1/sec-company-snapshot` && resource.method === "POST"));
   const endpoint = body.endpoints.find((candidate) => candidate.path === "/v1/sec-company-snapshot");
