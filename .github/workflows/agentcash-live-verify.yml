@@ -60,13 +60,19 @@ jobs:
           node <<'NODE'
           const fs = require('fs');
           const result = JSON.parse(fs.readFileSync('/tmp/agentcash-discover.json', 'utf8'));
-          if (!result.found) throw new Error(`AgentCash discovery did not find OpenAPI: ${JSON.stringify(result)}`);
-          const endpoints = result.endpoints || [];
-          if (endpoints.length !== 8) throw new Error(`AgentCash expected 8 endpoints, got ${endpoints.length}`);
-          const unpaid = endpoints.filter(e => e.price == null && e.payment == null && e.authMode !== 'paid');
+          if (result.ok !== true || result.selectedStage !== 'openapi') throw new Error(`AgentCash discovery did not select OpenAPI: ${JSON.stringify(result)}`);
+          const resources = result.resources || [];
+          if (resources.length !== 8) throw new Error(`AgentCash expected 8 resources, got ${resources.length}`);
+          for (const resource of resources) {
+            if (resource.method !== 'POST') throw new Error(`non-POST resource: ${JSON.stringify(resource)}`);
+            if (resource.authHint !== 'paid') throw new Error(`resource not marked paid: ${JSON.stringify(resource)}`);
+            if (!Array.isArray(resource.protocols) || resource.protocols.length !== 1 || resource.protocols[0] !== 'x402') throw new Error(`wrong protocols: ${JSON.stringify(resource)}`);
+            if (!/^[0-9]+\.[0-9]{6} USD$/.test(resource.priceHint || '')) throw new Error(`missing/invalid price hint: ${JSON.stringify(resource)}`);
+          }
           console.log('AGENTCASH_DISCOVER=PASS');
-          console.log(`ENDPOINTS=${endpoints.length}`);
+          console.log(`RESOURCES=${resources.length}`);
           console.log(`DISCOVERY_WARNINGS=${(result.warnings || []).length}`);
+          for (const warning of result.warnings || []) console.log(`WARNING=${warning.code}:${warning.severity}`);
           NODE
       - name: AgentCash check live paid endpoint
         shell: bash
@@ -78,7 +84,7 @@ jobs:
           const result = JSON.parse(fs.readFileSync('/tmp/agentcash-check.json', 'utf8'));
           const text = JSON.stringify(result);
           if (!text.includes('x402')) throw new Error(`live check did not report x402: ${text}`);
-          if (!text.includes('0.01') && !text.includes('10000')) throw new Error(`live check did not report quality-gate price: ${text}`);
+          if (!text.includes('0.010000') && !text.includes('0.01') && !text.includes('10000')) throw new Error(`live check did not report quality-gate price: ${text}`);
           console.log('AGENTCASH_CHECK=PASS');
           console.log(`CHECK_WARNINGS=${(result.warnings || []).length}`);
           NODE
