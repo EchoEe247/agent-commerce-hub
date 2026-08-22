@@ -1,0 +1,581 @@
+{
+  "schema_version": "1.0",
+  "report": {
+    "title": "Agent Zero Current Architecture Validation",
+    "requested_handoff_date": "2026-08-21",
+    "validated_at": "2026-08-22T00:33:10-05:00",
+    "platform": "Android / Termux",
+    "read_only_audit": true,
+    "secret_values_included": false,
+    "state_transition_during_audit": {
+      "initial": "STOPPED",
+      "initial_observed_at": "2026-08-22T00:25:07-05:00",
+      "final": "RUNNING",
+      "launch_attribution": "UNVERIFIED_EXTERNAL_OR_CONCURRENT_ACTION",
+      "audit_started_or_stopped_runtime": false,
+      "note": "Agent Zero appeared after the initial stopped observation. It was left running per the no-stop/no-restart constraint."
+    }
+  },
+  "installation": {
+    "repo_path": "/data/data/com.termux/files/home/projects/agent-zero",
+    "remote": "https://github.com/agent0ai/agent-zero.git",
+    "branch": "termux-native-nvidia",
+    "commit": "1d8b42bbc95b51657d00fdc10dc2cd58a6788a15",
+    "git_describe": "v2.10-3-g1d8b42bb",
+    "app_short_version": "v2.10",
+    "build_version": "T v2.10+3",
+    "install_method": "manual Git checkout plus native Termux Python venv with system site-packages",
+    "worktree": {
+      "status": "DIRTY_UNTRACKED_ONLY",
+      "tracked_modifications": 0,
+      "untracked_entries": 19,
+      "legacy_entries": {
+        "before_backups": 18,
+        "old_venv": ".venv-old-py311-20260821-024145"
+      }
+    },
+    "runtime": {
+      "python_version": "3.14.6",
+      "venv_path": "/data/data/com.termux/files/home/projects/agent-zero/.venv",
+      "python_executable": "/data/data/com.termux/files/usr/bin/python3.14",
+      "system_site_packages": true,
+      "node_version_available": "v24.13.0",
+      "node_required_for_core": false,
+      "package_manager": ["python-venv", "pip", "Termux packages"]
+    },
+    "entry_points": [
+      "/data/data/com.termux/files/home/bin/agent-zero",
+      "/data/data/com.termux/files/home/projects/agent-zero/scripts/termux/agent-zero",
+      "/data/data/com.termux/files/home/projects/agent-zero/run_ui.py",
+      "/data/data/com.termux/files/home/projects/agent-zero/run_tunnel.py"
+    ],
+    "launcher_sha256": "eceb53cafbbe18ee58823894372a4bac9b3628203409020dc977bef3d353cd45",
+    "bare_command_on_path": false,
+    "copies": [
+      {
+        "path": "/data/data/com.termux/files/home/projects/agent-zero",
+        "classification": "ACTIVE_PRIMARY"
+      },
+      {
+        "path": "/data/data/com.termux/files/home/projects/agent-zero/.venv-old-py311-20260821-024145",
+        "classification": "STALE_OR_LEGACY"
+      },
+      {
+        "path": "/data/data/com.termux/files/home/projects/agent-zero-termux-smoke",
+        "classification": "NOT_AGENT_ZERO"
+      },
+      {
+        "path": "/data/data/com.termux/files/home/.gemini/tmp/agent-zero",
+        "classification": "NOT_AGENT_ZERO"
+      },
+      {
+        "path": "/data/data/com.termux/files/home/.gemini/history/agent-zero",
+        "classification": "NOT_AGENT_ZERO"
+      }
+    ],
+    "additional_install_search": {
+      "home_local": "NONE_FOUND",
+      "termux_prefix": "NONE_FOUND",
+      "debian_proot": "NONE_FOUND",
+      "hermes_ubuntu_proot": "NONE_FOUND"
+    }
+  },
+  "configuration": {
+    "active_preset": "Default",
+    "sources": [
+      {
+        "path": "/data/data/com.termux/files/home/projects/agent-zero/usr/.env",
+        "role": "runtime ID, timezone and provider credential",
+        "state": "ACTIVE",
+        "secret_bearing": true,
+        "precedence": "loaded with override=True by initialize.py"
+      },
+      {
+        "path": "/data/data/com.termux/files/home/projects/agent-zero/usr/plugins/_model_config/default_config.yaml",
+        "role": "select Default model preset",
+        "state": "ACTIVE",
+        "secret_bearing": false,
+        "precedence": "user plugin config over bundled default"
+      },
+      {
+        "path": "/data/data/com.termux/files/home/projects/agent-zero/usr/plugins/_model_config/presets.yaml",
+        "role": "current Default, Efficiency and Power routes",
+        "state": "ACTIVE",
+        "secret_bearing": false,
+        "precedence": "user preset collection over fallback presets"
+      },
+      {
+        "path": "/data/data/com.termux/files/home/projects/agent-zero/conf/model_providers.yaml",
+        "role": "provider schema, key-variable mapping and model ID construction",
+        "state": "ACTIVE_SOURCE_DEFINITION",
+        "secret_bearing": false,
+        "precedence": "provider definition merged with selected preset"
+      },
+      {
+        "path": "/data/data/com.termux/files/home/projects/agent-zero/usr/settings.json",
+        "role": "persisted global settings",
+        "state": "ABSENT",
+        "secret_bearing": true,
+        "precedence": "would override defaults if present"
+      },
+      {
+        "path": "/data/data/com.termux/files/home/projects/agent-zero/usr/plugins/_model_config/presets.yaml.before-nvidia-20260821-050655",
+        "role": "pre-NVIDIA model preset backup",
+        "state": "STALE",
+        "secret_bearing": false,
+        "precedence": "NONE"
+      }
+    ],
+    "plugin_asset_precedence": [
+      "project plus agent profile",
+      "project",
+      "user plus agent profile",
+      "user plugin",
+      "bundled plugin"
+    ],
+    "active_conflicts": [],
+    "historical_conflicts_only": true
+  },
+  "models": [
+    {
+      "role": "chat/primary",
+      "display_model": "nvidia/nemotron-3-ultra-550b-a55b",
+      "actual_model": "nvidia/nemotron-3-ultra-550b-a55b",
+      "provider": "nvidia_nim",
+      "base_url": "https://integrate.api.nvidia.com/v1",
+      "base_url_source": "provider default; active api_base is blank",
+      "auth_method": "NVIDIA_NIM_API_KEY=[REDACTED] from usr/.env",
+      "local_proxy": null,
+      "fallback": null,
+      "status": "CONFIGURED_ENDPOINT_REACHABLE_AUTHENTICATED_INFERENCE_UNVERIFIED"
+    },
+    {
+      "role": "utility",
+      "display_model": "nvidia/nemotron-3-ultra-550b-a55b",
+      "actual_model": "nvidia/nemotron-3-ultra-550b-a55b",
+      "provider": "nvidia_nim",
+      "base_url": "https://integrate.api.nvidia.com/v1",
+      "base_url_source": "provider default; active api_base is blank",
+      "auth_method": "NVIDIA_NIM_API_KEY=[REDACTED] from usr/.env",
+      "local_proxy": null,
+      "fallback": null,
+      "status": "CONFIGURED_ENDPOINT_REACHABLE_AUTHENTICATED_INFERENCE_UNVERIFIED"
+    },
+    {
+      "role": "embedding",
+      "display_model": "nvidia/nemotron-3-embed-1b",
+      "actual_model": "nvidia/nemotron-3-embed-1b",
+      "provider": "nvidia_nim",
+      "base_url": "https://integrate.api.nvidia.com/v1",
+      "base_url_source": "provider default; active api_base is blank",
+      "auth_method": "NVIDIA_NIM_API_KEY=[REDACTED] from usr/.env",
+      "local_proxy": null,
+      "fallback": null,
+      "status": "CONFIGURED_NOT_EXERCISED"
+    },
+    {
+      "role": "browser",
+      "display_model": null,
+      "actual_model": "would inherit primary unless browser preset is configured",
+      "provider": "nvidia_nim by inheritance",
+      "base_url": "https://integrate.api.nvidia.com/v1",
+      "auth_method": "same as primary",
+      "local_proxy": null,
+      "fallback": null,
+      "status": "DISABLED"
+    },
+    {
+      "role": "vision",
+      "display_model": null,
+      "actual_model": null,
+      "provider": null,
+      "base_url": null,
+      "auth_method": null,
+      "local_proxy": null,
+      "fallback": null,
+      "status": "NO_SEPARATE_ACTIVE_ROUTE_PRIMARY_PRESET_VISION_FALSE"
+    }
+  ],
+  "runtime": {
+    "current_state": "RUNNING",
+    "processes": [
+      {
+        "process": "Agent Zero Web UI/runtime",
+        "pid": 9773,
+        "ppid": 9736,
+        "command": ".venv/bin/python run_ui.py",
+        "executable": "/data/data/com.termux/files/usr/bin/python3.14",
+        "workdir": "/data/data/com.termux/files/home/projects/agent-zero",
+        "tty": "/dev/pts/2",
+        "listen_address": "127.0.0.1",
+        "port": 5000,
+        "launch_method": "interactive bash login shell; exact typed command unverified",
+        "role": "core runtime, Web UI, HTTP API and WebSocket host",
+        "health": "HTTP_200",
+        "health_git_identity": "termux-native-nvidia@1d8b42bbc95b51657d00fdc10dc2cd58a6788a15",
+        "observed_cpu_percent": 27.2,
+        "cpu_note": "sustained CPU warning; root cause unverified"
+      }
+    ],
+    "ports": [
+      {"port": 5000, "service": "Web UI/API/WS", "state": "OPEN_LOOPBACK"},
+      {"port": 55520, "service": "tunnel control API", "state": "CLOSED"},
+      {"port": 9223, "service": "previously observed Chromium CDP", "state": "CLOSED"},
+      {"port": 9222, "service": "generic CDP example", "state": "CLOSED"},
+      {"port": 32081, "service": "A0/ACP documentation reference", "state": "CLOSED"},
+      {"port": 3100, "service": "WhatsApp bridge", "state": "CLOSED"},
+      {"port": 55022, "service": "code execution SSH", "state": "CLOSED_NATIVE_MODE"},
+      {"port": 55080, "service": "RFC development service", "state": "CLOSED"}
+    ]
+  },
+  "web_surfaces": {
+    "web_ui_present": true,
+    "web_ui_running": true,
+    "listen_address": "127.0.0.1",
+    "port": 5000,
+    "api_present": true,
+    "api_running": true,
+    "websocket_present": true,
+    "websocket_namespace": "/ws",
+    "authentication": "NONE_CONFIGURED",
+    "csrf": "PRESENT_FOR_MUTATION_HANDLERS",
+    "remote_access": "NO_ACTIVE_TUNNEL",
+    "local_only": true,
+    "mcp_server": "DISABLED_404_ON_MOUNT",
+    "a2a_server": "DISABLED_404_ON_MOUNT",
+    "tunnel": "STOPPED",
+    "external_callbacks": "NONE_ACTIVE"
+  },
+  "plugins_tools": {
+    "plugin_count": 38,
+    "always_enabled": ["_a0_acp", "_agent_editor", "_model_config", "_orchestrator", "_tool_access"],
+    "explicitly_disabled": ["_browser", "_memory", "_mcp_client", "_migrate_agents", "_whatsapp_integration"],
+    "enabled_but_not_necessarily_operational": [
+      "_a0_connector",
+      "_chat_branching",
+      "_chat_compaction",
+      "_chat_creation",
+      "_chat_load",
+      "_code_execution",
+      "_computer",
+      "_desktop",
+      "_email_integration",
+      "_github",
+      "_knowledge",
+      "_message_queue",
+      "_office",
+      "_oauth",
+      "_scheduler",
+      "_skills",
+      "_telegram_integration",
+      "_whisper_stt"
+    ],
+    "core_tools": [
+      "a2a_chat",
+      "browser_agent",
+      "call_subordinate",
+      "code_execution_tool",
+      "document_query",
+      "input",
+      "memory_delete",
+      "memory_forget",
+      "memory_load",
+      "memory_save",
+      "notify_user",
+      "response",
+      "search_engine",
+      "vision_load",
+      "wait"
+    ],
+    "tool_policy": "ALLOW_DEFAULT_EMPTY_DENY_LIST",
+    "operational_caveat": "Tool files can exist while their plugin or required external dependency is disabled/absent."
+  },
+  "browser": {
+    "playwright_installed_for_agent_zero": false,
+    "playwright_version_for_agent_zero": null,
+    "automation_library_expected": "patchright",
+    "patchright_installed": false,
+    "agent_zero_browser_cache": "/data/data/com.termux/files/home/projects/agent-zero/tmp/playwright",
+    "agent_zero_browser_cache_exists": false,
+    "agent_zero_browser_binaries": [],
+    "playwright_health": "NO",
+    "system_chromium_path": "/data/data/com.termux/files/usr/bin/chromium-browser",
+    "system_chromium_version": "149.0.7827.155",
+    "system_headless_shell_path": "/data/data/com.termux/files/usr/bin/headless_shell",
+    "cdp_support": "SOURCE_CAPABILITY_ONLY",
+    "cdp_9223": {
+      "state": "CLOSED",
+      "configured_in_agent_zero": false,
+      "relationship": "INDEPENDENT"
+    },
+    "termux_x11_integration": "NO",
+    "agent_zero_profile_path_template": "tmp/browser/sessions/<context>",
+    "agent_zero_profile_exists": false,
+    "downloads_path": "usr/downloads/browser",
+    "screenshots_path_template": "tmp/browser/screenshots/<context>",
+    "default_method": "disabled built-in Patchright persistent context",
+    "alternate_methods": [
+      {
+        "method": "A0 host browser connector / CDP",
+        "status": "UNAVAILABLE",
+        "blockers": ["a0 CLI absent", "no remote debugging endpoint configured"]
+      }
+    ],
+    "viewer": {
+      "xpra": "ABSENT",
+      "xvfb": "ABSENT",
+      "vnc": "ABSENT",
+      "novnc": "ABSENT"
+    },
+    "independent_voxel_toolchain": {
+      "path": "/data/data/com.termux/files/home/projects/voxel-ai-game",
+      "node_playwright_version": "1.62.1",
+      "chromium_version": "149.0.7827.155",
+      "agent_zero_runtime": false
+    }
+  },
+  "device_integration": {
+    "native_termux_shell": "CONFIGURED_USABLE",
+    "filesystem": "TERMUX_UID_ACCESS",
+    "android_shared_storage": "READ_WRITE_ACCESS_PRESENT",
+    "network": "AVAILABLE_TO_NATIVE_CODE_EXECUTION",
+    "termux_api": "PACKAGE_0.59.1-1_INSTALLED_NOT_EXERCISED",
+    "android_intents": "GENERIC_TERMUX_COMMANDS_PRESENT_NO_A0_SPECIFIC_INTEGRATION",
+    "screenshots": "NO_TERMUX_SCREENSHOT_COMMAND_NO_ACTIVE_A0_BROWSER_SCREENSHOT",
+    "adb": "BINARY_PRESENT_DAEMON_NOT_OBSERVED_FUNCTION_UNVERIFIED",
+    "termux_x11": {
+      "package": "termux-x11-nightly 1.03.01-4",
+      "service": "DOWN",
+      "process": "ABSENT",
+      "display_env": "UNSET",
+      "xdg_runtime_env": "UNSET",
+      "agent_zero_integration": false
+    },
+    "game_client_process": "NOT_OBSERVED"
+  },
+  "hermes": {
+    "classification": "LAUNCHABLE_BY_HERMES",
+    "direct_integration": false,
+    "hermes_skill_launches_agent_zero": false,
+    "shared_config": false,
+    "shared_memory": false,
+    "shared_model_proxy": false,
+    "shared_port": false,
+    "shared_environment": "TERMUX_UID_FILESYSTEM_SHELL_LOCALHOST_ONLY",
+    "hermes_can_launch": true,
+    "launch_path": "/data/data/com.termux/files/home/bin/agent-zero",
+    "bare_command_on_path": false,
+    "agent_zero_can_call_hermes": "generic enabled orchestrator terminal adapter",
+    "human_mediated_coordination": true
+  },
+  "state": {
+    "canonical_paths": [
+      "/data/data/com.termux/files/home/projects/agent-zero/usr",
+      "/data/data/com.termux/files/home/projects/agent-zero/tmp"
+    ],
+    "memory_system": "_memory plugin / FAISS-compatible architecture; disabled",
+    "databases": [],
+    "logs": [
+      {
+        "path": "/data/data/com.termux/files/home/a0_run_20260821-042438.log",
+        "role": "historical runtime log",
+        "finding": "approximately 110 MB prior Python 3.14/nest_asyncio error storm"
+      },
+      {
+        "path": "/dev/pts/2",
+        "role": "current process stdout/stderr"
+      }
+    ],
+    "browser_state": "ABSENT_FOR_AGENT_ZERO",
+    "task_history": {
+      "chat_directories": 7,
+      "scheduler_tasks": 0
+    },
+    "project_state": {
+      "usr_projects": "EMPTY",
+      "usr_knowledge": "NO_SUBSTANTIVE_KNOWLEDGE",
+      "usr_workdir": "ONE_POLICY_PROMPT_INCLUDE"
+    },
+    "oauth_lock": "ZERO_LENGTH_STALE_CANDIDATE"
+  },
+  "projects": {
+    "configured_agent_zero_projects": [],
+    "voxel_ai_game": {
+      "path": "/data/data/com.termux/files/home/projects/voxel-ai-game",
+      "explicit_workspace_configuration": false,
+      "agent_zero_scripts": false,
+      "agent_zero_browser_automation": false,
+      "agent_zero_startup_helpers": false,
+      "independent_playwright_setup": true,
+      "generic_filesystem_access_from_agent_zero": true,
+      "relationship": "INDEPENDENT_TOOLCHAIN_GENERIC_SAME_UID_ACCESS"
+    }
+  },
+  "startup": {
+    "autostart": false,
+    "login_start": false,
+    "manual": true,
+    "on_demand": true,
+    "termux_boot_hook": false,
+    "shell_profile_hook": false,
+    "termux_service": false,
+    "pid_file": false,
+    "daemon_supervisor": false,
+    "current_launch": "MANUAL_INTERACTIVE_SHELL_EXACT_TYPED_COMMAND_UNVERIFIED"
+  },
+  "security": [
+    {
+      "finding": "Agent Zero currently loopback-only",
+      "severity": "LOW_CURRENT",
+      "evidence": "127.0.0.1:5000; no active tunnel"
+    },
+    {
+      "finding": "Web UI/API authentication not configured",
+      "severity": "MEDIUM_IF_REMOTE_EXPOSURE",
+      "evidence": "AUTH_LOGIN and AUTH_PASSWORD absent"
+    },
+    {
+      "finding": "Provider credential file is restrictively permissioned",
+      "severity": "INFORMATIONAL",
+      "evidence": "usr/.env mode 0600 under 0700 directories"
+    },
+    {
+      "finding": "No live credential detected in tracked source by scoped regex scan",
+      "severity": "INFORMATIONAL",
+      "evidence": "only mock/test fixture patterns outside usr/.env"
+    },
+    {
+      "finding": "Native code execution has broad Termux UID authority",
+      "severity": "HIGH_BY_DESIGN",
+      "evidence": "native execution and allow-default tool policy"
+    },
+    {
+      "finding": "Independent Chromium profiles contain sensitive state",
+      "severity": "MEDIUM",
+      "evidence": "~/.config/chromium* mode 0700; not currently attached to Agent Zero"
+    },
+    {
+      "finding": "Stale backup and lock artifacts",
+      "severity": "LOW",
+      "evidence": "19 untracked worktree entries and zero-length OAuth lock"
+    },
+    {
+      "finding": "Sustained CPU anomaly",
+      "severity": "MEDIUM_UNDIAGNOSED",
+      "evidence": "PID 9773 about 27% CPU after seven minutes; prior 110 MB error-storm log"
+    }
+  ],
+  "drift": [
+    {
+      "item": "worktree not fully clean",
+      "evidence": "19 untracked entries, zero tracked modifications",
+      "impact": "backup files can be mistaken for active code/config and complicate updates",
+      "confidence": "HIGH"
+    },
+    {
+      "item": "previously stopped state is stale",
+      "evidence": "PID 9773 and HTTP 200 on port 5000",
+      "impact": "canonical state is running",
+      "confidence": "HIGH"
+    },
+    {
+      "item": "port 9223 assumption stale",
+      "evidence": "connection refused, no Chromium process, no active endpoint configuration",
+      "impact": "no current CDP workflow",
+      "confidence": "HIGH"
+    },
+    {
+      "item": "Agent Zero Playwright expectation stale",
+      "evidence": "browser disabled, Patchright absent, no A0 browser cache",
+      "impact": "built-in browser cannot start",
+      "confidence": "HIGH"
+    },
+    {
+      "item": "Voxel Playwright is independent",
+      "evidence": "Node Playwright exists only under Voxel while Agent Zero expects Python Patchright",
+      "impact": "device browser readiness must not be reported as Agent Zero readiness",
+      "confidence": "HIGH"
+    },
+    {
+      "item": "Termux:X11 not operational",
+      "evidence": "package installed but service/process/env absent",
+      "impact": "no visible desktop/browser path",
+      "confidence": "HIGH"
+    },
+    {
+      "item": "A0/ACP connector unavailable",
+      "evidence": "a0 CLI absent and 32081 closed",
+      "impact": "host-browser and ACP path unavailable",
+      "confidence": "HIGH"
+    },
+    {
+      "item": "enabled plugins overstate operational surfaces",
+      "evidence": "several enabled toggles have empty/disabled configuration or missing dependencies",
+      "impact": "inventory alone is not readiness",
+      "confidence": "HIGH"
+    },
+    {
+      "item": "historical Python 3.14 runtime error storm",
+      "evidence": "approximately 310090 repeated errors in historical log; live high CPU",
+      "impact": "possible remaining runtime issue",
+      "confidence": "MEDIUM"
+    },
+    {
+      "item": "launcher not on PATH",
+      "evidence": "command -v agent-zero empty; ~/bin absent from PATH",
+      "impact": "absolute launcher path required",
+      "confidence": "HIGH"
+    },
+    {
+      "item": "memory defaults exist but plugin is disabled",
+      "evidence": "_memory/.toggle-0 and no vector state",
+      "impact": "no semantic persistent memory",
+      "confidence": "HIGH"
+    }
+  ],
+  "readiness": {
+    "CORE_AGENT_READY": {
+      "value": "PARTIAL",
+      "blocker": "Live UI health is good, but sustained CPU is anomalous, browser and semantic memory are disabled, and no end-to-end task was run."
+    },
+    "WEB_UI_READY": {
+      "value": "YES",
+      "blocker": null
+    },
+    "MODEL_ROUTE_READY": {
+      "value": "PARTIAL",
+      "blocker": "Configuration, credential presence and endpoint reachability are proven; authenticated inference was deliberately not performed."
+    },
+    "BROWSER_AUTOMATION_READY": {
+      "value": "NO",
+      "blocker": "Browser plugin disabled, Patchright absent, A0 CLI absent, no managed browser/profile and no CDP endpoint."
+    },
+    "PLAYWRIGHT_READY": {
+      "value": "NO",
+      "blocker": "No Agent Zero Patchright/Playwright package or managed Chromium binary."
+    },
+    "TERMUX_X11_READY": {
+      "value": "NO",
+      "blocker": "No running X11 service/session, no DISPLAY/XDG environment and no Agent Zero integration."
+    },
+    "VOXEL_LOCAL_INSPECTION_READY": {
+      "value": "NO",
+      "blocker": "No explicit Agent Zero workspace integration, port 9223 stopped and Agent Zero browser stack unavailable."
+    },
+    "HERMES_DELEGATION_READY": {
+      "value": "PARTIAL",
+      "blocker": "Generic absolute-path/subprocess launchability exists, but no formal skill/API/shared-memory integration or end-to-end delegation test."
+    }
+  },
+  "canonical_memory_snapshot_present": true,
+  "still_unverified": [
+    "authenticated NVIDIA chat inference",
+    "authenticated NVIDIA embedding inference",
+    "browser startup after enabling/installing prerequisites",
+    "ADB and device-action behavior",
+    "root cause of live sustained CPU",
+    "exact shell command that launched PID 9773",
+    "end-to-end Voxel inspection",
+    "end-to-end Hermes delegation"
+  ]
+}
