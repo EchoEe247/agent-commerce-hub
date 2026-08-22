@@ -1,0 +1,50 @@
+name: Distribution Refresh
+on:
+  pull_request:
+    branches: [feat/hermes-commerce-control-plane]
+    paths: ['.github/workflows/distribution-refresh.yml']
+permissions:
+  contents: read
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Refresh Agent402 and 402 Index
+        shell: bash
+        run: |
+          node <<'NODE'
+          const origin='https://hermes-counterparty-api.onrender.com';
+          const endpoints=[
+            {
+              url: origin+'/v1/dependency-vulnerability-check',
+              name:'Hermes Dependency Vulnerability Check',
+              description:'Check one exact package version against OSV and return normalized vulnerability IDs, CVE aliases, severities, affected ranges, known fixed versions, references, and source provenance.',
+              category:'software-security',
+              probe_body:{ecosystem:'npm',package:'fastify',version:'5.6.0'}
+            },
+            {
+              url: origin+'/v1/package-maintenance-snapshot',
+              name:'Hermes Package Maintenance Snapshot',
+              description:'Exact npm or PyPI package/version maintenance snapshot with latest release, release age, deprecation or yanked status, license, repository, and runtime constraints.',
+              category:'developer-intelligence',
+              probe_body:{ecosystem:'npm',package:'is-number',version:'7.0.0'}
+            }
+          ];
+          const safe=async r=>{const t=await r.text();try{return JSON.parse(t)}catch{return {raw:t.slice(0,4000)}}};
+          const agent=await fetch('https://agent402.tools/api/index/register',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({origin})});
+          console.log('AGENT402_REFRESH',agent.status,JSON.stringify(await safe(agent)));
+          for(const e of endpoints){
+            const r=await fetch('https://402index.io/api/v1/register',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({
+              url:e.url,name:e.name,protocol:'x402',http_method:'POST',probe_body:JSON.stringify(e.probe_body),description:e.description,price_usd:0.005,payment_asset:'USDC',payment_network:'Base',category:e.category,provider:'Hermes Commerce'
+            })});
+            console.log('INDEX402_REGISTER',e.url,r.status,JSON.stringify(await safe(r)));
+          }
+          await new Promise(r=>setTimeout(r,2500));
+          for(const e of endpoints){
+            const q=await fetch('https://402index.io/api/v1/services?protocol=x402&limit=50&q='+encodeURIComponent(e.name));
+            const body=await safe(q);
+            const services=Array.isArray(body?.services)?body.services:[];
+            const exact=services.find(s=>s.url===e.url);
+            console.log('INDEX402_VERIFY',e.url,q.status,JSON.stringify(exact??null));
+          }
+          NODE
