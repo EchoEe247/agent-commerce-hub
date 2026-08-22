@@ -1,0 +1,31 @@
+name: Pricing Probe
+on:
+  pull_request:
+    branches: [feat/hermes-commerce-control-plane]
+    paths: ['.github/workflows/pricing-probe.yml']
+permissions:
+  contents: read
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Probe live prices
+        shell: bash
+        run: |
+          node <<'NODE'
+          const origin='https://hermes-counterparty-api.onrender.com';
+          const decode=v=>{let s=v.replace(/-/g,'+').replace(/_/g,'/'); while(s.length%4)s+='='; return JSON.parse(Buffer.from(s,'base64').toString('utf8'));};
+          for (const [path, body] of [
+            ['/v1/dependency-vulnerability-check',{ecosystem:'npm',package:'fastify',version:'5.6.0'}],
+            ['/v1/package-maintenance-snapshot',{ecosystem:'npm',package:'fastify',version:'5.6.0'}]
+          ]) {
+            const r=await fetch(origin+path,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});
+            const h=r.headers.get('payment-required');
+            const p=h?decode(h):null;
+            console.log(JSON.stringify({path,status:r.status,amount:p?.accepts?.[0]?.amount,network:p?.accepts?.[0]?.network,asset:p?.accepts?.[0]?.asset,payTo:p?.accepts?.[0]?.payTo},null,2));
+          }
+          const o=await (await fetch(origin+'/openapi.json')).json();
+          for (const path of ['/v1/dependency-vulnerability-check','/v1/package-maintenance-snapshot']) {
+            console.log('OPENAPI',path,o.paths?.[path]?.post?.['x-payment-info']?.price ?? null);
+          }
+          NODE
