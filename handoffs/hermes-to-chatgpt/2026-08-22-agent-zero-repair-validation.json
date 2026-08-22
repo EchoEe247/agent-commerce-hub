@@ -1,0 +1,175 @@
+{
+  "schema_version": 1,
+  "date": "2026-08-22",
+  "repository_under_test": "EchoEe247/agent-zero",
+  "validated_start": {
+    "branch": "termux-native-nvidia",
+    "commit": "1d8b42bbc95b51657d00fdc10dc2cd58a6788a15",
+    "tracked_clean": true,
+    "legacy_untracked_entries": 19
+  },
+  "post_repair": {
+    "branch": "angel/agent-zero-readiness-20260822",
+    "commit": "1e1ed797a6e8e06fad0cc2f70d5a77909d13fbf0",
+    "tracked_clean": true,
+    "legacy_untracked_entries": 19,
+    "health_http": 200,
+    "ui_root_http": 200,
+    "bind_host": "127.0.0.1",
+    "bind_port": 5000,
+    "active_tunnel": false
+  },
+  "cpu": {
+    "problem_reproduced": true,
+    "root_cause": "Four watchdog PollingObserver emitters recursively scanned four watched roots every one second on native Android/Termux.",
+    "historical_exception_storm_reproduced": false,
+    "historical_exception_root_cause": "Python 3.14 incompatibility with global nest_asyncio patching; already corrected on validated base branch.",
+    "pre_fix": {
+      "duration_seconds": 180,
+      "samples_percent_one_core": [10.199, 11.198, 11.399, 9.599, 10.599, 9.399, 11.899, 11.199, 10.899, 9.199, 10.499, 10.499, 10.898, 11.199, 10.699, 11.397, 10.899, 10.899],
+      "median_percent": 10.898,
+      "mean_percent": 10.699,
+      "max_percent": 11.899,
+      "samples_over_10": 15
+    },
+    "fix": "Use a 5-second watchdog polling interval only on native Termux; preserve native observer defaults elsewhere.",
+    "post_fix": {
+      "warmup_seconds": 20,
+      "duration_seconds": 180,
+      "samples_percent_one_core": [2.8, 2.2, 2.5, 3.899, 2.6, 4.199, 4.099, 2.6, 2.3, 2.5, 2.5, 2.9, 3.8, 2.2, 2.3, 3.399, 2.3, 2.9],
+      "median_percent": 2.6,
+      "mean_percent": 2.889,
+      "max_percent": 4.199,
+      "samples_over_10": 0
+    },
+    "ready": true
+  },
+  "models": {
+    "primary": {
+      "provider": "nvidia_nim",
+      "model": "nvidia/nemotron-3-ultra-550b-a55b",
+      "endpoint": "https://integrate.api.nvidia.com/v1",
+      "expected": {"total_quantity": 13, "total_value": 75, "highest_line_value_item": "beta"},
+      "response": {"total_quantity": 13, "total_value": 75, "highest_line_value_item": "beta"},
+      "authenticated_inference": true,
+      "pass": true
+    },
+    "utility": {
+      "provider": "nvidia_nim",
+      "model": "nvidia/nemotron-3-ultra-550b-a55b",
+      "response": {"sequence": [3, 2, 1], "sum": 6},
+      "pass": true
+    },
+    "embedding": {
+      "provider": "nvidia_nim",
+      "model": "nvidia/nemotron-3-embed-1b",
+      "vector_count": 2,
+      "dimensions": [2048, 2048],
+      "numeric": true,
+      "nonempty": true,
+      "distinct": true,
+      "pass": true
+    }
+  },
+  "browser": {
+    "ready": true,
+    "method": "Agent Zero browser tool -> Python line-JSON bridge -> Node Playwright core -> native Termux headless_shell",
+    "binary": "/data/data/com.termux/files/usr/bin/headless_shell",
+    "playwright_core": "reused from existing Voxel Node toolchain",
+    "patchright_used": false,
+    "termux_x11_required": false,
+    "cdp_endpoint": null,
+    "agent_task_http": 200,
+    "agent_task_latency_seconds": 115.888,
+    "observed_before": "READY_NONCE_A0_826",
+    "observed_after": "CHANGED_NONCE_A0_826",
+    "interaction": "Change state button clicked",
+    "screenshot_path": "/data/data/com.termux/files/home/tmp/agent-zero-browser-validation/final-agent-zero-task.jpg",
+    "screenshot_size": 15559,
+    "screenshot_sha256": "39e8e425b8dab77256819d3349c9b002e4a2b09373dfcae1c197a78df806b74d",
+    "pass": true
+  },
+  "hermes_delegation": {
+    "canonical_launcher": "/data/data/com.termux/files/home/bin/agent-zero",
+    "duplicate_start_prevented": true,
+    "task_interface": "POST http://127.0.0.1:5000/api/api_message",
+    "actual_tasks_completed": ["browser acceptance", "subagent orchestration"],
+    "pass": true
+  },
+  "subagents": {
+    "requested": 4,
+    "started": 4,
+    "completed_including_expected_blocked": 4,
+    "correct": 4,
+    "expected_failed": ["D"],
+    "parallel_execution": true,
+    "parent_context_id": "tEvexiwR",
+    "subagent_a_context_id": "ooUxBdiS",
+    "A": {
+      "task": "code defect analysis",
+      "defects": ["eligible boundary", "accumulator initialization", "wrong invoice field"],
+      "minimal_patch_count": 3,
+      "pass": true
+    },
+    "B": {
+      "task": "CSV analysis",
+      "totals_by_service": {"alpha": 77, "beta": 148, "gamma": 2102},
+      "largest_service": "gamma",
+      "anomaly": {"event_id": 19, "value": 2000},
+      "nonce": "NONCE-SUB-B-826-XQ7",
+      "pass": true
+    },
+    "C": {
+      "task": "configuration comparison",
+      "material_paths": ["server.port", "model.name", "browser.enabled", "browser.binary"],
+      "harmless_paths": ["log_level"],
+      "pass": true
+    },
+    "D": {
+      "task": "missing-input negative test",
+      "status": "blocked",
+      "error": "INPUT_NOT_FOUND",
+      "hallucinated": false,
+      "pass": true
+    },
+    "parent_aggregation": true,
+    "failure_propagation": true,
+    "health_after": true,
+    "system_ready": true
+  },
+  "voxel": {
+    "frontend_port_5173_open": false,
+    "live_inspection_performed": false,
+    "source_modified": false,
+    "playwright_interoperability_proven": true,
+    "local_inspection_ready": "partial"
+  },
+  "final_regression": {
+    "pytest_passed": 39,
+    "pytest_failed": 0,
+    "node_syntax": "pass",
+    "python_compileall": "pass",
+    "secret_scan": "pass",
+    "tracked_worktree_clean": true,
+    "health": "pass",
+    "active_tunnel": false
+  },
+  "changed_files": [
+    "helpers/watchdog.py",
+    "plugins/_browser/.toggle-0 -> plugins/_browser/.toggle-1",
+    "plugins/_browser/default_config.yaml",
+    "plugins/_browser/helpers/config.py",
+    "plugins/_browser/helpers/selector.py",
+    "plugins/_browser/helpers/termux_runtime.py",
+    "plugins/_browser/assets/termux-playwright-bridge.cjs",
+    "scripts/termux/agent-zero",
+    "tests/test_termux_browser_runtime.py",
+    "tests/test_termux_watchdog_polling.py"
+  ],
+  "remaining_issues": [
+    "Voxel frontend was not running, so no live Voxel page inspection was performed.",
+    "Native Termux browser support intentionally depends on a discoverable existing playwright-core package.",
+    "The unused upstream Patchright cache hook emits a non-fatal missing-requirement warning.",
+    "Nineteen legacy untracked artifacts remain preserved."
+  ]
+}
