@@ -1,0 +1,515 @@
+{
+  "audit_timestamp": "2026-08-21T22:59:30-05:00",
+  "host_environment": {
+    "device": "Google Pixel 6a",
+    "os": "Android 17",
+    "kernel": "6.1.157-android14-11-gbd23337e42e7-ab14791245",
+    "architecture": "aarch64",
+    "runtime": "native Termux 0.118.3 F-Droid",
+    "home": "/data/data/com.termux/files/home"
+  },
+  "primary_hermes": {
+    "status": "active",
+    "surface": "interactive_cli",
+    "pid_at_audit": 19017,
+    "version": "0.20.0 (2026.8.3)",
+    "executable": "/data/data/com.termux/files/usr/bin/hermes",
+    "hermes_home": "/data/data/com.termux/files/home/.hermes",
+    "source": "/data/data/com.termux/files/home/.hermes/hermes-agent",
+    "python": "3.11.15",
+    "config": "/data/data/com.termux/files/home/.hermes/config.yaml",
+    "state_db": "/data/data/com.termux/files/home/.hermes/state.db",
+    "git_branch": "angel/oci-grok420-chat-fix",
+    "git_commit": "16b5105fe839ffccf3188282e48efa23bcf2c562",
+    "working_tree": "locally_modified"
+  },
+  "providers": [
+    {
+      "id": "openai-codex",
+      "display_name": "OpenAI Codex",
+      "status": "active_default",
+      "auth": "oauth_device_code",
+      "base_url": "https://chatgpt.com/backend-api/codex",
+      "models": [
+        "gpt-5.6-sol",
+        "gpt-5.6-terra",
+        "gpt-5.6-luna",
+        "gpt-5.5",
+        "gpt-5.4",
+        "gpt-5.4-mini",
+        "gpt-5.6-sol-pro",
+        "gpt-5.6-terra-pro",
+        "gpt-5.6-luna-pro"
+      ]
+    },
+    {
+      "id": "custom",
+      "display_name": "Vultr Inference",
+      "status": "available_on_demand",
+      "auth": "api_key_env",
+      "base_url": "https://api.vultrinference.com/v1",
+      "models": [
+        "MiniMaxAI/MiniMax-M2.7",
+        "Qwen/Qwen3.5-397B-A17B",
+        "Qwen/Qwen3.6-27B",
+        "deepseek-ai/DeepSeek-V4-Flash",
+        "moonshotai/Kimi-K2.6",
+        "nvidia/DeepSeek-V3.2-NVFP4",
+        "nvidia/Nemotron-3-Nano-Omni-30B-A3B-Reasoning-BF16",
+        "nvidia/Nemotron-Cascade-2-30B-A3B",
+        "vultr/VultronRetrieverCore-Qwen3.5-4.5B",
+        "vultr/VultronRetrieverFlash-Qwen3.5-0.8B",
+        "zai-org/GLM-5.2-FP8"
+      ]
+    },
+    {
+      "id": "custom",
+      "display_name": "Oracle OCI Generative AI",
+      "status": "configured_live_unverified",
+      "auth": "api_key_env",
+      "base_url": "https://inference.generativeai.us-chicago-1.oci.oraclecloud.com/20231130/actions/v1",
+      "models": [
+        "xai.grok-4.3",
+        "xai.grok-4.20-reasoning",
+        "xai.grok-4.20-non-reasoning"
+      ]
+    },
+    {
+      "id": "custom",
+      "display_name": "OpenCode Free",
+      "status": "active_optional_service",
+      "auth": "anonymous_upstream",
+      "base_url": "http://127.0.0.1:20130/v1",
+      "models": [
+        "big-pickle",
+        "x-preview-f-free",
+        "mimo-v2.5-free",
+        "hy3-free",
+        "laguna-s-2.1-free",
+        "nemotron-3-ultra-free",
+        "nemotron-3.5-lightning-free",
+        "deepseek-v4-flash-free",
+        "muse-spark-1.2-contributor-free"
+      ]
+    },
+    {
+      "id": "kilocode",
+      "display_name": "Kilo Code",
+      "status": "available_on_demand_connectivity_validated",
+      "auth": "api_key_env",
+      "base_url": "https://api.kilo.ai/api/gateway"
+    },
+    {
+      "id": "copilot",
+      "display_name": "GitHub Copilot",
+      "status": "available_on_demand",
+      "auth": "github_cli_token",
+      "base_url": "https://api.githubcopilot.com"
+    },
+    {
+      "id": "anthropic",
+      "display_name": "Anthropic",
+      "status": "configured_unhealthy",
+      "auth": "api_key_env",
+      "base_url": "http://127.0.0.1:8080",
+      "effective_upstream_model": "qwen.qwen3-coder-next"
+    }
+  ],
+  "model_routing": [
+    {
+      "consumer": "Hermes default",
+      "route": [
+        "Hermes",
+        "codex_responses",
+        "https://chatgpt.com/backend-api/codex",
+        "gpt-5.6-sol"
+      ],
+      "reasoning_effort": "medium",
+      "local_proxy": null
+    },
+    {
+      "consumer": "Hermes OpenCode Free optional",
+      "route": [
+        "Hermes",
+        "127.0.0.1:20130",
+        "https://opencode.ai/zen"
+      ],
+      "local_proxy": "opencode-free-proxy.mjs"
+    },
+    {
+      "consumer": "Claude Code",
+      "route": [
+        "Claude Code",
+        "127.0.0.1:8080",
+        "AWS-hosted Mantle",
+        "qwen.qwen3-coder-next"
+      ],
+      "local_proxy": "claude-code-proxy.py"
+    }
+  ],
+  "local_services": [
+    {
+      "name": "OpenCode Free proxy",
+      "status": "active",
+      "pid_at_audit": 18698,
+      "port": 20130,
+      "path": "~/.hermes/helpers/opencode-free-proxy.mjs",
+      "health": "HTTP 200"
+    },
+    {
+      "name": "Claude-Code/Mantle proxy",
+      "status": "active",
+      "pid_at_audit": 18892,
+      "port": 8080,
+      "path": "~/.hermes/claude-code-proxy.py",
+      "health": "HTTP 200"
+    },
+    {
+      "name": "Chromium interactive CDP",
+      "status": "active",
+      "pid_at_audit": 20629,
+      "port": 9223,
+      "path": "/data/data/com.termux/files/usr/lib/chromium/chrome",
+      "health": "HTTP 200"
+    },
+    {
+      "name": "ChatGPT Web bridge",
+      "status": "stale_or_legacy",
+      "port": 17841,
+      "health": "unreachable",
+      "reason": "default source repo and entry point missing"
+    }
+  ],
+  "agents_and_harnesses": [
+    {
+      "name": "Hermes Agent",
+      "version": "0.20.0",
+      "status": "active_primary"
+    },
+    {
+      "name": "Codex CLI",
+      "version": "0.149.0",
+      "status": "available_on_demand",
+      "auth": "configured"
+    },
+    {
+      "name": "Claude Code",
+      "version": "2.1.237",
+      "status": "available_on_demand_proxy_active",
+      "auth": "local_proxy_route"
+    },
+    {
+      "name": "Gemini CLI",
+      "version": "0.56.0",
+      "status": "available_on_demand",
+      "route": "Vertex AI gemini-3.7-flash"
+    },
+    {
+      "name": "OpenCode CLI",
+      "version": "1.17.9",
+      "status": "available_on_demand"
+    },
+    {
+      "name": "Agent Zero",
+      "version": "source commit 1d8b42bbc95b",
+      "status": "available_on_demand",
+      "route": "NVIDIA NIM Nemotron"
+    },
+    {
+      "name": "GitLab Duo",
+      "version": "9.10.0",
+      "status": "installed_auth_unverified"
+    },
+    {
+      "name": "Echo",
+      "version": null,
+      "status": "not_found"
+    }
+  ],
+  "repositories": [
+    {
+      "name": "hermes-agent",
+      "path": "~/.hermes/hermes-agent",
+      "branch": "angel/oci-grok420-chat-fix",
+      "status": "active_dirty"
+    },
+    {
+      "name": "memory-system",
+      "path": "~/.hermes/memory-system",
+      "branch": "main",
+      "status": "active_on_demand"
+    },
+    {
+      "name": "agent-commerce-hub",
+      "path": "~/projects/agent-commerce-hub",
+      "branch": "feat/hermes-commerce-control-plane",
+      "status": "configured_mcp_not_running"
+    },
+    {
+      "name": "voxel-ai-game",
+      "path": "~/projects/voxel-ai-game",
+      "branch": "feat/v0.1-foundation",
+      "status": "active"
+    },
+    {
+      "name": "agent-zero",
+      "path": "~/projects/agent-zero",
+      "branch": "termux-native-nvidia",
+      "status": "available_on_demand"
+    },
+    {
+      "name": "clawcraft",
+      "path": "~/projects/clawcraft",
+      "branch": "angel/bedrock-1.26.50-bringup",
+      "status": "paused"
+    },
+    {
+      "name": "llama.cpp",
+      "path": "~/llama.cpp",
+      "branch": "master",
+      "status": "available_on_demand"
+    }
+  ],
+  "cloud_and_remote": [
+    {
+      "platform": "GitHub",
+      "status": "active",
+      "cli": "gh 2.97.0",
+      "auth_configured": true
+    },
+    {
+      "platform": "Oracle OCI Generative AI",
+      "status": "available_on_demand_live_unverified",
+      "cli": null,
+      "auth_configured": true
+    },
+    {
+      "platform": "Vultr Inference",
+      "status": "available_on_demand",
+      "cli": null,
+      "auth_configured": true
+    },
+    {
+      "platform": "Google Vertex AI",
+      "status": "available_via_gemini_cli",
+      "cli": "Gemini CLI 0.56.0",
+      "auth_configured": true
+    },
+    {
+      "platform": "AWS-hosted Mantle",
+      "status": "active_proxy_upstream_only",
+      "cli": null,
+      "auth_configured": "proxy_only"
+    },
+    {
+      "platform": "Cloudflare",
+      "status": "not_found_as_live_integration",
+      "auth_configured": false
+    },
+    {
+      "platform": "Render",
+      "status": "not_found",
+      "auth_configured": false
+    },
+    {
+      "platform": "DigitalOcean",
+      "status": "not_found",
+      "auth_configured": false
+    },
+    {
+      "platform": "Azure",
+      "status": "not_found",
+      "auth_configured": false
+    },
+    {
+      "platform": "Remote Hermes server",
+      "status": "not_found_locally",
+      "auth_configured": null
+    }
+  ],
+  "active_processes": [
+    {
+      "service": "Hermes CLI",
+      "pid_at_audit": 19017,
+      "port": null,
+      "health": "active"
+    },
+    {
+      "service": "OpenCode Free proxy",
+      "pid_at_audit": 18698,
+      "port": 20130,
+      "health": "HTTP 200"
+    },
+    {
+      "service": "Claude-Code proxy",
+      "pid_at_audit": 18892,
+      "port": 8080,
+      "health": "HTTP 200"
+    },
+    {
+      "service": "Chromium CDP",
+      "pid_at_audit": 20629,
+      "port": 9223,
+      "health": "HTTP 200"
+    },
+    {
+      "service": "Voxel backend",
+      "pid_at_audit": 10870,
+      "port": 3001,
+      "health": "HTTP 200 /health"
+    },
+    {
+      "service": "Voxel frontend",
+      "pid_at_audit": 10902,
+      "port": 5173,
+      "health": "HTTP 200"
+    }
+  ],
+  "persistent_state": {
+    "session_db": "~/.hermes/state.db",
+    "journal_mode": "wal",
+    "sessions_at_audit": 132,
+    "messages_at_audit_approx": 24148,
+    "hot_memory": [
+      "~/.hermes/memories/MEMORY.md",
+      "~/.hermes/memories/USER.md"
+    ],
+    "persona": "~/.hermes/SOUL.md",
+    "durable_vault": "/storage/emulated/0/Documents/Hermes-memory-storage",
+    "vault_index": "~/.hermes/memory-index.sqlite",
+    "credentials": "~/.hermes/auth.json",
+    "secrets": "~/.hermes/.env",
+    "logs": "~/.hermes/logs",
+    "model_caches": [
+      "~/.hermes/provider_models_cache.json",
+      "~/.hermes/models_dev_cache.json",
+      "~/.hermes/cache/model_catalog.json",
+      "~/.hermes/ollama_cloud_models_cache.json",
+      "~/.hermes/context_length_cache.yaml"
+    ]
+  },
+  "startup_chain": [
+    "Termux interactive login shell",
+    "$PREFIX/etc/profile",
+    "~/.bashrc",
+    "ensure Claude proxy on 8080",
+    "ensure OpenCode Free proxy on 20130",
+    "human runs hermes",
+    "ensure-hermes-local-patches.sh",
+    "$PREFIX/bin/hermes",
+    "~/.hermes/hermes-agent/venv/bin/hermes"
+  ],
+  "architecture_drift": [
+    {
+      "item": "Primary Hermes checkout is locally modified",
+      "confidence": "high"
+    },
+    {
+      "item": "Duplicate and old Hermes installations/source trees remain",
+      "confidence": "high"
+    },
+    {
+      "item": "Anthropic/Claude labels route through local proxy to Qwen",
+      "confidence": "high"
+    },
+    {
+      "item": "Claude proxy source contains embedded credential material; value omitted",
+      "confidence": "high"
+    },
+    {
+      "item": "Claude wrapper updater conflicts with autoUpdates=false and left staging state during audit",
+      "confidence": "high"
+    },
+    {
+      "item": "Codex Web bridge launcher is stale/broken",
+      "confidence": "high"
+    },
+    {
+      "item": "Browser tool configuration and observed Chromium runtime do not align",
+      "confidence": "high"
+    },
+    {
+      "item": "Commerce MCP enabled but absent from current runtime",
+      "confidence": "high"
+    },
+    {
+      "item": "Two commerce database roots exist",
+      "confidence": "high"
+    },
+    {
+      "item": "Numerous historical config backups remain",
+      "confidence": "high"
+    }
+  ],
+  "unverified": [
+    "External Hermes cloud/server instances outside locally configured accounts",
+    "Live Vultr and Oracle inference",
+    "Current Gemini/Vertex API usability",
+    "GitLab Duo login state and model route",
+    "Reason commerce MCP did not attach",
+    "Chromium launch provenance",
+    "Complete Android listener inventory",
+    "Remote Cloudflare/Render/DigitalOcean/Azure resources",
+    "Browser-use future engine",
+    "Consumers of older commerce DB"
+  ],
+  "canonical_memory_snapshot": {
+    "primary_control_plane": "Native Termux Hermes CLI on Android 17/aarch64",
+    "primary_installation": "/data/data/com.termux/files/home/.hermes/hermes-agent",
+    "version": "0.20.0 (2026.8.3)",
+    "runtime_state": "active interactive CLI; gateway, messaging channels, API server, and cron jobs stopped",
+    "default_model_route": "Hermes -> native Codex Responses -> https://chatgpt.com/backend-api/codex -> openai-codex/gpt-5.6-sol",
+    "reasoning_effort": "medium",
+    "secondary_hermes": {
+      "environment": "hermes-ubuntu PRoot",
+      "status": "available_on_demand_secondary_legacy",
+      "default_route": "Vultr MiniMaxAI/MiniMax-M2.7"
+    },
+    "active_helpers": [
+      "OpenCode Free proxy on 127.0.0.1:20130",
+      "Claude/Mantle compatibility proxy on 127.0.0.1:8080",
+      "Chromium CDP on 127.0.0.1:9223"
+    ],
+    "commerce_control": "Configured Mode A MCP rooted at projects/agent-commerce-hub; external writes and live value movement disabled; MCP process not running at audit time",
+    "cloud_access": {
+      "github": "active",
+      "vultr": "optional inference",
+      "oracle_oci_genai": "optional inference, live unverified",
+      "google_vertex": "Gemini CLI only",
+      "aws_mantle": "Claude proxy upstream only",
+      "cloudflare_render_digitalocean_azure": "no active CLI/runtime found"
+    },
+    "persistent_state": {
+      "sessions": "~/.hermes/state.db",
+      "hot_memory": "~/.hermes/memories/MEMORY.md and USER.md",
+      "durable_vault": "/storage/emulated/0/Documents/Hermes-memory-storage",
+      "vault_index": "~/.hermes/memory-index.sqlite"
+    },
+    "active_projects": [
+      "~/.hermes/hermes-agent",
+      "~/.hermes/memory-system (on demand)",
+      "~/projects/voxel-ai-game"
+    ],
+    "available_or_paused": [
+      "Agent Zero",
+      "Claude Code",
+      "Codex CLI",
+      "Gemini CLI",
+      "OpenCode CLI",
+      "hermes-ubuntu",
+      "agent-commerce-hub MCP",
+      "Clawcraft",
+      "llama.cpp"
+    ],
+    "legacy_or_drift": [
+      "locally modified Hermes checkout",
+      "old Hermes backup trees",
+      "Claude labels route to Qwen through local proxy",
+      "Codex Web bridge source missing",
+      "enabled commerce MCP absent from current runtime",
+      "duplicate commerce state DB layouts"
+    ]
+  },
+  "report_complete": true,
+  "audit_complete": true
+}
