@@ -1,0 +1,70 @@
+name: Distribution Live Read Audit
+
+on:
+  pull_request:
+    branches:
+      - feat/hermes-commerce-control-plane
+    paths:
+      - '.github/workflows/distribution-live-read-audit.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Smoke live llms discovery surface
+        run: |
+          curl --fail --silent --show-error --dump-header /tmp/llms.headers https://hermes-counterparty-api.onrender.com/llms.txt > /tmp/llms.txt
+          grep -F '# Hermes Agent Commerce API' /tmp/llms.txt
+          grep -F '/v1/company-domain-intelligence/preview' /tmp/llms.txt
+          grep -F '/v1/company-domain-intelligence' /tmp/llms.txt
+          grep -F '$0.02' /tmp/llms.txt
+          if grep -qi '^payment-required:' /tmp/llms.headers; then echo 'unexpected payment challenge on llms.txt'; exit 1; fi
+          echo 'LLMS_LIVE_SMOKE=PASS'
+      - name: Read live 402 Index verification hash
+        run: |
+          HASH="$(curl --fail --silent --show-error https://hermes-counterparty-api.onrender.com/.well-known/402index-verify.txt)"
+          echo "LIVE_402INDEX_HASH=$HASH"
+          test "$HASH" = '38c7d63638e26a694fdf51fd1b213221e26d73044847c5dac48bf4aa19756605'
+      - name: Query 402 Index by exact URL parameter
+        run: |
+          curl --fail --silent --show-error --get \
+            --data-urlencode 'url=https://hermes-counterparty-api.onrender.com/v1/company-domain-intelligence' \
+            --data-urlencode 'protocol=x402' \
+            --data-urlencode 'limit=200' \
+            https://402index.io/api/v1/services > /tmp/402-url.json
+          node - <<'NODE'
+          const fs = require('node:fs');
+          const data = JSON.parse(fs.readFileSync('/tmp/402-url.json','utf8'));
+          const rows = Array.isArray(data) ? data : (data.services || data.results || data.data || []);
+          const origin = 'https://hermes-counterparty-api.onrender.com';
+          const matches = rows.filter((row) => String(row.url || row.endpoint || '').startsWith(origin));
+          console.log(`INDEX402_URL_QUERY_ROWS=${rows.length}`);
+          console.log(`INDEX402_EXACT_ORIGIN_MATCHES=${matches.length}`);
+          for (const row of matches) console.log(JSON.stringify({id:row.id,url:row.url,name:row.name,source:row.source,verified:row.verified,health_status:row.health_status,provider:row.provider}));
+          NODE
+      - name: Query 402 Index search by seller identity
+        run: |
+          curl --fail --silent --show-error --get \
+            --data-urlencode 'q=Hermes Agent Commerce API' \
+            --data-urlencode 'protocol=x402' \
+            --data-urlencode 'limit=200' \
+            https://402index.io/api/v1/services > /tmp/402-search.json
+          node - <<'NODE'
+          const fs = require('node:fs');
+          const data = JSON.parse(fs.readFileSync('/tmp/402-search.json','utf8'));
+          const rows = Array.isArray(data) ? data : (data.services || data.results || data.data || []);
+          const origin = 'https://hermes-counterparty-api.onrender.com';
+          const matches = rows.filter((row) => String(row.url || row.endpoint || '').startsWith(origin));
+          console.log(`INDEX402_SELLER_SEARCH_ROWS=${rows.length}`);
+          console.log(`INDEX402_SELLER_EXACT_ORIGIN_MATCHES=${matches.length}`);
+          for (const row of matches) console.log(JSON.stringify({id:row.id,url:row.url,name:row.name,source:row.source,verified:row.verified,health_status:row.health_status,provider:row.provider}));
+          NODE
