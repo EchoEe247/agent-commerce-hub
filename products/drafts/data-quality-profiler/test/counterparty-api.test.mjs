@@ -56,7 +56,7 @@ test("GET /.well-known/x402 publishes thirteen unique Agent402-compatible tools"
   assert.equal(body.spec, "agent402-service-manifest/1");
   assert.equal(body.version, 1);
   assert.equal(body.serviceVersion, "0.1.0");
-  assert.equal(body.name, "Hermes Counterparty Availability");
+  assert.equal(body.name, "Hermes Agent Commerce API");
   assert.equal(body.homepage, PUBLIC_ORIGIN);
   assert.equal(body.resources.length, 13);
   assert.equal(new Set(body.resources.map((resource) => resource.url)).size, 13);
