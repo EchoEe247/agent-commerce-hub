@@ -147,9 +147,12 @@ function hasValidPaymentMetadata(operation) {
 function build402IndexPayloads(openapi, paidOperations) {
   const origin = String(openapi?.servers?.[0]?.url ?? "").replace(/\/$/, "");
   if (!origin) return [];
+  const provider = String(openapi?.info?.title ?? "").trim();
 
   return paidOperations.map(({ path, method, operation }) => {
     const example = operation?.requestBody?.content?.["application/json"]?.example;
+    const priceUsd = Number(operation?.["x-payment-info"]?.price?.amount);
+    const category = Array.isArray(operation?.tags) ? operation.tags[0] : undefined;
     const payload = {
       url: `${origin}${path}`,
       name: operation?.summary ?? operation?.operationId ?? `${method} ${path}`,
@@ -157,6 +160,10 @@ function build402IndexPayloads(openapi, paidOperations) {
       http_method: method,
     };
     if (example !== undefined) payload.probe_body = JSON.stringify(example);
+    if (operation?.description) payload.description = operation.description;
+    if (Number.isFinite(priceUsd)) payload.price_usd = priceUsd;
+    if (category) payload.category = category;
+    if (provider) payload.provider = provider;
     return payload;
   });
 }
