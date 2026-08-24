@@ -25,14 +25,14 @@ jobs:
           python - <<'PY'
           import json, os, subprocess
           repo=os.environ['REPO']
-          workflow=os.environ['WORKFLOW_ID']
+          workflow=int(os.environ['WORKFLOW_ID'])
           current=int(os.environ['CURRENT_RUN'])
           raw=subprocess.check_output([
-              'gh','api',f'repos/{repo}/actions/workflows/{workflow}/runs','-f','per_page=100'
+              'gh','api','--method','GET',f'repos/{repo}/actions/runs','-f','per_page=100'
           ], text=True)
           data=json.loads(raw)
           runs=data.get('workflow_runs',[])
-          targets=[int(r['id']) for r in runs if int(r['id']) != current]
+          targets=[int(r['id']) for r in runs if int(r.get('workflow_id') or 0)==workflow and int(r['id']) != current]
           deleted=[]
           for run_id in targets:
               subprocess.run(['gh','api','--method','DELETE',f'repos/{repo}/actions/runs/{run_id}'],check=True)
