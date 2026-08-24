@@ -9,6 +9,7 @@ import { createSecCompanySnapshot } from "./sec-company-snapshot.mjs";
 import { createDependencyVulnerabilityCheck } from "./dependency-vulnerability-check.mjs";
 import { createPackageMaintenanceSnapshot } from "./package-maintenance-snapshot.mjs";
 import { buildOpenApiDocument } from "./openapi.mjs";
+import { installCommerceTelemetry } from "./commerce-telemetry.mjs";
 import {
   duplicateAudit,
   qualityGate,
@@ -50,6 +51,8 @@ export function buildApp({
     bodyLimit: LIMITS.bodyBytes,
     trustProxy: true,
   });
+  installCommerceTelemetry(app, { logger, clock });
+
   const screenEntity = entitySanctionsScreen ?? createEntitySanctionsScreen({
     fetchImpl: ofacFetch,
     clock: sanctionsClock ?? clock,
