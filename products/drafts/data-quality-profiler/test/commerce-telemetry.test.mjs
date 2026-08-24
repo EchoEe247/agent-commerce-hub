@@ -110,3 +110,48 @@ test("commerce telemetry records an x402 payment attempt and successful settleme
     await server.close();
   }
 });
+
+test("commerce telemetry does not infer a sale from a settlement header without explicit success", async () => {
+  const entries = [];
+  const signature = encodeHeader({
+    x402Version: 2,
+    accepted: { amount: "20000", network: "eip155:8453" },
+    payload: { authorization: { from: "0x2222222222222222222222222222222222222222" } },
+  });
+  const ambiguousSettlement = encodeHeader({
+    transaction: "0xnot-confirmed",
+    network: "eip155:8453",
+  });
+
+  const server = buildApp({
+    config: config(),
+    logger: { log: (line) => entries.push(JSON.parse(line)) },
+    companyDomainIntelligence: async (payload) => companyResult(payload),
+    paymentPlugin: (app) => {
+      app.addHook("onSend", async (request, reply, body) => {
+        if (request.headers["payment-signature"]) {
+          reply.header("payment-response", ambiguousSettlement);
+        }
+        return body;
+      });
+    },
+  });
+
+  const response = await server.inject({
+    method: "POST",
+    url: "/v1/company-domain-intelligence",
+    headers: { "payment-signature": signature },
+    payload: { domain: "example.com" },
+  });
+
+  try {
+    assert.equal(response.statusCode, 200);
+    const event = entries.find((entry) => entry.event === "commerce_request");
+    assert.ok(event);
+    assert.equal(event.payment_attempted, true);
+    assert.equal(event.payment_succeeded, false);
+    assert.equal(event.payment_transaction, null);
+  } finally {
+    await server.close();
+  }
+});
