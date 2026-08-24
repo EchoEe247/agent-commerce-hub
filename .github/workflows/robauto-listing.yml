@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - ops/robauto-listing-20260824
+  pull_request:
+    branches:
+      - feat/hermes-commerce-control-plane
 
 permissions:
   contents: read
