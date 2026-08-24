@@ -1,0 +1,76 @@
+name: Distribution Verify
+
+on:
+  pull_request:
+    branches:
+      - feat/hermes-commerce-control-plane
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: AgentCash discovery
+        run: |
+          set -euo pipefail
+          npx -y @agentcash/discovery@latest discover https://hermes-counterparty-api.onrender.com --json > /tmp/agentcash.json
+          node <<'NODE'
+          const fs = require('fs');
+          const raw = fs.readFileSync('/tmp/agentcash.json', 'utf8');
+          const parsed = JSON.parse(raw);
+          const text = JSON.stringify(parsed);
+          const paid = [...text.matchAll(/\/v1\/[a-z0-9-]+/g)].map(m => m[0]);
+          const unique = [...new Set(paid)];
+          console.log(JSON.stringify({source:'agentcash', found: parsed.found ?? null, endpointPaths: unique, hasCompanyPaid:text.includes('/v1/company-domain-intelligence'), hasPreview:text.includes('/v1/company-domain-intelligence/preview'), outputBytes:raw.length}));
+          NODE
+
+      - name: Agent402 router discovery
+        run: |
+          node <<'NODE'
+          const queries = [
+            'hermes-counterparty-api.onrender.com',
+            'research a company',
+            'enrich a business domain',
+            'qualify a lead company domain'
+          ];
+          for (const q of queries) {
+            const url = `https://agent402.tools/api/find?q=${encodeURIComponent(q)}`;
+            const r = await fetch(url, {headers:{'user-agent':'hermes-distribution-verifier/1.0'}});
+            const body = await r.text();
+            let parsed = null;
+            try { parsed = JSON.parse(body); } catch {}
+            const text = parsed ? JSON.stringify(parsed) : body;
+            console.log(JSON.stringify({source:'agent402', q, status:r.status, hasHermes:text.includes('hermes-counterparty-api.onrender.com'), hasCompany:text.includes('/v1/company-domain-intelligence'), bodyPreview:text.slice(0,1500)}));
+          }
+          NODE
+
+      - name: 402 Index search
+        run: |
+          node <<'NODE'
+          const qs = [
+            'hermes-counterparty-api.onrender.com',
+            'company domain intelligence',
+            'research company domain'
+          ];
+          for (const q of qs) {
+            const url = `https://402index.io/api/v1/services?protocol=x402&q=${encodeURIComponent(q)}&limit=200`;
+            const r = await fetch(url, {headers:{'user-agent':'hermes-distribution-verifier/1.0'}});
+            const parsed = await r.json();
+            const services = Array.isArray(parsed.services) ? parsed.services : [];
+            const ours = services.filter(s => String(s.url ?? '').includes('hermes-counterparty-api.onrender.com'));
+            console.log(JSON.stringify({source:'402index', q, status:r.status, total:parsed.total ?? null, ours:ours.map(s=>({id:s.id,name:s.name,url:s.url,health:s.health_status,verified:s.x402_payment_valid,price:s.price_usd,source:s.source}))}));
+          }
+          NODE
+
+      - name: x402scan recipient visibility
+        run: |
+          node <<'NODE'
+          const wallet = '0x2BD7c4e294B09E9a853168a58712498D03A45B01';
+          const url = `https://www.x402scan.com/recipient/${wallet}/resources`;
+          const r = await fetch(url, {headers:{'user-agent':'hermes-distribution-verifier/1.0'}});
+          const body = await r.text();
+          console.log(JSON.stringify({source:'x402scan', status:r.status, bytes:body.length, hasHermes:body.includes('hermes-counterparty-api.onrender.com'), hasCompany:body.includes('/v1/company-domain-intelligence'), preview:body.slice(0,500)}));
+          NODE
