@@ -9,7 +9,7 @@ const PREVIEW_PATH = "/v1/company-domain-intelligence/preview";
 const ROUTES = [
   ["/v1/counterparty-availability", "counterpartyAvailability", "0.030000"],
   ["/v1/entity-sanctions-screen", "entitySanctionsScreen", "0.020000"],
-  ["/v1/company-domain-intelligence", "companyDomainIntelligence", "0.020000"],
+  ["/v1/company-domain-intelligence", "companyDomainIntelligenceEnrichment", "0.020000"],
   ["/v1/sec-company-snapshot", "secCompanySnapshot", "0.020000"],
   ["/v1/dependency-vulnerability-check", "dependencyVulnerabilityCheck", "0.015000"],
   ["/v1/package-maintenance-snapshot", "packageMaintenanceSnapshot", "0.015000"],
@@ -113,6 +113,10 @@ test("GET /openapi.json publishes thirteen paid x402 operations plus a free comp
     const companySchema = companyDomain.requestBody.content["application/json"].schema;
     assert.deepEqual(companySchema.required, ["domain"]);
     assert.equal(companySchema.properties.domain.type, "string");
+    assert.equal(
+      companyDomain.summary,
+      "Company domain intelligence: research and enrich a business domain with public web and infrastructure signals"
+    );
     assert.match(companyDomain.description, /DNS/i);
     assert.match(companyDomain.description, /RDAP/i);
     assert.match(companyDomain.description, /website/i);
