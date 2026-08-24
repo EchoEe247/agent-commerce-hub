@@ -1,5 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
+import { readFileSync } from "node:fs";
 import { buildOpenApiDocument } from "../src/openapi-base.mjs";
 import { buildLlmsDiscovery } from "../src/llms-discovery.mjs";
 import { evaluateDistributionReadiness } from "../src/distribution-readiness.mjs";
@@ -116,4 +118,28 @@ test("missing public contact email is a recommendation, not a discovery failure"
 
   assert.equal(check(report, "openapi.contact_email")?.status, "warn");
   assert.equal(report.technical_status, "ready");
+});
+
+test("distribution readiness CLI emits production-profile JSON without publishing anything", () => {
+  const result = spawnSync(process.execPath, ["scripts/distribution-readiness-check.mjs"], {
+    cwd: new URL("..", import.meta.url),
+    env: {
+      ...process.env,
+      X402_FACILITATOR_URL: "https://facilitator.xpay.sh",
+    },
+    encoding: "utf8",
+  });
+
+  assert.equal(result.status, 0, result.stderr);
+  const report = JSON.parse(result.stdout);
+  assert.equal(report.technical_status, "ready");
+  assert.equal(report.paid_operation_count, 13);
+  assert.equal(report.facilitator.classification, "xpay");
+  assert.equal(report.channels.index_402.registration_payloads.length, 13);
+  assert.equal(report.publication_actions.every((item) => item.status !== "published"), true);
+});
+
+test("package exposes a repeatable distribution readiness command", () => {
+  const packageJson = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
+  assert.equal(packageJson.scripts["check:distribution-readiness"], "node scripts/distribution-readiness-check.mjs");
 });
