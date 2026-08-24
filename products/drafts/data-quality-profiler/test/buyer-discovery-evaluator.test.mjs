@@ -140,7 +140,7 @@ function byCode(report, code) {
 test("valid discovery funnel passes all five buyer intents and required checks", () => {
   const report = evaluateBuyerDiscovery(makeFixture());
   assert.equal(report.schema_version, "1.0");
-  assert.equal(report.overall, "pass");
+  assert.equal(report.overall, "pass", JSON.stringify(report, null, 2));
   assert.equal(report.intent_results.length, 5);
   assert.equal(report.intent_results.every((item) => item.matched), true);
   assert.equal(report.summary.failed, 0);
