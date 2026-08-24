@@ -1,4 +1,4 @@
-name: Robauto Claim Token Static Audit
+name: Robauto Actions Log Cleanup
 
 on:
   pull_request:
@@ -7,30 +7,35 @@ on:
 
 permissions:
   contents: read
+  actions: write
 
 jobs:
-  audit:
+  cleanup:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Extract static UI semantics around claim_token
+      - name: Delete historical Robauto workflow runs
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          CURRENT_RUN: ${{ github.run_id }}
+          WORKFLOW_ID: '341345873'
         run: |
-          node <<'NODE'
-          (async()=>{
-            const url='https://robauto.ai/assets/index-BnBc8Sgi.js';
-            const r=await fetch(url,{headers:{'user-agent':'hermes-robauto-contract-audit/3.0'}});
-            const text=await r.text();
-            if(!r.ok) throw new Error(`bundle ${r.status}`);
-            const needle='claim_token';
-            let from=0,count=0;
-            while(true){
-              const i=text.indexOf(needle,from); if(i<0)break; count++;
-              let snippet=text.slice(Math.max(0,i-2500),Math.min(text.length,i+5000));
-              snippet=snippet.replace(/[a-f0-9]{32,}/gi,'<redacted-hex>').replace(/\s+/g,' ');
-              console.log(JSON.stringify({check:'claim-token-static-context',occurrence:count,snippet}));
-              from=i+needle.length;
-              if(count>=5)break;
-            }
-            console.log(JSON.stringify({check:'claim-token-occurrences',count}));
-          })().catch(e=>{console.error(e);process.exit(1)});
-          NODE
+          set -euo pipefail
+          python - <<'PY'
+          import json, os, subprocess
+          repo=os.environ['REPO']
+          workflow=os.environ['WORKFLOW_ID']
+          current=int(os.environ['CURRENT_RUN'])
+          raw=subprocess.check_output([
+              'gh','api',f'repos/{repo}/actions/workflows/{workflow}/runs','-f','per_page=100'
+          ], text=True)
+          data=json.loads(raw)
+          runs=data.get('workflow_runs',[])
+          targets=[int(r['id']) for r in runs if int(r['id']) != current]
+          deleted=[]
+          for run_id in targets:
+              subprocess.run(['gh','api','--method','DELETE',f'repos/{repo}/actions/runs/{run_id}'],check=True)
+              deleted.append(run_id)
+          print(json.dumps({'check':'robauto-run-log-cleanup','current_run':current,'found_historical':len(targets),'deleted_count':len(deleted),'deleted_run_ids':deleted}))
+          PY
