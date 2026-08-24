@@ -13,60 +13,53 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Inspect public frontend for claim management contract
+      - name: Inspect same-origin application bundles and API metadata
         run: |
           node <<'NODE'
           (async () => {
-          const roots = ['https://robauto.store/', 'https://robauto.ai/listings', 'https://robauto.ai/developers'];
-          const needles = ['claim_token','claim-token','claimToken','/claim','/listings/','DELETE','PATCH'];
-          const seen = new Set();
+          const pages = ['https://robauto.ai/agenthub','https://robauto.ai/listings','https://robauto.ai/developers'];
+          const needles = ['claim_token','claim-token','claimToken','claim listing','claim-listing','/claim','listings/claim','delete_listing','update_listing','DELETE','PATCH'];
+          const assets = new Set();
           const hits = [];
 
-          async function fetchText(url) {
-            const r = await fetch(url, {headers:{'user-agent':'hermes-robauto-contract-audit/1.0'}});
-            const text = await r.text();
-            return {r,text};
+          async function text(url, options={}) {
+            const r = await fetch(url,{...options,headers:{'user-agent':'hermes-robauto-contract-audit/2.0',...(options.headers||{})}});
+            return {r,body:await r.text()};
           }
-
-          function addHit(url, text) {
-            const lower = text.toLowerCase();
-            for (const needle of needles) {
-              let from = 0;
-              while (true) {
-                const i = lower.indexOf(needle.toLowerCase(), from);
-                if (i < 0) break;
-                const snippet = text.slice(Math.max(0,i-180), Math.min(text.length,i+320)).replace(/\s+/g,' ');
-                hits.push({url, needle, snippet});
-                if (hits.length >= 100) return;
-                from = i + needle.length;
+          function scan(url, body) {
+            const lower=body.toLowerCase();
+            for(const needle of needles){
+              let at=0;
+              while((at=lower.indexOf(needle.toLowerCase(),at))>=0){
+                const snippet=body.slice(Math.max(0,at-220),Math.min(body.length,at+420)).replace(/\s+/g,' ');
+                if(!/[a-f0-9]{32,}/i.test(snippet)) hits.push({url,needle,snippet});
+                at+=needle.length;
+                if(hits.length>=80)return;
               }
             }
           }
 
-          for (const root of roots) {
-            try {
-              const {r,text} = await fetchText(root);
-              console.log(JSON.stringify({check:'page',url:root,status:r.status,finalUrl:r.url,contentType:r.headers.get('content-type'),bytes:text.length}));
-              addHit(r.url,text);
-              const scripts = [...text.matchAll(/<script[^>]+src=["']([^"']+)["']/gi)].map(m=>m[1]);
-              for (const src of scripts) {
-                const u = new URL(src, r.url).href;
-                if (seen.has(u)) continue;
-                seen.add(u);
-                try {
-                  const out = await fetchText(u);
-                  if (!out.r.ok) continue;
-                  addHit(out.r.url,out.text);
-                } catch {}
-              }
-            } catch (error) {
-              console.log(JSON.stringify({check:'page-error',url:root,error:String(error?.message||error)}));
+          for(const page of pages){
+            const out=await text(page);
+            console.log(JSON.stringify({check:'page',url:page,status:out.r.status,finalUrl:out.r.url,bytes:out.body.length}));
+            scan(out.r.url,out.body);
+            for(const m of out.body.matchAll(/(?:src|href)=["']([^"']+\.(?:js|mjs)(?:\?[^"']*)?)["']/gi)){
+              const u=new URL(m[1],out.r.url);
+              if(u.hostname==='robauto.ai'||u.hostname==='robauto.store'||u.hostname.endsWith('.lovable.app')) assets.add(u.href);
             }
           }
+          console.log(JSON.stringify({check:'same-origin-assets',count:assets.size,assets:[...assets]}));
+          for(const url of assets){
+            try{const out=await text(url); if(out.r.ok){console.log(JSON.stringify({check:'asset',url:out.r.url,bytes:out.body.length})); scan(out.r.url,out.body);}}catch{}
+          }
 
-          const sanitized = hits
-            .filter(x => !/[a-f0-9]{32,}/i.test(x.snippet))
-            .slice(0,40);
-          console.log(JSON.stringify({check:'claim-contract-search',totalHits:hits.length,safeHits:sanitized}));
-          })().catch(error => { console.error(error); process.exit(1); });
+          const api='https://robauto.store/api/public/listings';
+          for(const method of ['OPTIONS','HEAD']){
+            try{
+              const out=await text(api,{method});
+              console.log(JSON.stringify({check:'api-metadata',method,status:out.r.status,finalUrl:out.r.url,allow:out.r.headers.get('allow'),accessControlAllowMethods:out.r.headers.get('access-control-allow-methods'),body:out.body.slice(0,300)}));
+            }catch(error){console.log(JSON.stringify({check:'api-metadata-error',method,error:String(error?.message||error)}));}
+          }
+          console.log(JSON.stringify({check:'claim-contract-search',safeHitCount:hits.length,hits:hits.slice(0,40)}));
+          })().catch(error=>{console.error(error);process.exit(1)});
           NODE
