@@ -32,7 +32,7 @@ function makeBazaar() {
         required: ["schema_version", "company"],
       },
     },
-  });
+  }).bazaar;
 }
 
 function encodeChallenge(overrides = {}) {
