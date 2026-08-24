@@ -1,0 +1,34 @@
+name: x402scan Refresh
+
+on:
+  pull_request:
+    branches:
+      - feat/hermes-commerce-control-plane
+
+permissions:
+  contents: read
+
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Confirm registration route is SIWX-only and free
+        env:
+          X402_PRIVATE_KEY: ${{ secrets.HERMES_COMMERCE_SPEND_TEST_PRIVATE_KEY }}
+        run: |
+          set -euo pipefail
+          test -n "$X402_PRIVATE_KEY"
+          npx -y agentcash@latest check https://x402scan.com/api/x402/registry/register-origin --json > /tmp/check.json
+          node <<'NODE'
+          const fs = require('fs');
+          const raw = fs.readFileSync('/tmp/check.json','utf8');
+          const parsed = JSON.parse(raw);
+          const text = JSON.stringify(parsed).toLowerCase();
+          const hasSiwx = text.includes('siwx') || text.includes('sign-in-with-x');
+          const paidSignals = [...text.matchAll(/"(?:price|amount|maxamountrequired|maxamount)"\s*:\s*"?([0-9]+(?:\.[0-9]+)?)/g)].map(m=>Number(m[1])).filter(Number.isFinite);
+          const positivePrice = paidSignals.some(v=>v>0);
+          console.log(JSON.stringify({check:'x402scan-register-origin',hasSiwx,positivePrice,bytes:raw.length,summary:parsed}));
+          if (!hasSiwx) throw new Error('registration route did not advertise SIWX identity auth');
+          if (positivePrice) throw new Error('registration route appears to require payment; refusing mutation');
+          NODE
