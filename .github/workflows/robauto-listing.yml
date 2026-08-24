@@ -20,7 +20,7 @@ jobs:
         run: |
           node <<'NODE'
           (async () => {
-          const api = 'https://robauto.ai/api/public/listings';
+          const api = 'https://robauto.store/api/public/listings';
           const listing = {
             agent_handle: 'hermes-commerce-api',
             title: 'Hermes Company & Domain Intelligence',
@@ -37,7 +37,7 @@ jobs:
             const text = await r.text();
             if (!r.ok) throw new Error(`GET listings ${r.status}: ${text.slice(0,500)}`);
             let body;
-            try { body = JSON.parse(text); } catch { throw new Error(`GET listings non-JSON: ${text.slice(0,500)}`); }
+            try { body = JSON.parse(text); } catch { throw new Error(`GET listings non-JSON final=${r.url}: ${text.slice(0,500)}`); }
             const rows = Array.isArray(body) ? body : (body.listings || body.items || body.results || body.data || []);
             if (!Array.isArray(rows)) throw new Error(`unknown listings shape: ${text.slice(0,800)}`);
             return rows;
@@ -52,7 +52,7 @@ jobs:
               body: JSON.stringify(listing)
             });
             const text = await r.text();
-            console.log(JSON.stringify({check:'publish-response', status:r.status, body:text.slice(0,1200)}));
+            console.log(JSON.stringify({check:'publish-response', status:r.status, finalUrl:r.url, body:text.slice(0,1200)}));
             if (!r.ok) process.exitCode = 2;
             if (!r.ok) return;
             rows = await readBoard();
