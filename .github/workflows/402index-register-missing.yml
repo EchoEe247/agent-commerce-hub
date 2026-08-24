@@ -1,0 +1,115 @@
+name: 402 Index Missing Registration
+
+on:
+  pull_request:
+    branches:
+      - feat/hermes-commerce-control-plane
+    paths:
+      - '.github/workflows/402index-register-missing.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  register:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Register only missing Hermes x402 endpoints
+        run: |
+          node --input-type=module <<'NODE'
+          const origin = 'https://hermes-counterparty-api.onrender.com';
+          const indexBase = 'https://402index.io/api/v1';
+
+          const openapiResponse = await fetch(`${origin}/openapi.json`);
+          if (!openapiResponse.ok) throw new Error(`OpenAPI fetch failed: ${openapiResponse.status}`);
+          const openapi = await openapiResponse.json();
+
+          const provider = String(openapi?.info?.title ?? 'Hermes Agent Commerce API').trim();
+          const payloads = [];
+          for (const [path, pathItem] of Object.entries(openapi?.paths ?? {})) {
+            const operation = pathItem?.post;
+            if (!operation?.['x-payment-info']) continue;
+            const example = operation?.requestBody?.content?.['application/json']?.example;
+            const priceUsd = Number(operation?.['x-payment-info']?.price?.amount);
+            const payload = {
+              url: `${origin}${path}`,
+              name: operation?.summary ?? operation?.operationId ?? `POST ${path}`,
+              protocol: 'x402',
+              http_method: 'POST',
+              description: operation?.description ?? undefined,
+              price_usd: Number.isFinite(priceUsd) ? priceUsd : undefined,
+              payment_asset: 'USDC',
+              payment_network: 'Base',
+              category: Array.isArray(operation?.tags) ? operation.tags[0] : undefined,
+              provider,
+            };
+            if (example !== undefined) payload.probe_body = JSON.stringify(example);
+            payloads.push(Object.fromEntries(Object.entries(payload).filter(([, value]) => value !== undefined)));
+          }
+
+          if (payloads.length !== 13) {
+            throw new Error(`Expected 13 paid operations, observed ${payloads.length}`);
+          }
+
+          const searchUrl = new URL(`${indexBase}/services`);
+          searchUrl.searchParams.set('q', provider);
+          searchUrl.searchParams.set('protocol', 'x402');
+          searchUrl.searchParams.set('limit', '200');
+          const searchResponse = await fetch(searchUrl);
+          if (!searchResponse.ok) throw new Error(`402 Index search failed: ${searchResponse.status}`);
+          const searchData = await searchResponse.json();
+          const rows = Array.isArray(searchData)
+            ? searchData
+            : (searchData.services || searchData.results || searchData.data || []);
+          const existing = new Set(
+            rows
+              .map((row) => String(row.url || row.endpoint || ''))
+              .filter((url) => url.startsWith(origin)),
+          );
+
+          const missing = payloads.filter((payload) => !existing.has(payload.url));
+          console.log(`PAID_OPERATIONS=${payloads.length}`);
+          console.log(`INDEX402_EXISTING_ORIGIN_URLS=${existing.size}`);
+          console.log(`INDEX402_MISSING=${missing.length}`);
+          for (const payload of missing) console.log(`MISSING ${payload.url}`);
+
+          if (missing.length === 0) {
+            console.log('INDEX402_REGISTRATION=NOOP_ALREADY_COMPLETE');
+            process.exit(0);
+          }
+          if (missing.length > 10) {
+            throw new Error(`Would exceed 402 Index registration rate limit: ${missing.length}`);
+          }
+
+          const results = [];
+          for (const payload of missing) {
+            const response = await fetch(`${indexBase}/register`, {
+              method: 'POST',
+              headers: { 'content-type': 'application/json' },
+              body: JSON.stringify(payload),
+            });
+            const text = await response.text();
+            let body;
+            try { body = JSON.parse(text); } catch { body = { raw: text.slice(0, 500) }; }
+            const receipt = {
+              url: payload.url,
+              http_status: response.status,
+              id: body?.service?.id ?? body?.id ?? null,
+              status: body?.service?.status ?? body?.status ?? null,
+              error: body?.error ?? body?.message ?? null,
+              suggested_protocol: body?.suggestedProtocol ?? null,
+              probe_http_status: body?.probe?.httpStatus ?? null,
+            };
+            console.log(`REGISTER_RECEIPT ${JSON.stringify(receipt)}`);
+            results.push(receipt);
+            if (![200, 201].includes(response.status)) {
+              throw new Error(`Registration failed for ${payload.url}: HTTP ${response.status}`);
+            }
+          }
+
+          console.log(`INDEX402_REGISTRATION_SUBMITTED=${results.length}`);
+          NODE
