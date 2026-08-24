@@ -1,5 +1,10 @@
 const PUBLIC_ORIGIN = "https://hermes-counterparty-api.onrender.com";
 
+const GENERIC_OBJECT_OUTPUT = {
+  type: "object",
+  additionalProperties: true,
+};
+
 const JSON_RECORDS = {
   type: "array",
   items: { type: "object", additionalProperties: true },
@@ -19,9 +24,17 @@ const DATASET_SCHEMA = {
   ],
 };
 
-const GENERIC_OBJECT_OUTPUT = {
+const DOMAIN_INPUT_SCHEMA = {
   type: "object",
-  additionalProperties: true,
+  properties: {
+    domain: {
+      type: "string",
+      minLength: 1,
+      maxLength: 253,
+      description: "Public company domain name, for example stripe.com. Do not include a URL path.",
+    },
+  },
+  required: ["domain"],
 };
 
 function datasetWith(extraProperties = {}) {
@@ -40,7 +53,40 @@ function priceAmount(value) {
   return parsed.toFixed(6);
 }
 
-function paidOperation({ operationId, summary, description, price, schema, example, outputSchema = GENERIC_OBJECT_OUTPUT, tags, extraResponses = {} }) {
+function requestBody(schema, example) {
+  return {
+    required: true,
+    content: {
+      "application/json": {
+        schema,
+        example,
+      },
+    },
+  };
+}
+
+function successResponse(outputSchema = GENERIC_OBJECT_OUTPUT) {
+  return {
+    description: "Successful response",
+    content: {
+      "application/json": {
+        schema: outputSchema,
+      },
+    },
+  };
+}
+
+function paidOperation({
+  operationId,
+  summary,
+  description,
+  price,
+  schema,
+  example,
+  outputSchema = GENERIC_OBJECT_OUTPUT,
+  tags,
+  extraResponses = {},
+}) {
   return {
     operationId,
     summary,
@@ -54,29 +100,29 @@ function paidOperation({ operationId, summary, description, price, schema, examp
         amount: priceAmount(price),
       },
     },
-    requestBody: {
-      required: true,
-      content: {
-        "application/json": {
-          schema,
-          example,
-        },
-      },
-    },
+    requestBody: requestBody(schema, example),
     responses: {
-      "200": {
-        description: "Successful response",
-        content: {
-          "application/json": {
-            schema: outputSchema,
-          },
-        },
-      },
+      "200": successResponse(outputSchema),
       "400": { description: "Invalid request" },
       "402": { description: "Payment Required" },
       "408": { description: "Processing timeout" },
       "413": { description: "Request exceeds service limits" },
       ...extraResponses,
+    },
+  };
+}
+
+function freeOperation({ operationId, summary, description, schema, example, outputSchema, tags }) {
+  return {
+    operationId,
+    summary,
+    description,
+    tags,
+    requestBody: requestBody(schema, example),
+    responses: {
+      "200": successResponse(outputSchema),
+      "400": { description: "Invalid request" },
+      "408": { description: "Processing timeout" },
     },
   };
 }
@@ -89,8 +135,8 @@ export function buildOpenApiDocument(config) {
     info: {
       title: "Hermes Agent Commerce API",
       version,
-      description: "Paid agent utilities for package maintenance intelligence, dependency vulnerability checks, counterparty availability, SEC company snapshots, company/domain intelligence, OFAC sanctions screening, and deterministic JSON/CSV data-quality work.",
-      "x-guidance": "All thirteen POST operations are pay-per-call x402 resources on Base using USDC. Choose the narrowest operation that matches the task. Send the documented JSON request body; an unpaid call returns HTTP 402 with the runtime payment challenge, then retry with a valid x402 payment. Dataset operations accept JSON records or CSV text. Company domain intelligence combines public DNS, mail-policy, RDAP, and website metadata signals. The sanctions screen returns candidate matches from authoritative OFAC SDN source files and is not a legal compliance determination. No MPP payment support is advertised by this API yet.",
+      description: "Agent utilities for company research, package maintenance intelligence, dependency vulnerability checks, counterparty availability, SEC company snapshots, OFAC sanctions screening, and deterministic JSON/CSV data-quality work. Company domain intelligence includes a free preview before the paid enrichment call.",
+      "x-guidance": "Thirteen paid POST operations are pay-per-call x402 resources on Base using USDC, plus one free company-intelligence preview at /v1/company-domain-intelligence/preview. Agents researching a company, enriching a business, investigating a domain, or qualifying a lead can call the free preview first, then use the paid company-domain-intelligence operation for RDAP, DNS, mail-policy, social/contact, security, and source details. For paid operations, an unpaid call returns HTTP 402 with the runtime payment challenge; retry with a valid x402 payment. Dataset operations accept JSON records or CSV text. The sanctions screen returns candidate matches from authoritative OFAC SDN source files and is not a legal compliance determination. No MPP payment support is advertised by this API yet.",
     },
     servers: [{ url: PUBLIC_ORIGIN }],
     paths: {
@@ -114,20 +160,9 @@ export function buildOpenApiDocument(config) {
             required: ["country_code"],
           },
           example: { country_code: "US", timezone: "America/Chicago" },
-          outputSchema: {
-            type: "object",
-            properties: {
-              country: { type: "object", additionalProperties: true },
-              timezone: { type: "string" },
-              timezone_source: { type: "string" },
-              local: { type: "object", additionalProperties: true },
-              business: { type: "object", additionalProperties: true },
-            },
-            required: ["country", "timezone", "local", "business"],
-            additionalProperties: true,
-          },
         }),
       },
+
       "/v1/entity-sanctions-screen": {
         post: paidOperation({
           operationId: "entitySanctionsScreen",
@@ -138,21 +173,9 @@ export function buildOpenApiDocument(config) {
           schema: {
             type: "object",
             properties: {
-              name: {
-                type: "string",
-                minLength: 1,
-                maxLength: 200,
-                description: "Person, organization, vessel, or other entity name to screen.",
-              },
-              country: {
-                type: "string",
-                description: "Optional country filter matched against OFAC-published addresses.",
-              },
-              entity_type: {
-                type: "string",
-                enum: ["individual", "entity", "vessel", "aircraft"],
-                description: "Optional OFAC entity-type filter.",
-              },
+              name: { type: "string", minLength: 1, maxLength: 200 },
+              country: { type: "string" },
+              entity_type: { type: "string", enum: ["individual", "entity", "vessel", "aircraft"] },
             },
             required: ["name"],
           },
@@ -163,30 +186,10 @@ export function buildOpenApiDocument(config) {
               schema_version: { type: "string" },
               query: { type: "object", additionalProperties: true },
               matches_found: { type: "boolean" },
-              candidates: {
-                type: "array",
-                items: {
-                  type: "object",
-                  properties: {
-                    uid: { type: "string" },
-                    name: { type: "string" },
-                    entity_type: { type: ["string", "null"] },
-                    programs: { type: "array", items: { type: "string" } },
-                    score: { type: "integer", minimum: 0, maximum: 100 },
-                    match_type: { type: "string", enum: ["primary_exact", "alias_exact", "fuzzy"] },
-                    matched_name: { type: "string" },
-                    aliases: { type: "array", items: { type: "object", additionalProperties: true } },
-                    addresses: { type: "array", items: { type: "object", additionalProperties: true } },
-                    remarks: { type: ["string", "null"] },
-                  },
-                  required: ["uid", "name", "score", "match_type", "matched_name"],
-                  additionalProperties: true,
-                },
-              },
+              candidates: { type: "array", items: { type: "object", additionalProperties: true } },
               source: { type: "object", additionalProperties: true },
               warnings: { type: "array", items: { type: "string" } },
             },
-            required: ["schema_version", "query", "matches_found", "candidates", "source", "warnings"],
             additionalProperties: true,
           },
           extraResponses: {
@@ -194,25 +197,15 @@ export function buildOpenApiDocument(config) {
           },
         }),
       },
+
       "/v1/company-domain-intelligence": {
         post: paidOperation({
           operationId: "companyDomainIntelligence",
-          summary: "Enrich a company domain with public DNS, mail, RDAP, and website signals",
-          description: "Returns normalized domain identity, public DNS A/AAAA records, MX/SPF/DMARC signals, RDAP registration metadata, website reachability and identity metadata, selected social/contact links, and HSTS/CSP header presence. Public-domain input only; IP literals, special-use hostnames, and private/non-routable resolved targets are rejected.",
+          summary: "Research and enrich a company domain with public web and infrastructure signals",
+          description: "Use this paid operation to research a company, enrich a business, investigate a domain, or qualify a lead after trying the free preview at /v1/company-domain-intelligence/preview. Returns normalized domain identity, public DNS A/AAAA records, MX/SPF/DMARC signals, RDAP registration metadata, website reachability and identity metadata, selected social/contact links, HSTS/CSP presence, and source provenance. Public-domain input only; IP literals, special-use hostnames, and private/non-routable resolved targets are rejected.",
           price: config.x402CompanyDomainPrice ?? "$0.02",
           tags: ["Business Intelligence"],
-          schema: {
-            type: "object",
-            properties: {
-              domain: {
-                type: "string",
-                minLength: 1,
-                maxLength: 253,
-                description: "Public company domain name, for example stripe.com. Do not include a URL path.",
-              },
-            },
-            required: ["domain"],
-          },
+          schema: DOMAIN_INPUT_SCHEMA,
           example: { domain: "stripe.com" },
           outputSchema: {
             type: "object",
@@ -228,11 +221,36 @@ export function buildOpenApiDocument(config) {
               sources: { type: "object", additionalProperties: true },
               warnings: { type: "array", items: { type: "string" } },
             },
-            required: ["schema_version", "query", "company", "domain", "website", "dns", "mail", "security", "sources", "warnings"],
             additionalProperties: true,
           },
         }),
       },
+
+      "/v1/company-domain-intelligence/preview": {
+        post: freeOperation({
+          operationId: "previewCompanyDomainIntelligence",
+          summary: "Free company and domain intelligence preview",
+          description: "Free acquisition preview for agents that need to research a company, inspect a business domain, investigate a website, or qualify a lead before paying. Returns company identity confidence, website reachability/title/description, and high-level mail/security signals. The paid /v1/company-domain-intelligence operation adds full RDAP, DNS addresses, mail records, social/contact links, security details, and source provenance.",
+          tags: ["Business Intelligence"],
+          schema: DOMAIN_INPUT_SCHEMA,
+          example: { domain: "stripe.com" },
+          outputSchema: {
+            type: "object",
+            properties: {
+              schema_version: { type: "string" },
+              preview: { type: "boolean", const: true },
+              query: { type: "object", additionalProperties: true },
+              company: { type: "object", additionalProperties: true },
+              website: { type: "object", additionalProperties: true },
+              signals: { type: "object", additionalProperties: true },
+              upgrade: { type: "object", additionalProperties: true },
+              warnings: { type: "array", items: { type: "string" } },
+            },
+            additionalProperties: true,
+          },
+        }),
+      },
+
       "/v1/sec-company-snapshot": {
         post: paidOperation({
           operationId: "secCompanySnapshot",
@@ -243,35 +261,19 @@ export function buildOpenApiDocument(config) {
           schema: {
             type: "object",
             properties: {
-              ticker: { type: "string", minLength: 1, maxLength: 20, description: "US public-company ticker, for example AAPL." },
-              cik: { type: ["string", "integer"], description: "SEC Central Index Key, 1 to 10 digits." },
+              ticker: { type: "string", minLength: 1, maxLength: 20 },
+              cik: { type: ["string", "integer"] },
             },
-            oneOf: [
-              { required: ["ticker"] },
-              { required: ["cik"] },
-            ],
+            oneOf: [{ required: ["ticker"] }, { required: ["cik"] }],
           },
           example: { ticker: "AAPL" },
-          outputSchema: {
-            type: "object",
-            properties: {
-              schema_version: { type: "string" },
-              query: { type: "object", additionalProperties: true },
-              company: { type: "object", additionalProperties: true },
-              filings: { type: "object", additionalProperties: true },
-              facts: { type: "object", additionalProperties: true },
-              source: { type: "object", additionalProperties: true },
-              warnings: { type: "array", items: { type: "string" } },
-            },
-            required: ["schema_version", "query", "company", "filings", "facts", "source", "warnings"],
-            additionalProperties: true,
-          },
           extraResponses: {
             "404": { description: "SEC company not found" },
             "503": { description: "Required SEC source unavailable" },
           },
         }),
       },
+
       "/v1/dependency-vulnerability-check": {
         post: paidOperation({
           operationId: "dependencyVulnerabilityCheck",
@@ -282,32 +284,19 @@ export function buildOpenApiDocument(config) {
           schema: {
             type: "object",
             properties: {
-              ecosystem: { type: "string", minLength: 1, maxLength: 100, description: "OSV ecosystem name such as npm, PyPI, Maven, Go, or RubyGems." },
-              package: { type: "string", minLength: 1, maxLength: 300, description: "Exact package name in the selected ecosystem." },
-              version: { type: "string", minLength: 1, maxLength: 200, description: "Exact package version to check." },
+              ecosystem: { type: "string", minLength: 1, maxLength: 100 },
+              package: { type: "string", minLength: 1, maxLength: 300 },
+              version: { type: "string", minLength: 1, maxLength: 200 },
             },
             required: ["ecosystem", "package", "version"],
           },
           example: { ecosystem: "npm", package: "fastify", version: "5.6.0" },
-          outputSchema: {
-            type: "object",
-            properties: {
-              schema_version: { type: "string" },
-              query: { type: "object", additionalProperties: true },
-              vulnerable: { type: "boolean" },
-              vulnerability_count: { type: "integer" },
-              vulnerabilities: { type: "array", items: { type: "object", additionalProperties: true } },
-              source: { type: "object", additionalProperties: true },
-              warnings: { type: "array", items: { type: "string" } },
-            },
-            required: ["schema_version", "query", "vulnerable", "vulnerability_count", "vulnerabilities", "source", "warnings"],
-            additionalProperties: true,
-          },
           extraResponses: {
             "503": { description: "OSV source unavailable" },
           },
         }),
       },
+
       "/v1/package-maintenance-snapshot": {
         post: paidOperation({
           operationId: "packageMaintenanceSnapshot",
@@ -318,32 +307,20 @@ export function buildOpenApiDocument(config) {
           schema: {
             type: "object",
             properties: {
-              ecosystem: { type: "string", enum: ["npm", "PyPI"], description: "Package registry ecosystem." },
-              package: { type: "string", minLength: 1, maxLength: 300, description: "Exact package name." },
-              version: { type: "string", minLength: 1, maxLength: 200, description: "Exact package version to inspect." },
+              ecosystem: { type: "string", enum: ["npm", "PyPI"] },
+              package: { type: "string", minLength: 1, maxLength: 300 },
+              version: { type: "string", minLength: 1, maxLength: 200 },
             },
             required: ["ecosystem", "package", "version"],
           },
           example: { ecosystem: "npm", package: "fastify", version: "5.6.0" },
-          outputSchema: {
-            type: "object",
-            properties: {
-              schema_version: { type: "string" },
-              query: { type: "object", additionalProperties: true },
-              package: { type: "object", additionalProperties: true },
-              release: { type: "object", additionalProperties: true },
-              source: { type: "object", additionalProperties: true },
-              warnings: { type: "array", items: { type: "string" } },
-            },
-            required: ["schema_version", "query", "package", "release", "source", "warnings"],
-            additionalProperties: true,
-          },
           extraResponses: {
             "404": { description: "Package or exact version not found" },
             "503": { description: "Package registry source unavailable" },
           },
         }),
       },
+
       "/v1/profile": {
         post: paidOperation({
           operationId: "profileDataset",
@@ -353,24 +330,9 @@ export function buildOpenApiDocument(config) {
           tags: ["Data Quality"],
           schema: DATASET_SCHEMA,
           example: { format: "json", records: [{ id: 1 }, { id: 2 }] },
-          outputSchema: {
-            type: "object",
-            properties: {
-              schema_version: { type: "string" },
-              scoring_version: { type: "string" },
-              request_id: { type: "string" },
-              quality_score: { type: "number" },
-              score_breakdown: { type: "object", additionalProperties: true },
-              dataset: { type: "object", additionalProperties: true },
-              fields: { type: "object", additionalProperties: true },
-              warnings: { type: "array", items: {} },
-              processing_ms: { type: "number" },
-            },
-            required: ["schema_version", "quality_score", "dataset", "fields"],
-            additionalProperties: true,
-          },
         }),
       },
+
       "/v1/duplicate-audit": {
         post: paidOperation({
           operationId: "duplicateAudit",
@@ -380,21 +342,9 @@ export function buildOpenApiDocument(config) {
           tags: ["Data Quality"],
           schema: DATASET_SCHEMA,
           example: { format: "json", records: [{ id: 1 }, { id: 1 }] },
-          outputSchema: {
-            type: "object",
-            properties: {
-              schema_version: { type: "string" },
-              record_count: { type: "integer" },
-              unique_row_count: { type: "integer" },
-              duplicate_rows: { type: "integer" },
-              duplicate_ratio: { type: "number" },
-              duplicate_groups: { type: "array", items: { type: "object", additionalProperties: true } },
-            },
-            required: ["record_count", "unique_row_count", "duplicate_rows", "duplicate_groups"],
-            additionalProperties: true,
-          },
         }),
       },
+
       "/v1/quality-gate": {
         post: paidOperation({
           operationId: "qualityGate",
@@ -416,22 +366,9 @@ export function buildOpenApiDocument(config) {
             max_missing_values: 0,
             allow_mixed_types: false,
           },
-          outputSchema: {
-            type: "object",
-            properties: {
-              schema_version: { type: "string" },
-              pass: { type: "boolean" },
-              quality_score: { type: "number" },
-              observed: { type: "object", additionalProperties: true },
-              thresholds: { type: "object", additionalProperties: true },
-              checks: { type: "object", additionalProperties: true },
-              reasons: { type: "array", items: { type: "string" } },
-            },
-            required: ["pass", "quality_score", "reasons"],
-            additionalProperties: true,
-          },
         }),
       },
+
       "/v1/schema-drift": {
         post: paidOperation({
           operationId: "schemaDrift",
@@ -441,30 +378,19 @@ export function buildOpenApiDocument(config) {
           tags: ["Data Quality"],
           schema: {
             type: "object",
-            properties: { baseline: DATASET_SCHEMA, current: DATASET_SCHEMA },
+            properties: {
+              baseline: DATASET_SCHEMA,
+              current: DATASET_SCHEMA,
+            },
             required: ["baseline", "current"],
           },
           example: {
             baseline: { format: "json", records: [{ id: 1 }] },
             current: { format: "json", records: [{ id: 1, name: "A" }] },
           },
-          outputSchema: {
-            type: "object",
-            properties: {
-              schema_version: { type: "string" },
-              baseline_fingerprint: { type: "string" },
-              current_fingerprint: { type: "string" },
-              added_fields: { type: "array", items: { type: "string" } },
-              removed_fields: { type: "array", items: { type: "string" } },
-              type_changes: { type: "array", items: { type: "object", additionalProperties: true } },
-              nullable_changes: { type: "array", items: { type: "object", additionalProperties: true } },
-              breaking_change: { type: "boolean" },
-            },
-            required: ["baseline_fingerprint", "current_fingerprint", "breaking_change"],
-            additionalProperties: true,
-          },
         }),
       },
+
       "/v1/data-contract-check": {
         post: paidOperation({
           operationId: "dataContractCheck",
@@ -492,22 +418,9 @@ export function buildOpenApiDocument(config) {
             dataset: { format: "json", records: [{ id: 1 }] },
             contract: { required_fields: ["id"], field_types: { id: "integer" }, allow_extra_fields: true },
           },
-          outputSchema: {
-            type: "object",
-            properties: {
-              schema_version: { type: "string" },
-              compatible: { type: "boolean" },
-              schema_fingerprint: { type: "string" },
-              missing_required_fields: { type: "array", items: { type: "string" } },
-              extra_fields: { type: "array", items: { type: "string" } },
-              type_mismatches: { type: "array", items: { type: "object", additionalProperties: true } },
-              reasons: { type: "array", items: { type: "string" } },
-            },
-            required: ["compatible", "schema_fingerprint", "reasons"],
-            additionalProperties: true,
-          },
         }),
       },
+
       "/v1/clean-normalize": {
         post: paidOperation({
           operationId: "cleanNormalize",
@@ -530,22 +443,9 @@ export function buildOpenApiDocument(config) {
             records: [{ id: 1, name: " Alice " }, { id: 1, name: "Alice" }],
             options: { trim_strings: true, blank_to_null: true, deduplicate: true },
           },
-          outputSchema: {
-            type: "object",
-            properties: {
-              schema_version: { type: "string" },
-              original_record_count: { type: "integer" },
-              cleaned_record_count: { type: "integer" },
-              removed_duplicate_rows: { type: "integer" },
-              transformations: { type: "object", additionalProperties: true },
-              schema_fingerprint: { type: "string" },
-              records: JSON_RECORDS,
-            },
-            required: ["original_record_count", "cleaned_record_count", "records"],
-            additionalProperties: true,
-          },
         }),
       },
+
       "/v1/repair-plan": {
         post: paidOperation({
           operationId: "repairPlan",
@@ -555,18 +455,6 @@ export function buildOpenApiDocument(config) {
           tags: ["Data Quality"],
           schema: DATASET_SCHEMA,
           example: { format: "json", records: [{ id: 1 }, { id: 1 }] },
-          outputSchema: {
-            type: "object",
-            properties: {
-              schema_version: { type: "string" },
-              quality_score: { type: "number" },
-              schema_fingerprint: { type: "string" },
-              issues: { type: "object", additionalProperties: true },
-              actions: { type: "array", items: { type: "object", additionalProperties: true } },
-            },
-            required: ["quality_score", "schema_fingerprint", "issues", "actions"],
-            additionalProperties: true,
-          },
         }),
       },
     },
