@@ -9,6 +9,15 @@ on:
       - 'products/drafts/data-quality-profiler/scripts/buyer-discovery-check.mjs'
       - 'products/drafts/data-quality-profiler/test/buyer-discovery-*.test.mjs'
       - 'products/drafts/data-quality-profiler/package.json'
+  pull_request:
+    branches:
+      - feat/agent-discovery-llms
+    paths:
+      - 'products/drafts/data-quality-profiler/src/discovery/**'
+      - 'products/drafts/data-quality-profiler/scripts/buyer-discovery-check.mjs'
+      - 'products/drafts/data-quality-profiler/test/buyer-discovery-*.test.mjs'
+      - 'products/drafts/data-quality-profiler/package.json'
+      - '.github/workflows/buyer-discovery-tdd.yml'
   workflow_dispatch:
 
 permissions:
