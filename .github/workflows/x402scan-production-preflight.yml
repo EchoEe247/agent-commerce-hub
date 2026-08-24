@@ -1,0 +1,30 @@
+name: x402scan Production Preflight
+
+on:
+  pull_request:
+    branches:
+      - feat/hermes-commerce-control-plane
+    paths:
+      - '.github/workflows/x402scan-production-preflight.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      TARGET_URL: https://hermes-counterparty-api.onrender.com
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Discover deployed origin
+        run: |
+          npx -y @agentcash/discovery@latest discover "$TARGET_URL"
+      - name: Check paid company-domain endpoint
+        run: |
+          npx -y @agentcash/discovery@latest check "$TARGET_URL/v1/company-domain-intelligence"
