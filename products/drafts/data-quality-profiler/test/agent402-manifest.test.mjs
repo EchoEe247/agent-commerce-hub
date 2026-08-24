@@ -34,6 +34,11 @@ test("manifest exposes all thirteen POST tools including Product 13", async () =
   assert.equal(response.statusCode, 200);
   const body = response.json();
 
+  assert.equal(body.name, "Hermes Agent Commerce API");
+  assert.notEqual(body.name, "Hermes Counterparty Availability");
+  assert.match(body.summary, /company\/domain intelligence/i);
+  assert.match(body.summary, /data quality/i);
+
   assert.equal(body.resources.length, 13);
   assert.equal(new Set(body.resources.map((resource) => resource.url)).size, 13);
   for (const resource of body.resources) {
@@ -55,7 +60,13 @@ test("manifest exposes all thirteen POST tools including Product 13", async () =
   assert.equal(domainProduct.method, "POST");
   assert.equal(domainProduct.price_usd, 0.02);
   assert.equal(domainProduct.network, "eip155:8453");
-  assert.match(domainProduct.summary, /domain/i);
+  assert.equal(
+    domainProduct.summary,
+    "Company domain intelligence: research and enrich a business domain with public web and infrastructure signals"
+  );
+  assert.match(domainProduct.description, /research a company/i);
+  assert.match(domainProduct.description, /enrich a business/i);
+  assert.match(domainProduct.description, /free preview/i);
   assert.match(domainProduct.description, /DNS/i);
   assert.match(domainProduct.description, /RDAP/i);
 
