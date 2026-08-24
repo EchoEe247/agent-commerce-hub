@@ -34,6 +34,7 @@ test("manifest exposes all thirteen POST tools including Product 13", async () =
   assert.equal(response.statusCode, 200);
   const body = response.json();
 
+  // Seller identity is portfolio-level; it must not inherit the original single-tool product name.
   assert.equal(body.name, "Hermes Agent Commerce API");
   assert.notEqual(body.name, "Hermes Counterparty Availability");
   assert.match(body.summary, /company\/domain intelligence/i);
