@@ -8,7 +8,8 @@
     "start": "node src/server.mjs",
     "test": "node --test",
     "test:api": "node --test test/api.test.mjs",
-    "check:buyer-discovery": "node scripts/buyer-discovery-check.mjs"
+    "check:buyer-discovery": "node scripts/buyer-discovery-check.mjs",
+    "check:distribution-readiness": "node scripts/distribution-readiness-check.mjs"
   },
   "dependencies": {
     "@x402/core": "2.20.0",
