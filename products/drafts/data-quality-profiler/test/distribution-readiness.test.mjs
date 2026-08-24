@@ -51,7 +51,7 @@ test("current discovery branch is technically ready while publication remains ex
   assert.equal(report.channels.index_402.registration_payloads.length, 13);
 });
 
-test("402 Index payloads are generated from OpenAPI examples rather than invented bodies", () => {
+test("402 Index payloads use OpenAPI examples and searchable listing metadata", () => {
   const report = evaluateDistributionReadiness(fixture());
   const payload = report.channels.index_402.registration_payloads.find(
     (item) => item.url.endsWith("/v1/company-domain-intelligence"),
@@ -63,6 +63,10 @@ test("402 Index payloads are generated from OpenAPI examples rather than invente
     protocol: "x402",
     http_method: "POST",
     probe_body: JSON.stringify({ domain: "stripe.com" }),
+    description: "Returns normalized domain identity, public DNS A/AAAA records, MX/SPF/DMARC signals, RDAP registration metadata, website reachability and identity metadata, selected social/contact links, and HSTS/CSP header presence. Public-domain input only; IP literals, special-use hostnames, and private/non-routable resolved targets are rejected.",
+    price_usd: 0.02,
+    category: "Business Intelligence",
+    provider: "Hermes Agent Commerce API",
   });
 });
 
