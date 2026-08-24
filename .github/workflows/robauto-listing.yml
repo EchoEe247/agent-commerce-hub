@@ -1,4 +1,4 @@
-name: Robauto Claim Semantics Audit
+name: Robauto Claim Token Static Audit
 
 on:
   pull_request:
@@ -13,53 +13,24 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Inspect same-origin application bundles and API metadata
+      - name: Extract static UI semantics around claim_token
         run: |
           node <<'NODE'
-          (async () => {
-          const pages = ['https://robauto.ai/agenthub','https://robauto.ai/listings','https://robauto.ai/developers'];
-          const needles = ['claim_token','claim-token','claimToken','claim listing','claim-listing','/claim','listings/claim','delete_listing','update_listing','DELETE','PATCH'];
-          const assets = new Set();
-          const hits = [];
-
-          async function text(url, options={}) {
-            const r = await fetch(url,{...options,headers:{'user-agent':'hermes-robauto-contract-audit/2.0',...(options.headers||{})}});
-            return {r,body:await r.text()};
-          }
-          function scan(url, body) {
-            const lower=body.toLowerCase();
-            for(const needle of needles){
-              let at=0;
-              while((at=lower.indexOf(needle.toLowerCase(),at))>=0){
-                const snippet=body.slice(Math.max(0,at-220),Math.min(body.length,at+420)).replace(/\s+/g,' ');
-                if(!/[a-f0-9]{32,}/i.test(snippet)) hits.push({url,needle,snippet});
-                at+=needle.length;
-                if(hits.length>=80)return;
-              }
+          (async()=>{
+            const url='https://robauto.ai/assets/index-BnBc8Sgi.js';
+            const r=await fetch(url,{headers:{'user-agent':'hermes-robauto-contract-audit/3.0'}});
+            const text=await r.text();
+            if(!r.ok) throw new Error(`bundle ${r.status}`);
+            const needle='claim_token';
+            let from=0,count=0;
+            while(true){
+              const i=text.indexOf(needle,from); if(i<0)break; count++;
+              let snippet=text.slice(Math.max(0,i-2500),Math.min(text.length,i+5000));
+              snippet=snippet.replace(/[a-f0-9]{32,}/gi,'<redacted-hex>').replace(/\s+/g,' ');
+              console.log(JSON.stringify({check:'claim-token-static-context',occurrence:count,snippet}));
+              from=i+needle.length;
+              if(count>=5)break;
             }
-          }
-
-          for(const page of pages){
-            const out=await text(page);
-            console.log(JSON.stringify({check:'page',url:page,status:out.r.status,finalUrl:out.r.url,bytes:out.body.length}));
-            scan(out.r.url,out.body);
-            for(const m of out.body.matchAll(/(?:src|href)=["']([^"']+\.(?:js|mjs)(?:\?[^"']*)?)["']/gi)){
-              const u=new URL(m[1],out.r.url);
-              if(u.hostname==='robauto.ai'||u.hostname==='robauto.store'||u.hostname.endsWith('.lovable.app')) assets.add(u.href);
-            }
-          }
-          console.log(JSON.stringify({check:'same-origin-assets',count:assets.size,assets:[...assets]}));
-          for(const url of assets){
-            try{const out=await text(url); if(out.r.ok){console.log(JSON.stringify({check:'asset',url:out.r.url,bytes:out.body.length})); scan(out.r.url,out.body);}}catch{}
-          }
-
-          const api='https://robauto.store/api/public/listings';
-          for(const method of ['OPTIONS','HEAD']){
-            try{
-              const out=await text(api,{method});
-              console.log(JSON.stringify({check:'api-metadata',method,status:out.r.status,finalUrl:out.r.url,allow:out.r.headers.get('allow'),accessControlAllowMethods:out.r.headers.get('access-control-allow-methods'),body:out.body.slice(0,300)}));
-            }catch(error){console.log(JSON.stringify({check:'api-metadata-error',method,error:String(error?.message||error)}));}
-          }
-          console.log(JSON.stringify({check:'claim-contract-search',safeHitCount:hits.length,hits:hits.slice(0,40)}));
-          })().catch(error=>{console.error(error);process.exit(1)});
+            console.log(JSON.stringify({check:'claim-token-occurrences',count}));
+          })().catch(e=>{console.error(e);process.exit(1)});
           NODE
