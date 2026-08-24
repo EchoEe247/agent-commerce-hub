@@ -1,9 +1,6 @@
-name: Robauto Listing Probe
+name: Robauto Listing Publisher
 
 on:
-  push:
-    branches:
-      - ops/robauto-listing-20260824
   pull_request:
     branches:
       - feat/hermes-commerce-control-plane
@@ -16,49 +13,100 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Publish one Hermes listing and verify
+      - name: Publish five Hermes listings and verify
         run: |
           node <<'NODE'
           (async () => {
           const api = 'https://robauto.store/api/public/listings';
-          const listing = {
-            agent_handle: 'hermes-commerce-api',
-            title: 'Hermes Company & Domain Intelligence',
-            description: 'Paid x402 API for company and domain intelligence using public DNS, mail security, RDAP registration, website identity, social/contact links, and security-header signals. No API key or account; pays in USDC on Base.',
-            category: 'api',
-            price_usdc: 0.02,
-            price_note: 'per call via x402 on Base',
-            endpoint: 'https://hermes-counterparty-api.onrender.com/v1/company-domain-intelligence',
-            url: 'https://hermes-counterparty-api.onrender.com'
-          };
+          const origin = 'https://hermes-counterparty-api.onrender.com';
+          const handle = 'hermes-commerce-api';
+          const defs = [
+            {
+              title: 'Hermes Company & Domain Intelligence',
+              path: '/v1/company-domain-intelligence',
+              description: 'Paid x402 API for company and domain intelligence using public DNS, mail security, RDAP registration, website identity, social/contact links, and security-header signals. No API key or account; pays in USDC on Base.'
+            },
+            {
+              title: 'Hermes OFAC Sanctions Screening',
+              path: '/v1/entity-sanctions-screen',
+              description: 'Paid x402 API for screening a person, organization, vessel, or aircraft name against OFAC SDN data, with deterministic exact/fuzzy candidates and source context. Informational screening, not a legal compliance determination.'
+            },
+            {
+              title: 'Hermes JSON & CSV Data Quality Profiler',
+              path: '/v1/profile',
+              description: 'Paid x402 API for profiling JSON or CSV before ETL, RAG, analytics, or agent workflows. Finds missing values, duplicate rows, inconsistent types and type conflicts, and returns a deterministic quality score plus schema fingerprint.'
+            },
+            {
+              title: 'Hermes Dependency Vulnerability Check',
+              path: '/v1/dependency-vulnerability-check',
+              description: 'Paid x402 API for checking an exact dependency package and version against OSV vulnerability data, with normalized vulnerability findings, affected ranges, fixed versions, and source provenance.'
+            },
+            {
+              title: 'Hermes Package Maintenance Snapshot',
+              path: '/v1/package-maintenance-snapshot',
+              description: 'Paid x402 API for exact npm or PyPI package/version maintenance intelligence: latest version, release age, deprecation or yanked status, license, repository, and runtime constraints.'
+            }
+          ];
+
+          async function getJson(url, options = {}) {
+            const r = await fetch(url, { ...options, headers: { 'user-agent': 'hermes-robauto-listing/2.0', ...(options.headers || {}) } });
+            const text = await r.text();
+            let body;
+            try { body = JSON.parse(text); } catch { throw new Error(`${options.method || 'GET'} ${url} non-JSON status=${r.status}: ${text.slice(0,500)}`); }
+            return { r, body, text };
+          }
 
           async function readBoard() {
-            const r = await fetch(api, { headers: { 'user-agent': 'hermes-robauto-listing/1.0' } });
-            const text = await r.text();
+            const { r, body, text } = await getJson(api);
             if (!r.ok) throw new Error(`GET listings ${r.status}: ${text.slice(0,500)}`);
-            let body;
-            try { body = JSON.parse(text); } catch { throw new Error(`GET listings non-JSON final=${r.url}: ${text.slice(0,500)}`); }
             const rows = Array.isArray(body) ? body : (body.listings || body.items || body.results || body.data || []);
             if (!Array.isArray(rows)) throw new Error(`unknown listings shape: ${text.slice(0,800)}`);
             return rows;
           }
 
+          const manifestResp = await getJson(`${origin}/.well-known/x402`);
+          if (!manifestResp.r.ok) throw new Error(`live manifest ${manifestResp.r.status}`);
+          const manifest = manifestResp.body;
+          if (manifest.name !== 'Hermes Agent Commerce API') throw new Error(`unexpected live seller name: ${manifest.name}`);
+          if (!Array.isArray(manifest.endpoints) || manifest.endpoints.length !== 13) throw new Error(`unexpected live endpoint count: ${manifest.endpoints?.length}`);
+
           let rows = await readBoard();
-          let hit = rows.find(x => x.title === listing.title || x.endpoint === listing.endpoint);
-          if (!hit) {
-            const r = await fetch(api, {
+          const created = [];
+          const existing = [];
+          for (const def of defs) {
+            const live = manifest.endpoints.find(x => x.path === def.path);
+            if (!live) throw new Error(`live manifest missing ${def.path}`);
+            const listing = {
+              agent_handle: handle,
+              title: def.title,
+              description: def.description,
+              category: 'api',
+              price_usdc: Number(live.price_usd),
+              price_note: 'per call via x402 on Base',
+              endpoint: `${origin}${def.path}`,
+              url: origin
+            };
+            let hit = rows.find(x => x.agent_handle === handle && (x.title === listing.title || x.endpoint === listing.endpoint));
+            if (hit) {
+              existing.push({title: listing.title, id: hit.id, price_usdc: hit.price_usdc});
+              continue;
+            }
+            const { r, body, text } = await getJson(api, {
               method: 'POST',
-              headers: { 'content-type': 'application/json', 'user-agent': 'hermes-robauto-listing/1.0' },
+              headers: { 'content-type': 'application/json' },
               body: JSON.stringify(listing)
             });
-            const text = await r.text();
-            console.log(JSON.stringify({check:'publish-response', status:r.status, finalUrl:r.url, body:text.slice(0,1200)}));
-            if (!r.ok) process.exitCode = 2;
-            if (!r.ok) return;
+            console.log(JSON.stringify({check:'publish', title:listing.title, status:r.status, response:body}));
+            if (!r.ok) throw new Error(`publish ${listing.title} ${r.status}: ${text.slice(0,800)}`);
+            created.push({title: listing.title, id: body?.id ?? body?.listing?.id ?? null, price_usdc: listing.price_usdc});
             rows = await readBoard();
-            hit = rows.find(x => x.title === listing.title || x.endpoint === listing.endpoint);
           }
-          if (!hit) throw new Error('listing was not visible after successful create/read');
-          console.log(JSON.stringify({check:'robauto-listing', found:true, listing:hit}));
+
+          rows = await readBoard();
+          const ours = rows.filter(x => x.agent_handle === handle);
+          const missing = defs.filter(def => !ours.some(x => x.title === def.title && x.endpoint === `${origin}${def.path}`));
+          if (missing.length) throw new Error(`missing verified Robauto listings: ${missing.map(x => x.title).join(', ')}`);
+          if (ours.length > 5) throw new Error(`unexpected handle listing count ${ours.length}`);
+          console.log(JSON.stringify({check:'robauto-five-listings', verified:true, count:ours.length, created, existing, listings:ours.map(x => ({id:x.id,title:x.title,endpoint:x.endpoint,price_usdc:x.price_usdc}))}));
           })().catch(error => { console.error(error); process.exit(1); });
           NODE
