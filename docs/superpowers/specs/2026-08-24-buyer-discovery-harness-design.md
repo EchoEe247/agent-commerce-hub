@@ -25,7 +25,7 @@ The live production-validation branch remains `feat/hermes-commerce-control-plan
 ## Constraints
 
 - No production payment may be attempted.
-- No wallet key, signer, token, payment header, Authorization header, or other secret may be required or committed.
+- No wallet key, signer, token, outgoing payment header, Authorization header, or other secret may be required or committed.
 - OpenAPI remains the canonical machine-readable discovery contract.
 - Runtime unpaid 402 behavior remains the final proof of the paid boundary.
 - `/llms.txt` is an additional agent-facing explanation surface, not a replacement for OpenAPI.
@@ -97,7 +97,7 @@ The corpus is data, not executable prompt logic. Adding an intent requires addin
 
 ### 1. Intent definitions
 
-Create a focused module under the profiler product, tentatively:
+Create:
 
 `products/drafts/data-quality-profiler/src/discovery/buyer-intents.mjs`
 
@@ -151,7 +151,7 @@ The evaluator does not settle, sign, or retry with payment.
 
 ### 3. In-process acquisition probe
 
-Create a test/runtime helper that uses the existing `buildApp()` and Fastify `inject()` path. It performs two requests using a safe public example domain such as `stripe.com` while substituting the company-intelligence implementation in tests so CI does not depend on DNS/RDAP/web availability.
+Create a test/runtime helper that uses the existing `buildApp()` and Fastify `inject()` path. It uses the fixed public example domain `stripe.com` while substituting the company-intelligence implementation in tests so CI does not depend on DNS/RDAP/web availability.
 
 Probe sequence:
 
@@ -162,7 +162,7 @@ Probe sequence:
 
 The paid request must stop at 402. No payment-capable client is constructed.
 
-The 402 decoder should reuse the same Base64 `PAYMENT-REQUIRED` interpretation already established in company x402 tests instead of introducing a second wire format.
+The 402 decoder must reuse the same Base64 `PAYMENT-REQUIRED` interpretation already established in company x402 tests instead of introducing a second wire format.
 
 Bazaar metadata is validated with `validateDiscoveryExtension` from the already installed `@x402/extensions` dependency.
 
@@ -201,6 +201,7 @@ Create a stable report contract, versioned from the first release:
 ```
 
 Rules:
+- `summary.checks`, `summary.passed`, and `summary.failed` are computed from the emitted required checks; the example values illustrate a fully passing twelve-check report.
 - `overall` is `pass` only when every required check passes.
 - No secrets or raw payment signatures are included.
 - The report may include public route paths, prices, network identifiers, public payTo addresses, and public metadata because those are already part of the service’s discovery contract.
@@ -218,16 +219,16 @@ Optional production mode accepts a public target origin through `TARGET_URL`. In
 
 The first implementation does not execute third-party registration actions.
 
-### 6. Optional external compatibility adapter
+### 6. Future external compatibility adapter
 
-A separate script may invoke the current public AgentCash discovery validator:
+A later live-only adapter can invoke the current public AgentCash discovery validator:
 
 ```bash
 npx -y @agentcash/discovery@latest discover "$TARGET_URL"
 npx -y @agentcash/discovery@latest check "$TARGET_URL"
 ```
 
-This adapter is informative and live-only. Its results are recorded separately from the deterministic `overall` result because package updates, network outages, or registry changes are external variables.
+This adapter is not required for version 1. When added, its results must remain separate from the deterministic `overall` result because package updates, network outages, or registry changes are external variables.
 
 The design deliberately does not parse marketplace ranking or buyer counts into the core pass/fail contract.
 
@@ -297,13 +298,13 @@ Use the real app builder and real payment middleware with the existing fake faci
 
 Add the new test files and script/runtime modules to `Counterparty Seller CI` path filters and focused test list so the PR gate executes them. The full profiler suite remains mandatory on PRs.
 
-External AgentCash/x402scan checks remain a manually dispatched or explicit live step; they must not make deterministic CI depend on internet marketplace state.
+External AgentCash/x402scan checks remain an explicit future live step; they must not make deterministic CI depend on internet marketplace state.
 
 ## Security and financial boundaries
 
 - Never create a signer.
 - Never import wallet/private-key helpers.
-- Never emit a payment header.
+- Never emit an outgoing payment header.
 - Never call settlement endpoints.
 - Never accept or log secret-bearing environment variables.
 - Production mode must stop after confirming 402.
@@ -318,6 +319,7 @@ External AgentCash/x402scan checks remain a manually dispatched or explicit live
 - No automatic price changes.
 - No ranking optimization.
 - No MCP server implementation.
+- No external AgentCash validator execution inside the required implementation.
 - No scraping of competitor transaction statistics inside CI.
 - No changes to settlement accounting or commerce telemetry.
 - No Render deployment changes.
