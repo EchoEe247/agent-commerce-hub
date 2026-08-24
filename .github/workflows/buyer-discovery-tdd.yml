@@ -1,0 +1,36 @@
+name: Buyer Discovery TDD
+
+on:
+  push:
+    branches:
+      - feat/buyer-discovery-harness
+    paths:
+      - 'products/drafts/data-quality-profiler/src/discovery/**'
+      - 'products/drafts/data-quality-profiler/scripts/buyer-discovery-check.mjs'
+      - 'products/drafts/data-quality-profiler/test/buyer-discovery-*.test.mjs'
+      - 'products/drafts/data-quality-profiler/package.json'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install dependencies
+        working-directory: products/drafts/data-quality-profiler
+        run: npm ci
+      - name: Buyer discovery tests
+        working-directory: products/drafts/data-quality-profiler
+        run: |
+          TESTS=()
+          if [ -f test/buyer-discovery-evaluator.test.mjs ]; then TESTS+=(test/buyer-discovery-evaluator.test.mjs); fi
+          if [ -f test/buyer-discovery-harness.test.mjs ]; then TESTS+=(test/buyer-discovery-harness.test.mjs); fi
+          if [ -f test/buyer-discovery-script.test.mjs ]; then TESTS+=(test/buyer-discovery-script.test.mjs); fi
+          if [ ${#TESTS[@]} -eq 0 ]; then echo 'No buyer discovery tests found'; exit 1; fi
+          node --test "${TESTS[@]}"
