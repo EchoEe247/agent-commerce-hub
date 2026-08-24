@@ -78,7 +78,7 @@ function makeFixture() {
       },
       [PAID_PATH]: {
         post: {
-          operationId: "companyDomainIntelligence",
+          operationId: "companyDomainIntelligenceEnrichment",
           summary: "Research and enrich a company domain",
           "x-payment-info": {
             protocols: [{ x402: {} }],
