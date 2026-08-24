@@ -1,0 +1,76 @@
+name: External x402 Index Audit
+
+on:
+  pull_request:
+    branches:
+      - feat/hermes-commerce-control-plane
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Audit Coinbase Bazaar and x402.direct without payment
+        shell: bash
+        run: |
+          set -euo pipefail
+          ORIGIN='hermes-counterparty-api.onrender.com'
+
+          echo '=== Coinbase Bazaar (awal, no auth/balance required for search/list) ==='
+          npx --yes awal@latest x402 bazaar list --network base --json > /tmp/bazaar.out 2>/tmp/bazaar.err || {
+            echo 'AWAL_EXIT_FAILURE'
+            cat /tmp/bazaar.err
+            exit 1
+          }
+          node <<'NODE'
+          const fs = require('fs');
+          const text = fs.readFileSync('/tmp/bazaar.out','utf8');
+          const origin = 'hermes-counterparty-api.onrender.com';
+          const lines = text.trim().split(/\n+/);
+          let parsed = null;
+          for (let i = 0; i < lines.length; i++) {
+            const candidate = lines.slice(i).join('\n');
+            try { parsed = JSON.parse(candidate); break; } catch {}
+          }
+          if (parsed == null) {
+            console.log(JSON.stringify({check:'coinbase-bazaar', parseable:false, containsOrigin:text.includes(origin), sample:text.slice(0,1000)}));
+            process.exit(0);
+          }
+          const collect = value => {
+            if (!value) return [];
+            if (Array.isArray(value)) return value;
+            for (const k of ['items','resources','services','results']) if (Array.isArray(value[k])) return value[k];
+            return [];
+          };
+          const rows = collect(parsed);
+          const matches = rows.filter(x => JSON.stringify(x).includes(origin));
+          console.log(JSON.stringify({check:'coinbase-bazaar', parseable:true, total:rows.length, matchCount:matches.length, matches:matches.slice(0,20)}));
+          NODE
+
+          echo '=== x402.direct free index ==='
+          node <<'NODE'
+          const origin = 'hermes-counterparty-api.onrender.com';
+          let page = 1;
+          let totalRows = 0;
+          const matches = [];
+          for (; page <= 100; page++) {
+            const r = await fetch(`https://x402.direct/api/services?page=${page}&limit=100`, {headers:{'user-agent':'hermes-external-index-audit/1.0'}});
+            const text = await r.text();
+            if (!r.ok) throw new Error(`x402.direct page ${page} status=${r.status}: ${text.slice(0,300)}`);
+            let body;
+            try { body = JSON.parse(text); } catch { throw new Error(`x402.direct page ${page} non-json: ${text.slice(0,300)}`); }
+            const rows = Array.isArray(body) ? body : (body.services || body.items || body.results || body.data || []);
+            if (!Array.isArray(rows)) throw new Error(`x402.direct unknown shape page ${page}: ${text.slice(0,500)}`);
+            totalRows += rows.length;
+            for (const row of rows) if (JSON.stringify(row).includes(origin)) matches.push(row);
+            const totalPages = Number(body?.pagination?.totalPages ?? body?.totalPages ?? body?.pages ?? 0);
+            const total = Number(body?.pagination?.total ?? body?.total ?? 0);
+            if (totalPages && page >= totalPages) break;
+            if (total && totalRows >= total) break;
+            if (rows.length < 100) break;
+          }
+          console.log(JSON.stringify({check:'x402-direct', pagesScanned:page, totalRows, matchCount:matches.length, matches:matches.slice(0,20)}));
+          NODE
