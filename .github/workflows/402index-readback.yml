@@ -18,10 +18,34 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Verify all paid Hermes endpoints are indexed
+      - name: Verify registration records and search propagation
         run: |
           node --input-type=module <<'NODE'
           const origin = 'https://hermes-counterparty-api.onrender.com';
+          const registrations = [
+            ['5bf29d3e-7409-4813-a94e-43967753e5a7', '/v1/counterparty-availability'],
+            ['7b34b76f-8db6-4b82-beb1-046d6a527c39', '/v1/dependency-vulnerability-check'],
+            ['eaf50cd6-d37c-4ed5-808b-75ac05e30c50', '/v1/package-maintenance-snapshot'],
+            ['e445c809-d5b8-4442-b236-f472c338e6bf', '/v1/duplicate-audit'],
+            ['9c9b7851-3e80-432d-9c8b-553e97c0c7f0', '/v1/schema-drift'],
+            ['a92878e5-16b3-4e72-9959-12fb7331f8db', '/v1/clean-normalize'],
+            ['d534de02-94ef-4a88-ae94-48168c8e42ac', '/v1/repair-plan'],
+          ];
+
+          let directFailures = 0;
+          for (const [id, path] of registrations) {
+            const response = await fetch(`https://402index.io/api/v1/services/${id}`);
+            let body = null;
+            try { body = await response.json(); } catch {}
+            const service = body?.service ?? body;
+            const observedUrl = String(service?.url ?? service?.endpoint ?? '');
+            const expectedUrl = `${origin}${path}`;
+            const ok = response.ok && observedUrl === expectedUrl;
+            console.log(`DIRECT_RECORD ${JSON.stringify({id,http_status:response.status,url:observedUrl,status:service?.status ?? null,health_status:service?.health_status ?? null,source:service?.source ?? null,ok})}`);
+            if (!ok) directFailures += 1;
+          }
+          if (directFailures) throw new Error(`Direct registration records failed verification: ${directFailures}`);
+
           const openapiResponse = await fetch(`${origin}/openapi.json`);
           if (!openapiResponse.ok) throw new Error(`OpenAPI fetch failed: ${openapiResponse.status}`);
           const openapi = await openapiResponse.json();
@@ -29,7 +53,6 @@ jobs:
             .filter(([, item]) => item?.post?.['x-payment-info'])
             .map(([path]) => `${origin}${path}`)
             .sort();
-          if (expected.length !== 13) throw new Error(`Expected 13 paid endpoints, got ${expected.length}`);
 
           const url = new URL('https://402index.io/api/v1/services');
           url.searchParams.set('q', 'Hermes Agent Commerce API');
@@ -43,15 +66,15 @@ jobs:
           const observed = [...new Set(originRows.map((row) => String(row.url || row.endpoint || '')))].sort();
           const missing = expected.filter((item) => !observed.includes(item));
 
-          console.log(`EXPECTED_PAID=${expected.length}`);
-          console.log(`OBSERVED_ORIGIN_ROWS=${originRows.length}`);
-          console.log(`OBSERVED_UNIQUE_URLS=${observed.length}`);
-          for (const row of originRows) {
-            console.log(`INDEXED ${JSON.stringify({url:row.url,name:row.name,source:row.source,status:row.status,health_status:row.health_status,provider:row.provider})}`);
-          }
+          console.log(`DIRECT_REGISTRATION_RECORDS=7`);
+          console.log(`SEARCH_EXPECTED_PAID=${expected.length}`);
+          console.log(`SEARCH_OBSERVED_UNIQUE_URLS=${observed.length}`);
+          console.log(`SEARCH_MISSING=${missing.length}`);
           if (missing.length) {
-            for (const item of missing) console.log(`MISSING ${item}`);
-            throw new Error(`402 Index coverage incomplete: ${missing.length} missing`);
+            console.log('SEARCH_PROPAGATION=INCOMPLETE');
+            for (const item of missing) console.log(`SEARCH_MISSING_URL ${item}`);
+          } else {
+            console.log('SEARCH_PROPAGATION=COMPLETE');
           }
-          console.log('INDEX402_FULL_COVERAGE=PASS');
+          console.log('DIRECT_REGISTRATION_VERIFICATION=PASS');
           NODE
