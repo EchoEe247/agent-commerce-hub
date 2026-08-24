@@ -4,8 +4,14 @@ import { buildApp } from "../src/app.mjs";
 
 const ORIGIN = "https://hermes-counterparty-api.onrender.com";
 
-// Product #11 remains stable while portfolio totals advance to thirteen.
-test("Product 11 remains published after Product 13 in OpenAPI", async () => {
+function paidOperationCount(document) {
+  return Object.values(document.paths)
+    .flatMap((pathItem) => Object.values(pathItem))
+    .filter((operation) => operation?.["x-payment-info"]).length;
+}
+
+// Product #11 remains stable while the portfolio adds a free acquisition preview.
+test("Product 11 remains published with thirteen paid OpenAPI operations", async () => {
   const app = buildApp({
     config: {
       serviceVersion: "0.1.0",
@@ -17,8 +23,9 @@ test("Product 11 remains published after Product 13 in OpenAPI", async () => {
   const response = await app.inject({ method: "GET", url: "/openapi.json" });
   assert.equal(response.statusCode, 200);
   const document = response.json();
-  assert.equal(Object.keys(document.paths).length, 13);
-  assert.match(document.info["x-guidance"], /thirteen POST operations/i);
+  assert.equal(Object.keys(document.paths).length, 14);
+  assert.equal(paidOperationCount(document), 13);
+  assert.match(document.info["x-guidance"], /thirteen paid POST operations/i);
   const operation = document.paths["/v1/sec-company-snapshot"]?.post;
   assert.ok(operation);
   assert.equal(operation.operationId, "secCompanySnapshot");
