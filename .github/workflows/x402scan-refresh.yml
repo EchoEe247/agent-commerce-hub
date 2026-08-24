@@ -19,7 +19,7 @@ jobs:
         run: |
           set -euo pipefail
           test -n "$X402_PRIVATE_KEY"
-          npx -y agentcash@latest check https://x402scan.com/api/x402/registry/register-origin --json > /tmp/check.json
+          npx -y agentcash@latest check https://x402scan.com/api/x402/registry/register-origin --format json --quiet > /tmp/check.json
           node <<'NODE'
           const fs = require('fs');
           const raw = fs.readFileSync('/tmp/check.json','utf8');
