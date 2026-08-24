@@ -17,14 +17,7 @@ jobs:
         run: |
           node <<'NODE'
           const host = 'hermes-counterparty-api.onrender.com';
-          const queries = [
-            'Hermes Company Domain Intelligence',
-            'company domain intelligence',
-            'research company domain',
-            'enrich a business domain',
-            'qualify a lead company domain',
-            'research stripe.com company domain'
-          ];
+          const queries = ['Hermes Company Domain Intelligence','company domain intelligence','research company domain','enrich a business domain','qualify a lead company domain','research stripe.com company domain'];
           for (const q of queries) {
             const url = `https://agent402.tools/api/route?q=${encodeURIComponent(q)}&include=external&top=25`;
             const r = await fetch(url, {headers:{'user-agent':'hermes-agent402-route-rank/1.0'}});
