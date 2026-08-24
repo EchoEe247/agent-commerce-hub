@@ -340,3 +340,47 @@ test("POST /v1/company-domain-intelligence/preview returns a useful free subset 
     await server.close();
   }
 });
+
+test("company intelligence preview emits acquisition telemetry without logging request contents", async () => {
+  const entries = [];
+  const server = buildApp({
+    config: baseConfig(),
+    paymentPlugin: async () => {},
+    logger: { log: (line) => entries.push(JSON.parse(line)) },
+    companyDomainIntelligence: async (payload) => ({
+      schema_version: "1.0",
+      query: { domain: payload.domain, normalized_domain: "example.com" },
+      company: { display_name: "Example Inc", confidence: "high" },
+      website: { reachable: true, https: true, status_code: 200, title: "Example Inc", description: "Example" },
+      mail: { has_mx: true, spf_present: true, dmarc_present: true },
+      security: { hsts: true, content_security_policy: true },
+      warnings: [],
+    }),
+  });
+
+  const response = await server.inject({
+    method: "POST",
+    url: "/v1/company-domain-intelligence/preview",
+    headers: { "user-agent": "HermesBuyer/1.0" },
+    payload: { domain: "secret-example.com" },
+  });
+
+  try {
+    assert.equal(response.statusCode, 200);
+    const event = entries.find((entry) => entry.event === "commerce_request");
+    assert.ok(event, "expected one commerce_request telemetry event");
+    assert.equal(event.method, "POST");
+    assert.equal(event.path, "/v1/company-domain-intelligence/preview");
+    assert.equal(event.status, 200);
+    assert.equal(event.preview, true);
+    assert.equal(event.traffic_class, "external");
+    assert.equal(event.user_agent, "HermesBuyer/1.0");
+    assert.equal(event.payment_required, false);
+    assert.equal(event.payment_attempted, false);
+    assert.equal(event.payment_succeeded, false);
+    assert.equal(event.request_body, undefined);
+    assert.equal(JSON.stringify(event).includes("secret-example.com"), false);
+  } finally {
+    await server.close();
+  }
+});
