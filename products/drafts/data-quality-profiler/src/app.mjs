@@ -9,6 +9,7 @@ import { createSecCompanySnapshot } from "./sec-company-snapshot.mjs";
 import { createDependencyVulnerabilityCheck } from "./dependency-vulnerability-check.mjs";
 import { createPackageMaintenanceSnapshot } from "./package-maintenance-snapshot.mjs";
 import { buildOpenApiDocument } from "./openapi.mjs";
+import { buildLlmsDiscovery } from "./llms-discovery.mjs";
 import { installCommerceTelemetry } from "./commerce-telemetry.mjs";
 import {
   duplicateAudit,
@@ -107,6 +108,10 @@ export function buildApp({
 
   app.get("/openapi.json", async (_request, reply) => (
     reply.type("application/json").send(buildOpenApiDocument(config))
+  ));
+
+  app.get("/llms.txt", async (_request, reply) => (
+    reply.type("text/plain; charset=utf-8").send(buildLlmsDiscovery(buildOpenApiDocument(config)))
   ));
 
   app.get("/.well-known/402index-verify.txt", async (_request, reply) => (

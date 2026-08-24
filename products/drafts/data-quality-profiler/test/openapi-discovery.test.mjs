@@ -142,3 +142,15 @@ test("GET /openapi.json publishes thirteen paid x402 operations plus a free comp
     await server.close();
   }
 });
+
+test("GET /llms.txt is a free agent-discovery surface", async () => {
+  const server = app();
+  const response = await server.inject({ method: "GET", url: "/llms.txt" });
+  try {
+    assert.equal(response.statusCode, 200);
+    assert.match(response.headers["content-type"] ?? "", /^text\/plain/);
+    assert.equal(response.headers["payment-required"], undefined);
+  } finally {
+    await server.close();
+  }
+});
