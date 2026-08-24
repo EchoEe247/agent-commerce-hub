@@ -14,63 +14,94 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Audit Coinbase Bazaar and x402.direct without payment
-        shell: bash
         run: |
-          set -euo pipefail
-          ORIGIN='hermes-counterparty-api.onrender.com'
-
-          echo '=== Coinbase Bazaar (awal, no auth/balance required for search/list) ==='
-          npx --yes awal@latest x402 bazaar list --network base --json > /tmp/bazaar.out 2>/tmp/bazaar.err || {
-            echo 'AWAL_EXIT_FAILURE'
-            cat /tmp/bazaar.err
-            exit 1
-          }
-          node <<'NODE'
-          const fs = require('fs');
-          const text = fs.readFileSync('/tmp/bazaar.out','utf8');
-          const origin = 'hermes-counterparty-api.onrender.com';
-          const lines = text.trim().split(/\n+/);
-          let parsed = null;
-          for (let i = 0; i < lines.length; i++) {
-            const candidate = lines.slice(i).join('\n');
-            try { parsed = JSON.parse(candidate); break; } catch {}
-          }
-          if (parsed == null) {
-            console.log(JSON.stringify({check:'coinbase-bazaar', parseable:false, containsOrigin:text.includes(origin), sample:text.slice(0,1000)}));
-            process.exit(0);
-          }
-          const collect = value => {
-            if (!value) return [];
-            if (Array.isArray(value)) return value;
-            for (const k of ['items','resources','services','results']) if (Array.isArray(value[k])) return value[k];
-            return [];
-          };
-          const rows = collect(parsed);
-          const matches = rows.filter(x => JSON.stringify(x).includes(origin));
-          console.log(JSON.stringify({check:'coinbase-bazaar', parseable:true, total:rows.length, matchCount:matches.length, matches:matches.slice(0,20)}));
-          NODE
-
-          echo '=== x402.direct free index ==='
           node <<'NODE'
           const origin = 'hermes-counterparty-api.onrender.com';
-          let page = 1;
-          let totalRows = 0;
-          const matches = [];
-          for (; page <= 100; page++) {
-            const r = await fetch(`https://x402.direct/api/services?page=${page}&limit=100`, {headers:{'user-agent':'hermes-external-index-audit/1.0'}});
-            const text = await r.text();
-            if (!r.ok) throw new Error(`x402.direct page ${page} status=${r.status}: ${text.slice(0,300)}`);
-            let body;
-            try { body = JSON.parse(text); } catch { throw new Error(`x402.direct page ${page} non-json: ${text.slice(0,300)}`); }
-            const rows = Array.isArray(body) ? body : (body.services || body.items || body.results || body.data || []);
-            if (!Array.isArray(rows)) throw new Error(`x402.direct unknown shape page ${page}: ${text.slice(0,500)}`);
-            totalRows += rows.length;
-            for (const row of rows) if (JSON.stringify(row).includes(origin)) matches.push(row);
-            const totalPages = Number(body?.pagination?.totalPages ?? body?.totalPages ?? body?.pages ?? 0);
-            const total = Number(body?.pagination?.total ?? body?.total ?? 0);
-            if (totalPages && page >= totalPages) break;
-            if (total && totalRows >= total) break;
-            if (rows.length < 100) break;
+          const ua = { 'user-agent': 'hermes-external-index-audit/2.0' };
+          const outcomes = [];
+
+          async function auditBazaar() {
+            const base = 'https://api.cdp.coinbase.com/platform/v2/x402/discovery/resources';
+            const pageSize = 1000;
+            let offset = 0;
+            let total = null;
+            let scanned = 0;
+            const matches = [];
+            for (let page = 0; page < 200; page++) {
+              const r = await fetch(`${base}?limit=${pageSize}&offset=${offset}`, { headers: ua });
+              const text = await r.text();
+              if (!r.ok) throw new Error(`Bazaar HTTP ${r.status}: ${text.slice(0,300)}`);
+              let body;
+              try { body = JSON.parse(text); } catch { throw new Error(`Bazaar non-JSON: ${text.slice(0,300)}`); }
+              const rows = body?.items || body?.resources || (Array.isArray(body) ? body : []);
+              if (!Array.isArray(rows)) throw new Error(`Bazaar unknown shape: ${text.slice(0,500)}`);
+              if (!rows.length) break;
+              total = body?.pagination?.total ?? total;
+              scanned += rows.length;
+              for (const row of rows) if (JSON.stringify(row).includes(origin)) matches.push(row);
+              offset += rows.length;
+              if (total != null && offset >= total) break;
+              if (rows.length < pageSize) break;
+            }
+            return {
+              check: 'coinbase-bazaar',
+              ok: true,
+              total,
+              scanned,
+              matchCount: matches.length,
+              matches: matches.slice(0,20).map(x => ({
+                resource: x.resource ?? x.url ?? null,
+                serviceName: x.serviceName ?? x.name ?? null,
+                network: x.network ?? null,
+              })),
+            };
           }
-          console.log(JSON.stringify({check:'x402-direct', pagesScanned:page, totalRows, matchCount:matches.length, matches:matches.slice(0,20)}));
+
+          async function auditDirect() {
+            let page = 1;
+            let scanned = 0;
+            const matches = [];
+            let declaredTotal = null;
+            let declaredPages = null;
+            for (; page <= 200; page++) {
+              const r = await fetch(`https://x402.direct/api/services?page=${page}&limit=100`, { headers: ua });
+              const text = await r.text();
+              if (!r.ok) throw new Error(`x402.direct HTTP ${r.status}: ${text.slice(0,300)}`);
+              let body;
+              try { body = JSON.parse(text); } catch { throw new Error(`x402.direct non-JSON: ${text.slice(0,300)}`); }
+              const rows = Array.isArray(body) ? body : (body.services || body.items || body.results || body.data || []);
+              if (!Array.isArray(rows)) throw new Error(`x402.direct unknown shape: ${text.slice(0,500)}`);
+              declaredTotal = body?.pagination?.total ?? body?.total ?? declaredTotal;
+              declaredPages = body?.pagination?.totalPages ?? body?.totalPages ?? body?.pages ?? declaredPages;
+              scanned += rows.length;
+              for (const row of rows) if (JSON.stringify(row).includes(origin)) matches.push(row);
+              if (!rows.length) break;
+              if (declaredPages && page >= Number(declaredPages)) break;
+              if (declaredTotal && scanned >= Number(declaredTotal)) break;
+              if (rows.length < 100) break;
+            }
+            return {
+              check: 'x402-direct',
+              ok: true,
+              declaredTotal,
+              pagesScanned: page,
+              scanned,
+              matchCount: matches.length,
+              matches: matches.slice(0,20),
+            };
+          }
+
+          for (const fn of [auditBazaar, auditDirect]) {
+            try {
+              const out = await fn();
+              outcomes.push(out);
+              console.log(JSON.stringify(out));
+            } catch (error) {
+              const out = { check: fn.name === 'auditBazaar' ? 'coinbase-bazaar' : 'x402-direct', ok: false, error: String(error?.message || error) };
+              outcomes.push(out);
+              console.log(JSON.stringify(out));
+            }
+          }
+
+          if (!outcomes.some(x => x.ok)) throw new Error('Both external indexes were unavailable; audit produced no coverage evidence');
           NODE
