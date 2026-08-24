@@ -32,24 +32,6 @@ jobs:
             const results = Array.isArray(parsed.results) ? parsed.results : [];
             const rank = results.findIndex(x => String(x.seller ?? '').includes(host) || String(x.url ?? '').includes(host));
             const hit = rank >= 0 ? results[rank] : null;
-            console.log(JSON.stringify({
-              q,
-              status:r.status,
-              count:parsed.count ?? results.length,
-              sellers:parsed.sellers ?? null,
-              hermesRank:rank >= 0 ? rank + 1 : null,
-              hermes:hit ? {
-                seller:hit.seller,
-                slug:hit.slug,
-                name:hit.name,
-                route:hit.route,
-                price:hit.price,
-                score:hit.score,
-                health:hit.health,
-                why:hit.why,
-                description:hit.description
-              } : null,
-              top5:results.slice(0,5).map((x,i)=>({rank:i+1,seller:x.seller,name:x.name,route:x.route,price:x.price,score:x.score,health:x.health,why:x.why}))
-            }));
+            console.log(JSON.stringify({q,status:r.status,count:parsed.count ?? results.length,sellers:parsed.sellers ?? null,hermesRank:rank >= 0 ? rank + 1 : null,hermes:hit ? {seller:hit.seller,slug:hit.slug,name:hit.name,route:hit.route,price:hit.price,score:hit.score,health:hit.health,why:hit.why,description:hit.description} : null,top5:results.slice(0,5).map((x,i)=>({rank:i+1,seller:x.seller,name:x.name,route:x.route,price:x.price,score:x.score,health:x.health,why:x.why}))}));
           }
           NODE
