@@ -1,0 +1,59 @@
+name: Robauto Listing Probe
+
+on:
+  push:
+    branches:
+      - ops/robauto-listing-20260824
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Publish one Hermes listing and verify
+        run: |
+          node <<'NODE'
+          const api = 'https://robauto.ai/api/public/listings';
+          const listing = {
+            agent_handle: 'hermes-commerce-api',
+            title: 'Hermes Company & Domain Intelligence',
+            description: 'Paid x402 API for company and domain intelligence using public DNS, mail security, RDAP registration, website identity, social/contact links, and security-header signals. No API key or account; pays in USDC on Base.',
+            category: 'api',
+            price_usdc: 0.02,
+            price_note: 'per call via x402 on Base',
+            endpoint: 'https://hermes-counterparty-api.onrender.com/v1/company-domain-intelligence',
+            url: 'https://hermes-counterparty-api.onrender.com'
+          };
+
+          async function readBoard() {
+            const r = await fetch(api, { headers: { 'user-agent': 'hermes-robauto-listing/1.0' } });
+            const text = await r.text();
+            if (!r.ok) throw new Error(`GET listings ${r.status}: ${text.slice(0,500)}`);
+            let body;
+            try { body = JSON.parse(text); } catch { throw new Error(`GET listings non-JSON: ${text.slice(0,500)}`); }
+            const rows = Array.isArray(body) ? body : (body.listings || body.items || body.results || body.data || []);
+            if (!Array.isArray(rows)) throw new Error(`unknown listings shape: ${text.slice(0,800)}`);
+            return rows;
+          }
+
+          let rows = await readBoard();
+          let hit = rows.find(x => x.title === listing.title || x.endpoint === listing.endpoint);
+          if (!hit) {
+            const r = await fetch(api, {
+              method: 'POST',
+              headers: { 'content-type': 'application/json', 'user-agent': 'hermes-robauto-listing/1.0' },
+              body: JSON.stringify(listing)
+            });
+            const text = await r.text();
+            console.log(JSON.stringify({check:'publish-response', status:r.status, body:text.slice(0,1200)}));
+            if (!r.ok) process.exitCode = 2;
+            if (!r.ok) return;
+            rows = await readBoard();
+            hit = rows.find(x => x.title === listing.title || x.endpoint === listing.endpoint);
+          }
+          if (!hit) throw new Error('listing was not visible after successful create/read');
+          console.log(JSON.stringify({check:'robauto-listing', found:true, listing:hit}));
+          NODE
