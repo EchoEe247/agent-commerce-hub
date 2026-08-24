@@ -9,66 +9,11 @@ permissions:
   contents: read
 
 jobs:
-  refresh:
+  verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 5
     steps:
-      - name: Confirm registration route is SIWX-only and free
-        run: |
-          node <<'NODE'
-          const url = 'https://x402scan.com/api/x402/registry/register-origin';
-          const origin = 'https://hermes-counterparty-api.onrender.com';
-          const r = await fetch(url, {
-            method: 'POST',
-            headers: {'content-type':'application/json','user-agent':'hermes-x402scan-preflight/1.0'},
-            body: JSON.stringify({origin})
-          });
-          const body = await r.text();
-          let parsed = null;
-          try { parsed = JSON.parse(body); } catch {}
-          const paymentRequired = r.headers.get('payment-required');
-          let challenge = null;
-          if (paymentRequired) {
-            try { challenge = JSON.parse(Buffer.from(paymentRequired,'base64').toString('utf8')); } catch {}
-          }
-          const combined = `${JSON.stringify(parsed ?? {}).toLowerCase()} ${JSON.stringify(challenge ?? {}).toLowerCase()}`;
-          const hasSiwx = combined.includes('sign-in-with-x') || combined.includes('siwx');
-          const accepts = challenge?.accepts ?? parsed?.accepts ?? [];
-          if (r.status !== 402) throw new Error(`expected unauthenticated 402, got ${r.status}`);
-          if (!hasSiwx) throw new Error('registration challenge is not SIWX');
-          if (Array.isArray(accepts) && accepts.length > 0) throw new Error('registration challenge advertises paid x402; refusing mutation');
-          console.log(JSON.stringify({preflight:'pass',status:r.status,siwx:true,paidAccepts:0}));
-          NODE
-
-      - name: Refresh existing Hermes origin on x402scan
-        env:
-          X402_PRIVATE_KEY: ${{ secrets.HERMES_COMMERCE_SPEND_TEST_PRIVATE_KEY }}
-        run: |
-          set -euo pipefail
-          test -n "$X402_PRIVATE_KEY"
-          npx -y agentcash@latest fetch https://x402scan.com/api/x402/registry/register-origin \
-            -m POST \
-            -b '{"origin":"https://hermes-counterparty-api.onrender.com"}' \
-            --format json \
-            --quiet > /tmp/register.json
-          node <<'NODE'
-          const fs = require('fs');
-          const raw = fs.readFileSync('/tmp/register.json','utf8').trim();
-          if (!raw) throw new Error('AgentCash returned empty registration output');
-          let parsed;
-          try { parsed = JSON.parse(raw); } catch { throw new Error(`registration output was not JSON: ${raw.slice(0,500)}`); }
-          const candidates = [parsed, parsed?.data, parsed?.body, parsed?.response, parsed?.result].filter(Boolean);
-          let registration = candidates.find(x => typeof x === 'object' && (x.registered !== undefined || x.failed !== undefined || x.total !== undefined));
-          if (!registration && typeof parsed?.body === 'string') {
-            try { registration = JSON.parse(parsed.body); } catch {}
-          }
-          console.log(JSON.stringify({agentcash:parsed,registration}));
-          if (!registration) throw new Error('could not locate x402scan registration result');
-          if (Number(registration.failed ?? 0) !== 0) throw new Error(`x402scan reported failed resources: ${JSON.stringify(registration.failedDetails ?? registration)}`);
-          if (Number(registration.registered ?? 0) < 13) throw new Error(`expected at least 13 registered paid resources, got ${registration.registered}`);
-          NODE
-
-      - name: Verify x402scan now exposes the full paid portfolio
+      - name: Verify x402scan exposes the full Hermes paid portfolio
         run: |
           node <<'NODE'
           const wallet='0x2BD7c4e294B09E9a853168a58712498D03A45B01';
@@ -82,7 +27,7 @@ jobs:
           ];
           const present=expected.filter(p=>body.includes(p));
           const missing=expected.filter(p=>!body.includes(p));
-          console.log(JSON.stringify({status:r.status,presentCount:present.length,present,missing}));
+          console.log(JSON.stringify({status:r.status,presentCount:present.length,present,missing,hasPreview:body.includes('/v1/company-domain-intelligence/preview'),bytes:body.length}));
           if (r.status !== 200) throw new Error(`x402scan recipient page status ${r.status}`);
           if (missing.length) throw new Error(`x402scan still missing routes: ${missing.join(', ')}`);
           NODE
