@@ -4,7 +4,13 @@ import { buildApp } from "../src/app.mjs";
 
 const ORIGIN = "https://hermes-counterparty-api.onrender.com";
 
-test("Product 13 is published as the thirteenth OpenAPI paid operation", async () => {
+function paidOperationCount(document) {
+  return Object.values(document.paths)
+    .flatMap((pathItem) => Object.values(pathItem))
+    .filter((operation) => operation?.["x-payment-info"]).length;
+}
+
+test("Product 13 remains the thirteenth paid OpenAPI operation", async () => {
   const app = buildApp({
     config: { serviceVersion: "0.1.0", x402PackageMaintenancePrice: "$0.005" },
     paymentPlugin: async () => {},
@@ -12,8 +18,9 @@ test("Product 13 is published as the thirteenth OpenAPI paid operation", async (
   const response = await app.inject({ method: "GET", url: "/openapi.json" });
   assert.equal(response.statusCode, 200);
   const document = response.json();
-  assert.equal(Object.keys(document.paths).length, 13);
-  assert.match(document.info["x-guidance"], /thirteen POST operations/i);
+  assert.equal(Object.keys(document.paths).length, 14);
+  assert.equal(paidOperationCount(document), 13);
+  assert.match(document.info["x-guidance"], /thirteen paid POST operations/i);
   const operation = document.paths["/v1/package-maintenance-snapshot"]?.post;
   assert.ok(operation);
   assert.equal(operation.operationId, "packageMaintenanceSnapshot");
