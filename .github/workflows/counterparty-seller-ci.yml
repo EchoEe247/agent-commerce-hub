@@ -10,6 +10,7 @@ on:
       - feat/sec-company-snapshot
       - feat/product12-dependency-vulnerability
       - feat/product13-package-maintenance
+      - feat/buyer-discovery-harness
     paths:
       - 'products/drafts/data-quality-profiler/src/counterparty-availability.mjs'
       - 'products/drafts/data-quality-profiler/src/entity-sanctions-screen.mjs'
@@ -17,6 +18,7 @@ on:
       - 'products/drafts/data-quality-profiler/src/sec-company-snapshot.mjs'
       - 'products/drafts/data-quality-profiler/src/dependency-vulnerability-check.mjs'
       - 'products/drafts/data-quality-profiler/src/package-maintenance-snapshot.mjs'
+      - 'products/drafts/data-quality-profiler/src/discovery/**'
       - 'products/drafts/data-quality-profiler/src/app.mjs'
       - 'products/drafts/data-quality-profiler/src/openapi.mjs'
       - 'products/drafts/data-quality-profiler/src/config.mjs'
@@ -26,6 +28,7 @@ on:
       - 'products/drafts/data-quality-profiler/scripts/sec-source-smoke.mjs'
       - 'products/drafts/data-quality-profiler/scripts/osv-source-smoke.mjs'
       - 'products/drafts/data-quality-profiler/scripts/package-registry-smoke.mjs'
+      - 'products/drafts/data-quality-profiler/scripts/buyer-discovery-check.mjs'
       - 'products/drafts/data-quality-profiler/test/agent402-manifest.test.mjs'
       - 'products/drafts/data-quality-profiler/test/counterparty-availability.test.mjs'
       - 'products/drafts/data-quality-profiler/test/entity-sanctions-screen.test.mjs'
@@ -48,10 +51,15 @@ on:
       - 'products/drafts/data-quality-profiler/test/openapi-discovery.test.mjs'
       - 'products/drafts/data-quality-profiler/test/x402-plugin.test.mjs'
       - 'products/drafts/data-quality-profiler/test/config.test.mjs'
+      - 'products/drafts/data-quality-profiler/test/buyer-discovery-evaluator.test.mjs'
+      - 'products/drafts/data-quality-profiler/test/buyer-discovery-harness.test.mjs'
+      - 'products/drafts/data-quality-profiler/test/buyer-discovery-script.test.mjs'
+      - 'products/drafts/data-quality-profiler/package.json'
       - '.github/workflows/counterparty-seller-ci.yml'
   pull_request:
     branches:
       - feat/hermes-commerce-control-plane
+      - feat/agent-discovery-llms
     paths:
       - 'products/drafts/data-quality-profiler/src/counterparty-availability.mjs'
       - 'products/drafts/data-quality-profiler/src/entity-sanctions-screen.mjs'
@@ -59,6 +67,7 @@ on:
       - 'products/drafts/data-quality-profiler/src/sec-company-snapshot.mjs'
       - 'products/drafts/data-quality-profiler/src/dependency-vulnerability-check.mjs'
       - 'products/drafts/data-quality-profiler/src/package-maintenance-snapshot.mjs'
+      - 'products/drafts/data-quality-profiler/src/discovery/**'
       - 'products/drafts/data-quality-profiler/src/app.mjs'
       - 'products/drafts/data-quality-profiler/src/openapi.mjs'
       - 'products/drafts/data-quality-profiler/src/config.mjs'
@@ -68,6 +77,7 @@ on:
       - 'products/drafts/data-quality-profiler/scripts/sec-source-smoke.mjs'
       - 'products/drafts/data-quality-profiler/scripts/osv-source-smoke.mjs'
       - 'products/drafts/data-quality-profiler/scripts/package-registry-smoke.mjs'
+      - 'products/drafts/data-quality-profiler/scripts/buyer-discovery-check.mjs'
       - 'products/drafts/data-quality-profiler/test/agent402-manifest.test.mjs'
       - 'products/drafts/data-quality-profiler/test/counterparty-availability.test.mjs'
       - 'products/drafts/data-quality-profiler/test/entity-sanctions-screen.test.mjs'
@@ -90,6 +100,10 @@ on:
       - 'products/drafts/data-quality-profiler/test/openapi-discovery.test.mjs'
       - 'products/drafts/data-quality-profiler/test/x402-plugin.test.mjs'
       - 'products/drafts/data-quality-profiler/test/config.test.mjs'
+      - 'products/drafts/data-quality-profiler/test/buyer-discovery-evaluator.test.mjs'
+      - 'products/drafts/data-quality-profiler/test/buyer-discovery-harness.test.mjs'
+      - 'products/drafts/data-quality-profiler/test/buyer-discovery-script.test.mjs'
+      - 'products/drafts/data-quality-profiler/package.json'
       - '.github/workflows/counterparty-seller-ci.yml'
   workflow_dispatch:
 
@@ -116,10 +130,14 @@ jobs:
           if [ -f src/sec-company-snapshot.mjs ]; then node --check src/sec-company-snapshot.mjs; fi
           if [ -f src/dependency-vulnerability-check.mjs ]; then node --check src/dependency-vulnerability-check.mjs; fi
           if [ -f src/package-maintenance-snapshot.mjs ]; then node --check src/package-maintenance-snapshot.mjs; fi
+          if [ -f src/discovery/buyer-intents.mjs ]; then node --check src/discovery/buyer-intents.mjs; fi
+          if [ -f src/discovery/buyer-discovery-evaluator.mjs ]; then node --check src/discovery/buyer-discovery-evaluator.mjs; fi
+          if [ -f src/discovery/buyer-discovery-runner.mjs ]; then node --check src/discovery/buyer-discovery-runner.mjs; fi
           if [ -f scripts/ofac-source-smoke.mjs ]; then node --check scripts/ofac-source-smoke.mjs; fi
           if [ -f scripts/sec-source-smoke.mjs ]; then node --check scripts/sec-source-smoke.mjs; fi
           if [ -f scripts/osv-source-smoke.mjs ]; then node --check scripts/osv-source-smoke.mjs; fi
           if [ -f scripts/package-registry-smoke.mjs ]; then node --check scripts/package-registry-smoke.mjs; fi
+          if [ -f scripts/buyer-discovery-check.mjs ]; then node --check scripts/buyer-discovery-check.mjs; fi
           node --check src/app.mjs
           node --check src/openapi.mjs
           node --check src/config.mjs
@@ -144,7 +162,13 @@ jobs:
           if [ -f test/package-maintenance-errors.test.mjs ]; then TESTS+=(test/package-maintenance-errors.test.mjs); fi
           if [ -f test/package-maintenance-discovery.test.mjs ]; then TESTS+=(test/package-maintenance-discovery.test.mjs); fi
           if [ -f test/package-maintenance-x402.test.mjs ]; then TESTS+=(test/package-maintenance-x402.test.mjs); fi
+          if [ -f test/buyer-discovery-evaluator.test.mjs ]; then TESTS+=(test/buyer-discovery-evaluator.test.mjs); fi
+          if [ -f test/buyer-discovery-harness.test.mjs ]; then TESTS+=(test/buyer-discovery-harness.test.mjs); fi
+          if [ -f test/buyer-discovery-script.test.mjs ]; then TESTS+=(test/buyer-discovery-script.test.mjs); fi
           node --test "${TESTS[@]}"
+      - name: Buyer discovery CLI check
+        working-directory: products/drafts/data-quality-profiler
+        run: npm run check:buyer-discovery
       - name: Full profiler suite (PR gate)
         if: github.event_name == 'pull_request'
         working-directory: products/drafts/data-quality-profiler
