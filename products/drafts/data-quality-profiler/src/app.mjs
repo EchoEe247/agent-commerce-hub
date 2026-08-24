@@ -375,6 +375,16 @@ export function buildApp({
     }
   });
 
+  app.post("/v1/company-domain-intelligence/preview", async (request, reply) => {
+    try {
+      const result = await inspectCompanyDomain(request.body);
+      return reply.send(buildCompanyDomainPreview(result, config.x402CompanyDomainPrice ?? "$0.02"));
+    } catch (error) {
+      const { statusCode, body } = classifyError(error);
+      return reply.status(statusCode).send(body);
+    }
+  });
+
   app.post("/v1/sec-company-snapshot", async (request, reply) => {
     try {
       return reply.send(await inspectSecCompany(request.body));
@@ -470,6 +480,37 @@ export function buildApp({
     paymentPlugin(app);
   }
   return app;
+}
+
+function buildCompanyDomainPreview(result, price) {
+  return {
+    schema_version: result?.schema_version ?? "1.0",
+    preview: true,
+    query: result?.query ?? {},
+    company: {
+      display_name: result?.company?.display_name ?? null,
+      confidence: result?.company?.confidence ?? "low",
+    },
+    website: {
+      reachable: Boolean(result?.website?.reachable),
+      https: Boolean(result?.website?.https),
+      status_code: Number.isFinite(Number(result?.website?.status_code)) ? Number(result.website.status_code) : null,
+      title: result?.website?.title ?? null,
+      description: result?.website?.description ?? null,
+    },
+    signals: {
+      has_mx: Boolean(result?.mail?.has_mx),
+      spf_present: Boolean(result?.mail?.spf_present),
+      dmarc_present: Boolean(result?.mail?.dmarc_present),
+      hsts: Boolean(result?.security?.hsts),
+      content_security_policy: Boolean(result?.security?.content_security_policy),
+    },
+    upgrade: {
+      path: "/v1/company-domain-intelligence",
+      price_usd: priceNumber(price),
+    },
+    warnings: Array.isArray(result?.warnings) ? [...result.warnings] : [],
+  };
 }
 
 function registerDatasetOperation(app, path, operation, clock, deadlineMs) {
