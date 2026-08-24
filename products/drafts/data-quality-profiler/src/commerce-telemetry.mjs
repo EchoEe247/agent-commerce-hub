@@ -66,7 +66,7 @@ export function installCommerceTelemetry(app, { logger = console, clock = { now:
       successfulHttpResponse &&
       settlementHeader &&
       settlement &&
-      settlement.success !== false
+      settlement.success === true
     );
 
     if (entry.payment_succeeded) {
