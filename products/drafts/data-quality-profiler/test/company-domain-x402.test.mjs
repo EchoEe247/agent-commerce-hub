@@ -81,3 +81,58 @@ test("Product 10 unpaid request advertises exact $0.02 x402 payment and valid Ba
     await facilitator.close();
   }
 });
+
+test("real x402 middleware leaves company preview free while full intelligence remains paid", async () => {
+  const { app: facilitator, url } = await createFakeFacilitator();
+  const plugin = buildPaymentPlugin({
+    x402Enabled: true,
+    x402Network: "eip155:84532",
+    x402PayTo: PAY_TO,
+    x402CompanyDomainPrice: "$0.02",
+    x402FacilitatorUrl: url,
+  });
+  const app = buildApp({
+    config: { serviceVersion: "0.1.0", x402CompanyDomainPrice: "$0.02" },
+    paymentPlugin: plugin,
+    companyDomainIntelligence: async ({ domain }) => ({
+      schema_version: "1.0",
+      query: { domain, normalized_domain: domain },
+      company: { display_name: "Stripe", confidence: "high" },
+      website: {
+        reachable: true,
+        https: true,
+        status_code: 200,
+        title: "Stripe",
+        description: "Payments infrastructure",
+      },
+      mail: { has_mx: true, spf_present: true, dmarc_present: true },
+      security: { hsts: true, content_security_policy: true },
+      warnings: [],
+    }),
+  });
+
+  try {
+    const preview = await app.inject({
+      method: "POST",
+      url: "/v1/company-domain-intelligence/preview",
+      payload: { domain: "stripe.com" },
+    });
+    assert.equal(preview.statusCode, 200);
+    assert.equal(preview.headers["payment-required"], undefined);
+    assert.equal(preview.json().preview, true);
+    assert.equal(preview.json().upgrade.path, "/v1/company-domain-intelligence");
+    assert.equal(preview.json().upgrade.price_usd, 0.02);
+
+    const paid = await app.inject({
+      method: "POST",
+      url: "/v1/company-domain-intelligence",
+      payload: { domain: "stripe.com" },
+    });
+    assert.equal(paid.statusCode, 402);
+    const decoded = decodePaymentRequired(paid);
+    assert.equal(decoded.accepts?.[0]?.amount, "20000");
+  } finally {
+    await app.close();
+    await facilitator.close();
+  }
+});

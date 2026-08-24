@@ -4,6 +4,7 @@ import { buildApp } from "../src/app.mjs";
 
 const PUBLIC_ORIGIN = "https://hermes-counterparty-api.onrender.com";
 const EARNING_WALLET = "0x2BD7c4e294B09E9a853168a58712498D03A45B01";
+const PREVIEW_PATH = "/v1/company-domain-intelligence/preview";
 
 const ROUTES = [
   ["/v1/counterparty-availability", "counterpartyAvailability", "0.030000"],
@@ -45,7 +46,7 @@ function app() {
   });
 }
 
-test("GET /openapi.json publishes thirteen AgentCash-compatible x402 operations", async () => {
+test("GET /openapi.json publishes thirteen paid x402 operations plus a free company intelligence preview", async () => {
   const server = app();
   const response = await server.inject({ method: "GET", url: "/openapi.json" });
 
@@ -58,9 +59,13 @@ test("GET /openapi.json publishes thirteen AgentCash-compatible x402 operations"
     assert.equal(document.info.title, "Hermes Agent Commerce API");
     assert.equal(document.info.version, "0.1.0");
     assert.match(document.info["x-guidance"], /x402/i);
-    assert.match(document.info["x-guidance"], /thirteen POST operations/i);
+    assert.match(document.info["x-guidance"], /thirteen paid POST operations/i);
+    assert.match(document.info["x-guidance"], /free company.*preview/i);
     assert.deepEqual(document.servers, [{ url: PUBLIC_ORIGIN }]);
-    assert.deepEqual(Object.keys(document.paths).sort(), ROUTES.map(([path]) => path).sort());
+    assert.deepEqual(
+      Object.keys(document.paths).sort(),
+      [...ROUTES.map(([path]) => path), PREVIEW_PATH].sort()
+    );
 
     for (const [path, operationId, amount] of ROUTES) {
       const operation = document.paths[path]?.post;
@@ -83,6 +88,18 @@ test("GET /openapi.json publishes thirteen AgentCash-compatible x402 operations"
       assert.equal(outputSchema.type, "object");
     }
 
+    const preview = document.paths[PREVIEW_PATH]?.post;
+    assert.ok(preview, "missing free company intelligence preview");
+    assert.equal(preview.operationId, "previewCompanyDomainIntelligence");
+    assert.equal(preview["x-payment-info"], undefined);
+    assert.equal(preview.responses["402"], undefined);
+    assert.equal(preview.requestBody.required, true);
+    assert.deepEqual(preview.requestBody.content["application/json"].schema.required, ["domain"]);
+    assert.match(preview.description, /free/i);
+    assert.match(preview.description, /research a company/i);
+    assert.match(preview.description, /qualify a lead/i);
+    assert.deepEqual(preview.tags, ["Business Intelligence"]);
+
     const sanctions = document.paths["/v1/entity-sanctions-screen"].post;
     const sanctionsSchema = sanctions.requestBody.content["application/json"].schema;
     assert.ok(sanctionsSchema.required.includes("name"));
@@ -99,6 +116,11 @@ test("GET /openapi.json publishes thirteen AgentCash-compatible x402 operations"
     assert.match(companyDomain.description, /DNS/i);
     assert.match(companyDomain.description, /RDAP/i);
     assert.match(companyDomain.description, /website/i);
+    assert.match(companyDomain.description, /research a company/i);
+    assert.match(companyDomain.description, /enrich a business/i);
+    assert.match(companyDomain.description, /investigate a domain/i);
+    assert.match(companyDomain.description, /qualify a lead/i);
+    assert.match(companyDomain.description, /free preview/i);
     assert.deepEqual(companyDomain.tags, ["Business Intelligence"]);
 
     const sec = document.paths["/v1/sec-company-snapshot"].post;

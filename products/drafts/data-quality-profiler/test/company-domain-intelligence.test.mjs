@@ -272,3 +272,115 @@ test("HTTP route returns stable 400 errors for invalid and unsafe domain targets
   assert.equal(unsafe.statusCode, 400);
   assert.equal(unsafe.json().error.code, "UNSAFE_DOMAIN_TARGET");
 });
+
+test("POST /v1/company-domain-intelligence/preview returns a useful free subset without exposing the full paid result", async () => {
+  const server = buildApp({
+    config: baseConfig(),
+    paymentPlugin: async () => {},
+    companyDomainIntelligence: async (payload) => ({
+      schema_version: "1.0",
+      query: { domain: payload.domain, normalized_domain: "example.com" },
+      company: { display_name: "Example Inc", source: "og:site_name", confidence: "high" },
+      domain: { registered: true, registrar: "Example Registrar", age_days: 2400, nameservers: ["ns1.example.com"] },
+      website: {
+        reachable: true,
+        https: true,
+        status_code: 200,
+        final_url: "https://example.com/",
+        title: "Example Inc | Infrastructure",
+        description: "Infrastructure for Example customers.",
+        canonical_url: "https://example.com/",
+        social_links: ["https://www.linkedin.com/company/example-inc"],
+        contact_links: ["https://example.com/contact"],
+      },
+      dns: { has_a: true, has_aaaa: false, addresses: ["93.184.216.34"], ipv6_addresses: [] },
+      mail: { has_mx: true, mx: [{ exchange: "mail.example.com", priority: 10 }], spf_present: true, dmarc_present: true },
+      security: { hsts: true, content_security_policy: true },
+      sources: { fetched_at: "2026-08-21T05:00:00.000Z", dns: "system-resolver", rdap: "https://rdap.org/domain/example.com", website: "https://example.com/" },
+      warnings: [],
+    }),
+  });
+
+  const response = await server.inject({
+    method: "POST",
+    url: "/v1/company-domain-intelligence/preview",
+    payload: { domain: "Example.com" },
+  });
+
+  try {
+    assert.equal(response.statusCode, 200);
+    const body = response.json();
+    assert.equal(body.schema_version, "1.0");
+    assert.equal(body.preview, true);
+    assert.equal(body.query.normalized_domain, "example.com");
+    assert.deepEqual(body.company, { display_name: "Example Inc", confidence: "high" });
+    assert.deepEqual(body.website, {
+      reachable: true,
+      https: true,
+      status_code: 200,
+      title: "Example Inc | Infrastructure",
+      description: "Infrastructure for Example customers.",
+    });
+    assert.deepEqual(body.signals, {
+      has_mx: true,
+      spf_present: true,
+      dmarc_present: true,
+      hsts: true,
+      content_security_policy: true,
+    });
+    assert.equal(body.upgrade.path, "/v1/company-domain-intelligence");
+    assert.equal(body.upgrade.price_usd, 0.02);
+    assert.equal(body.domain, undefined);
+    assert.equal(body.dns, undefined);
+    assert.equal(body.mail, undefined);
+    assert.equal(body.sources, undefined);
+    assert.equal(body.website.social_links, undefined);
+    assert.equal(body.website.contact_links, undefined);
+  } finally {
+    await server.close();
+  }
+});
+
+test("company intelligence preview emits acquisition telemetry without logging request contents", async () => {
+  const entries = [];
+  const server = buildApp({
+    config: baseConfig(),
+    paymentPlugin: async () => {},
+    logger: { log: (line) => entries.push(JSON.parse(line)) },
+    companyDomainIntelligence: async (payload) => ({
+      schema_version: "1.0",
+      query: { domain: payload.domain, normalized_domain: "example.com" },
+      company: { display_name: "Example Inc", confidence: "high" },
+      website: { reachable: true, https: true, status_code: 200, title: "Example Inc", description: "Example" },
+      mail: { has_mx: true, spf_present: true, dmarc_present: true },
+      security: { hsts: true, content_security_policy: true },
+      warnings: [],
+    }),
+  });
+
+  const response = await server.inject({
+    method: "POST",
+    url: "/v1/company-domain-intelligence/preview",
+    headers: { "user-agent": "HermesBuyer/1.0" },
+    payload: { domain: "secret-example.com" },
+  });
+
+  try {
+    assert.equal(response.statusCode, 200);
+    const event = entries.find((entry) => entry.event === "commerce_request");
+    assert.ok(event, "expected one commerce_request telemetry event");
+    assert.equal(event.method, "POST");
+    assert.equal(event.path, "/v1/company-domain-intelligence/preview");
+    assert.equal(event.status, 200);
+    assert.equal(event.preview, true);
+    assert.equal(event.traffic_class, "external");
+    assert.equal(event.user_agent, "HermesBuyer/1.0");
+    assert.equal(event.payment_required, false);
+    assert.equal(event.payment_attempted, false);
+    assert.equal(event.payment_succeeded, false);
+    assert.equal(event.request_body, undefined);
+    assert.equal(JSON.stringify(event).includes("secret-example.com"), false);
+  } finally {
+    await server.close();
+  }
+});
