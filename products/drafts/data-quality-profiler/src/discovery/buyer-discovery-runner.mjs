@@ -8,6 +8,7 @@ const PREVIEW_PATH = "/v1/company-domain-intelligence/preview";
 const PAID_PATH = "/v1/company-domain-intelligence";
 const PAY_TO = "0x0000000000000000000000000000000000000001";
 const FIXTURE_DOMAIN = "stripe.com";
+const QUIET_LOGGER = Object.freeze({ log() {} });
 
 export async function runInProcessBuyerDiscovery() {
   const facilitator = Fastify({ logger: false });
@@ -45,6 +46,7 @@ export async function runInProcessBuyerDiscovery() {
     config,
     paymentPlugin,
     companyDomainIntelligence: deterministicCompanyDomainIntelligence,
+    logger: QUIET_LOGGER,
   });
 
   try {
