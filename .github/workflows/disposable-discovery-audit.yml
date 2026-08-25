@@ -1,0 +1,48 @@
+name: Disposable Live Discovery Audit
+
+on:
+  push:
+    branches:
+      - ops/discovery-audit-20260825
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Show live OpenAPI payment metadata sample
+        run: |
+          set -euo pipefail
+          curl -fsS https://hermes-counterparty-api.onrender.com/openapi.json -o /tmp/openapi.json
+          node - <<'NODE'
+          const fs = require('fs');
+          const doc = JSON.parse(fs.readFileSync('/tmp/openapi.json', 'utf8'));
+          const paid = [];
+          for (const [path, item] of Object.entries(doc.paths || {})) {
+            for (const method of ['get','post','put','patch','delete','head']) {
+              const op = item?.[method];
+              if (op?.['x-payment-info']) paid.push({ path, method: method.toUpperCase(), payment: op['x-payment-info'] });
+            }
+          }
+          console.log(`PAID_OPERATION_COUNT=${paid.length}`);
+          console.log(JSON.stringify(paid.slice(0, 2), null, 2));
+          NODE
+
+      - name: Run current AgentCash discovery audit
+        run: |
+          set -o pipefail
+          npx -y @agentcash/discovery@1.7.5 https://hermes-counterparty-api.onrender.com -v 2>&1 | tee /tmp/agentcash-audit.txt
+
+      - name: Summarize audit markers
+        if: always()
+        run: |
+          if [ -f /tmp/agentcash-audit.txt ]; then
+            echo '--- AUDIT MARKERS ---'
+            grep -E 'L2_|paid|protocol|warning|warn|error|found|endpoint|resource' /tmp/agentcash-audit.txt || true
+          fi
