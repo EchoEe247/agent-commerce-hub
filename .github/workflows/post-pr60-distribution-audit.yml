@@ -118,8 +118,24 @@ jobs:
 
           cat /tmp/audit-status.env
 
+      - name: Upload audit receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: post-pr60-distribution-audit
+          path: |
+            /tmp/audit-status.env
+            /tmp/buyer.json
+            /tmp/buyer.err
+            /tmp/agentcash-discover.txt
+            /tmp/agentcash-check.txt
+            /tmp/index-readback.txt
+          if-no-files-found: error
+          retention-days: 7
+
       - name: Post audit receipt to PR
         if: always()
+        continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
@@ -134,35 +150,12 @@ jobs:
             echo "- AgentCash paid-endpoint check exit: ${CHECK_RC:-missing}"
             echo "- 402 Index readback exit: ${INDEX_RC:-missing}"
             echo
-            echo '### Buyer discovery'
-            echo '```json'
-            head -c 12000 /tmp/buyer.json 2>/dev/null || true
-            echo
-            echo '```'
-            if [ -s /tmp/buyer.err ]; then
-              echo 'Buyer stderr:'
-              echo '```text'
-              head -c 4000 /tmp/buyer.err
-              echo
-              echo '```'
-            fi
-            echo
-            echo '### AgentCash discover'
-            echo '```text'
-            head -c 12000 /tmp/agentcash-discover.txt 2>/dev/null || true
-            echo
-            echo '```'
-            echo
-            echo '### AgentCash paid endpoint check'
-            echo '```text'
-            head -c 8000 /tmp/agentcash-check.txt 2>/dev/null || true
-            echo
-            echo '```'
-            echo
             echo '### 402 Index readback'
             echo '```text'
             cat /tmp/index-readback.txt 2>/dev/null || true
             echo '```'
+            echo
+            echo 'Full buyer/AgentCash outputs are attached to the workflow artifact `post-pr60-distribution-audit`.'
             echo
             echo 'No registration, payment, signer, settlement, price, wallet, or production-code mutation was performed by this audit.'
           } > /tmp/audit-comment.md
