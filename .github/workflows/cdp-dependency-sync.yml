@@ -1,4 +1,4 @@
-name: CDP Dependency Sync
+name: CDP Facilitator Patch
 
 on:
   push:
@@ -9,26 +9,61 @@ permissions:
   contents: write
 
 jobs:
-  sync:
+  patch:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           ref: feat/cdp-bazaar-facilitator
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 24
-      - name: Install exact Coinbase x402 facilitator package
-        working-directory: products/drafts/data-quality-profiler
-        run: npm install --save-exact @coinbase/x402@2.1.0
-      - name: Commit generated package metadata
+      - name: Apply bounded facilitator factory change
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+          path = Path('products/drafts/data-quality-profiler/src/payments/x402-plugin.mjs')
+          text = path.read_text()
+          if 'export function buildFacilitatorConfig(config)' in text:
+              print('Facilitator factory already present; no patch needed.')
+              raise SystemExit(0)
+
+          old_import = 'import { declareDiscoveryExtension, bazaarResourceServerExtension } from "@x402/extensions/bazaar";'
+          new_import = '''import { createFacilitatorConfig as createCdpFacilitatorConfig } from "@coinbase/x402";
+          import { declareDiscoveryExtension, bazaarResourceServerExtension, withBazaar } from "@x402/extensions/bazaar";'''.replace('          import', 'import')
+          if old_import not in text:
+              raise SystemExit('expected Bazaar import not found')
+          text = text.replace(old_import, new_import, 1)
+
+          marker = 'export function buildPaymentPlugin(config) {'
+          helpers = '''export function buildFacilitatorConfig(config) {
+            if (config.x402FacilitatorMode === "cdp") {
+              return createCdpFacilitatorConfig(config.cdpApiKeyId, config.cdpApiKeySecret);
+            }
+            return { url: config.x402FacilitatorUrl };
+          }
+
+          export function buildFacilitatorClient(config) {
+            return withBazaar(new HTTPFacilitatorClient(buildFacilitatorConfig(config)));
+          }
+
+          '''.replace('          export', 'export').replace('            ', '  ')
+          if marker not in text:
+              raise SystemExit('buildPaymentPlugin marker not found')
+          text = text.replace(marker, helpers + marker, 1)
+
+          old_ctor = 'const facilitatorClient = new HTTPFacilitatorClient({ url: config.x402FacilitatorUrl });'
+          new_ctor = 'const facilitatorClient = buildFacilitatorClient(config);'
+          if old_ctor not in text:
+              raise SystemExit('facilitator constructor not found')
+          text = text.replace(old_ctor, new_ctor, 1)
+          path.write_text(text)
+          PY
+      - name: Commit bounded production patch
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add products/drafts/data-quality-profiler/package.json products/drafts/data-quality-profiler/package-lock.json
+          git add products/drafts/data-quality-profiler/src/payments/x402-plugin.mjs
           if git diff --cached --quiet; then
-            echo 'No dependency changes to commit.'
+            echo 'No facilitator code changes to commit.'
             exit 0
           fi
-          git commit -m 'chore: sync coinbase x402 dependency'
+          git commit -m 'feat: add CDP-authenticated Bazaar facilitator client'
           git push origin HEAD:feat/cdp-bazaar-facilitator
