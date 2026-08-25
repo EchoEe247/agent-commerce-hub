@@ -1,0 +1,64 @@
+name: Disposable Active Buyer Search
+
+on:
+  push:
+    branches:
+      - ops/active-buyer-discovery-20260825
+    paths:
+      - .github/workflows/disposable-active-buyer-search.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  search:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: AgentCash buyer-intent searches
+        shell: bash
+        run: |
+          set -euo pipefail
+          queries=(
+            "research a company domain"
+            "company domain intelligence"
+            "check a company against OFAC sanctions"
+            "check a dependency version for vulnerabilities"
+            "package maintenance status npm pypi"
+            "profile data quality json csv"
+            "detect schema drift"
+            "check a data contract"
+            "clean normalize json csv"
+            "repair bad data"
+          )
+          for q in "${queries[@]}"; do
+            echo "===== AGENTCASH QUERY: $q ====="
+            npx -y agentcash@latest search "$q" --format json || true
+          done
+
+      - name: Bankr x402 buyer-intent searches
+        shell: bash
+        run: |
+          set -euo pipefail
+          queries=(
+            "company domain intelligence"
+            "OFAC sanctions screening"
+            "dependency vulnerability check"
+            "data quality schema drift"
+          )
+          for q in "${queries[@]}"; do
+            echo "===== BANKR QUERY: $q ====="
+            npx -y @bankr/cli@latest x402 search "$q" --raw || true
+          done
+
+      - name: Safety receipt
+        run: |
+          echo 'WALLET_SECRET_USED=NO'
+          echo 'SIGNATURE_CREATED=NO'
+          echo 'PAYMENT_ATTEMPTED=NO'
+          echo 'FUNDS_MOVED=NO'
