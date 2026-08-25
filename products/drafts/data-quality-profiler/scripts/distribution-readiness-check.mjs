@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { loadConfig } from "../src/config.mjs";
-import { buildOpenApiDocument } from "../src/openapi-base.mjs";
+import { buildOpenApiDocument } from "../src/openapi.mjs";
 import { buildLlmsDiscovery } from "../src/llms-discovery.mjs";
 import { evaluateDistributionReadiness } from "../src/distribution-readiness.mjs";
 
