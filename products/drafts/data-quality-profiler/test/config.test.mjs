@@ -19,7 +19,8 @@ test("defaults to local unpaid development mode", () => {
   assert.equal(cfg.x402DataContractPrice, "$0.015");
   assert.equal(cfg.x402CleanNormalizePrice, "$0.02");
   assert.equal(cfg.x402RepairPlanPrice, "$0.02");
-  assert.equal(cfg.x402FacilitatorUrl, "https://x402.org/facilitator");
+  assert.equal(cfg.x402FacilitatorMode, "xpay");
+  assert.equal(cfg.x402FacilitatorUrl, "https://facilitator.xpay.sh");
   assert.equal(cfg.allowMainnet, false);
 });
 
@@ -76,4 +77,33 @@ test("rejects arbitrary non-Sepolia, non-Base networks (fail-closed)", () => {
 
 test("allows Base Sepolia (eip155:84532)", () => {
   assert.doesNotThrow(() => loadConfig({ X402_ENABLED: "true", X402_PAY_TO: "0x0000000000000000000000000000000000000001", X402_NETWORK: "eip155:84532" }));
+});
+
+test("rejects unknown facilitator modes", () => {
+  assert.throws(() => loadConfig({ X402_FACILITATOR_MODE: "mystery" }), /X402_FACILITATOR_MODE/);
+});
+
+test("CDP facilitator mode requires both CDP credentials when x402 is enabled", () => {
+  const base = {
+    X402_ENABLED: "true",
+    X402_PAY_TO: "0x0000000000000000000000000000000000000001",
+    X402_FACILITATOR_MODE: "cdp",
+  };
+  assert.throws(() => loadConfig(base), /CDP_API_KEY_ID/);
+  assert.throws(() => loadConfig({ ...base, CDP_API_KEY_ID: "organizations/test/apiKeys/key" }), /CDP_API_KEY_SECRET/);
+});
+
+test("CDP facilitator mode pins Coinbase URL and retains credentials only in runtime config", () => {
+  const cfg = loadConfig({
+    X402_ENABLED: "true",
+    X402_PAY_TO: "0x0000000000000000000000000000000000000001",
+    X402_FACILITATOR_MODE: "cdp",
+    X402_FACILITATOR_URL: "https://should-not-win.example",
+    CDP_API_KEY_ID: "organizations/test/apiKeys/key",
+    CDP_API_KEY_SECRET: "-----BEGIN EC PRIVATE KEY-----\nTEST\n-----END EC PRIVATE KEY-----",
+  });
+  assert.equal(cfg.x402FacilitatorMode, "cdp");
+  assert.equal(cfg.x402FacilitatorUrl, "https://api.cdp.coinbase.com/platform/v2/x402");
+  assert.equal(cfg.cdpApiKeyId, "organizations/test/apiKeys/key");
+  assert.match(cfg.cdpApiKeySecret, /BEGIN EC PRIVATE KEY/);
 });
