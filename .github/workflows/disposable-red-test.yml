@@ -1,0 +1,29 @@
+name: Disposable Discovery Metadata RED
+
+on:
+  push:
+    branches:
+      - ops/discovery-audit-20260825
+
+permissions:
+  contents: read
+
+jobs:
+  red:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout fix branch
+        uses: actions/checkout@v4
+        with:
+          ref: fix/discovery-auth-contact
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install
+        working-directory: products/drafts/data-quality-profiler
+        run: npm ci
+      - name: Run regression test
+        working-directory: products/drafts/data-quality-profiler
+        run: node --test test/discovery-public-metadata.test.mjs
