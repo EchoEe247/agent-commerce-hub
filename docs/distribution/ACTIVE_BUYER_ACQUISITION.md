@@ -36,7 +36,13 @@ A prospect is qualified only when at least three are true:
 
 Reject projects that merely sell x402 services but do not buy external services.
 
-## First target: CashClaw
+## Discovery cold-start finding
+
+AgentCash-backed x402scan discovery currently requests catalog search with `broad=false`. Its source comments state that broad mode includes resources without usage signals, while the normal restricted mode cuts those resources from results. This creates a plausible cold-start problem for a new origin with zero usage: lack of prior usage can reduce organic discovery, which in turn makes acquiring the first usage harder.
+
+Operational implication: direct integration, curated-skill placement, and first-buyer activation are acquisition channels in their own right. Do not wait for semantic marketplace search alone to create the first transaction.
+
+## Outreach experiment 1: CashClaw
 
 Repository: `moltlaunch/cashclaw`
 
@@ -47,7 +53,6 @@ Why it qualifies:
 - default specialties include code review, TypeScript, and React
 - system prompt already injects a paid API catalog
 - tool shells out to AgentCash for paid calls
-- maintainers already receive integration/vendor proposals through GitHub issues
 
 Current integration blocker:
 
@@ -60,9 +65,54 @@ Proposed minimal integration:
 3. Use them only when task context calls for dependency/package/data verification.
 4. Preserve CashClaw's existing wallet controls; no new key handling is required.
 
-Suggested buyer-facing value proposition:
+Outbound status:
 
-> Add low-cost pre-submit verification to CashClaw jobs: exact-version OSV vulnerability checks, npm/PyPI maintenance status, and deterministic JSON/CSV contract/schema/duplicate/repair checks. They use CashClaw's existing AgentCash/x402 payment path; no new account, API key, or subscription.
+- targeted maintainer email sent 2026-08-25
+- subject: `CashClaw AgentCash: add Hermes verification APIs?`
+- GitHub issue route was attempted first but connector permissions rejected the external write; no issue was posted
+- hypothesis: a small allowlist + catalog patch unlocks Hermes for code/data work without changing CashClaw payment infrastructure
+
+## Outreach experiment 2: Wes Sander agent projects
+
+Repositories:
+
+- `ucsandman/budget-aware-research-agent`
+- `ucsandman/TreasuryClaw`
+
+Why they qualify:
+
+- maintained in August 2026
+- use AgentCash for paid external API calls
+- their wrappers accept an arbitrary endpoint URL instead of a fixed provider-only allowlist
+- TreasuryClaw has an upstream approval/max-spend model before non-interactive AgentCash execution
+
+Outbound status:
+
+- targeted maintainer email sent 2026-08-25
+- subject: `AgentCash/x402 utility for your research + OpenClaw agents`
+- hypothesis: Hermes verification calls can be adopted without new payment plumbing and can sit behind the project's existing spend-control layer
+
+## Outreach experiment 3: Remlo
+
+Repository: `winsznx/remlo`
+
+Why it qualifies:
+
+- maintained in August 2026
+- agent-payment/payroll infrastructure using x402/MPP
+- includes an x402 compliance-report surface
+- has a three-agent treasury council
+- its Compliance specialist explicitly considers whether a recipient or venue may be on a restricted list
+
+Concrete Hermes insertion point:
+
+Before a high-value payroll/treasury council vote involving a new counterparty, call Hermes `POST /v1/entity-sanctions-screen` and add the structured result to the Compliance specialist evidence payload. This converts a sanctions-related prompt consideration into externally checked evidence.
+
+Outbound status:
+
+- targeted maintainer email sent 2026-08-25
+- subject: `Remlo compliance agent: external x402 sanctions screen`
+- hypothesis: external sanctions evidence is a stronger product fit than generic developer verification because it directly supports an existing compliance-agent decision path
 
 ## Secondary target class: direct @x402/fetch agents
 
@@ -74,6 +124,8 @@ Target workflows:
 - due-diligence substeps before an agent commits to a counterparty/action
 - structured data validation before producing a report or upload
 - deterministic audit checks where an LLM alone is a poor verifier
+
+One verified example is `profbernardoj/everclaw-community-branches`, which contains a live-style `@x402/fetch` CoinGecko client that pays $0.01 USDC on Base. Treat this as a candidate ecosystem, not yet an outreach conversion, until a specific Hermes workflow and reliable maintainer contact route are established.
 
 ## Search-only acquisition probe
 
@@ -107,10 +159,18 @@ Track the funnel separately:
 
 Do not count self-generated calls as buyer demand.
 
+Current acquisition counts as of 2026-08-25:
+
+- qualified independent maintainer targets contacted: 3
+- targeted outbound emails sent: 3
+- external GitHub issues successfully posted: 0
+- buyer-funded Hermes calls attributable to this campaign: not yet observed
+
 ## Next actions
 
-1. Read the search-only workflow output and record whether Hermes surfaces for each intent.
-2. Send one targeted CashClaw integration proposal referencing the ready Hermes verification skill and exact minimal patch.
-3. Identify 3-5 additional payer-capable work/coding/data agents and adapt the pitch to each workflow.
-4. Re-check production telemetry after real distribution attempts.
-5. Only then decide whether search metadata, integration packaging, endpoint design, or pricing is the next bottleneck.
+1. Monitor replies to the three targeted messages and respond with the smallest integration artifact requested.
+2. Qualify 2-3 additional independent payer-capable agents, prioritizing direct `@x402/fetch` clients and compliance/counterparty workflows.
+3. Pursue a documented AgentCash curated-skill/catalog inclusion path so Hermes does not depend on broad semantic search.
+4. Re-check production commerce telemetry after the real distribution attempts above.
+5. Distinguish origin discovery, 402 challenge traffic, payment attempts, successful settlements, and repeat buyers.
+6. Only after this evidence decide whether search metadata, integration packaging, endpoint design, or pricing is the next bottleneck.
