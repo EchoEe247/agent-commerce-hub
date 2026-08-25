@@ -140,6 +140,15 @@ test("distribution readiness CLI emits production-profile JSON without publishin
   assert.equal(report.paid_operation_count, 13);
   assert.equal(report.facilitator.classification, "xpay");
   assert.equal(report.channels.index_402.registration_payloads.length, 13);
+  const company = report.channels.index_402.registration_payloads.find(
+    (item) => item.url.endsWith("/v1/company-domain-intelligence"),
+  );
+  assert.ok(company, "expected company-domain-intelligence registration payload");
+  assert.equal(
+    company.name,
+    "Company domain intelligence: research and enrich a business domain with public web and infrastructure signals",
+  );
+  assert.match(company.description, /after trying the free preview/i);
   assert.equal(report.publication_actions.every((item) => item.status !== "published"), true);
 });
 
