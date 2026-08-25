@@ -1,0 +1,28 @@
+name: Root Landing TDD
+
+on:
+  push:
+    branches:
+      - fix/root-landing
+    paths:
+      - 'products/drafts/data-quality-profiler/test/root-landing.test.mjs'
+      - 'products/drafts/data-quality-profiler/src/app.mjs'
+      - '.github/workflows/root-landing-tdd.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  root-landing:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install dependencies
+        working-directory: products/drafts/data-quality-profiler
+        run: npm ci
+      - name: Run root landing regression test
+        working-directory: products/drafts/data-quality-profiler
+        run: node --test test/root-landing.test.mjs
