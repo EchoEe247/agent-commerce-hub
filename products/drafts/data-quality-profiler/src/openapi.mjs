@@ -9,6 +9,7 @@ export function buildOpenApiDocument(config) {
 
   document.info.description = "Agent utilities for company research, package maintenance intelligence, dependency vulnerability checks, counterparty availability, SEC company snapshots, OFAC sanctions screening, and deterministic JSON/CSV data-quality work. Company domain intelligence includes a free preview before the paid enrichment call.";
   document.info["x-guidance"] = "Thirteen paid POST operations are pay-per-call x402 resources on Base using USDC, plus one free company-intelligence preview at /v1/company-domain-intelligence/preview. Agents researching a company, enriching a business, investigating a domain, or qualifying a lead can call the free preview first, then use the paid company-domain-intelligence operation for RDAP, DNS, mail-policy, social/contact, security, and source details. For paid operations, an unpaid call returns HTTP 402 with the runtime payment challenge; retry with a valid x402 payment. Dataset operations accept JSON records or CSV text. The sanctions screen returns candidate matches from authoritative OFAC SDN source files and is not a legal compliance determination. No MPP payment support is advertised by this API yet.";
+  document.info.contact = { url: "https://github.com/EchoEe247/agent-commerce-hub" };
 
   company.operationId = "companyDomainIntelligenceEnrichment";
   company.summary = "Company domain intelligence: research and enrich a business domain with public web and infrastructure signals";
@@ -20,6 +21,7 @@ export function buildOpenApiDocument(config) {
       summary: "Free company and domain intelligence preview",
       description: "Free acquisition preview for agents that need to research a company, inspect a business domain, investigate a website, or qualify a lead before paying. Returns company identity confidence, website reachability/title/description, and high-level mail/security signals. The paid /v1/company-domain-intelligence operation adds full RDAP, DNS addresses, mail records, social/contact links, security details, and source provenance.",
       tags: ["Business Intelligence"],
+      security: [],
       requestBody: {
         required: true,
         content: {
