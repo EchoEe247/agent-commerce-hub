@@ -2,7 +2,8 @@ import { x402ResourceServer } from "@x402/core/server";
 import { HTTPFacilitatorClient } from "@x402/core/server";
 import { ExactEvmScheme } from "@x402/evm/exact/server";
 import { paymentMiddleware } from "@x402/fastify";
-import { declareDiscoveryExtension, bazaarResourceServerExtension } from "@x402/extensions/bazaar";
+import { createFacilitatorConfig as createCdpFacilitatorConfig } from "@coinbase/x402";
+import { declareDiscoveryExtension, bazaarResourceServerExtension, withBazaar } from "@x402/extensions/bazaar";
 
 const JSON_DATASET_SCHEMA = {
   type: "object",
@@ -26,11 +27,22 @@ const DATASET_SCHEMA = {
   oneOf: [JSON_DATASET_SCHEMA, CSV_DATASET_SCHEMA],
 };
 
+export function buildFacilitatorConfig(config) {
+  if (config.x402FacilitatorMode === "cdp") {
+    return createCdpFacilitatorConfig(config.cdpApiKeyId, config.cdpApiKeySecret);
+  }
+  return { url: config.x402FacilitatorUrl };
+}
+
+export function buildFacilitatorClient(config) {
+  return withBazaar(new HTTPFacilitatorClient(buildFacilitatorConfig(config)));
+}
+
 export function buildPaymentPlugin(config) {
   return function installPayment(app) {
     if (!config.x402Enabled) return;
 
-    const facilitatorClient = new HTTPFacilitatorClient({ url: config.x402FacilitatorUrl });
+    const facilitatorClient = buildFacilitatorClient(config);
     const resourceServer = new x402ResourceServer(facilitatorClient)
       .register(config.x402Network, new ExactEvmScheme())
       .registerExtension(bazaarResourceServerExtension);
