@@ -1,0 +1,51 @@
+name: Active Buyer Search
+
+on:
+  push:
+    branches:
+      - feat/active-buyer-acquisition
+    paths:
+      - '.github/workflows/active-buyer-search.yml'
+      - 'skills/hermes-verification/SKILL.md'
+      - 'docs/distribution/ACTIVE_BUYER_ACQUISITION.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  search:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Query no-spend buyer discovery surfaces
+        shell: bash
+        run: |
+          set -uo pipefail
+          queries=(
+            'check npm dependency version for known vulnerabilities'
+            'check whether an npm or PyPI package version is outdated deprecated or yanked'
+            'detect schema drift between JSON datasets'
+            'validate a JSON dataset against a data contract'
+            'audit duplicate rows in CSV or JSON'
+            'clean normalize JSON or CSV and remove duplicate rows'
+          )
+
+          echo '=== AGENTCASH SEARCH ==='
+          for q in "${queries[@]}"; do
+            echo "--- QUERY: $q"
+            # SEARCH ONLY. Do not use agentcash fetch/try or any payment-capable command here.
+            npx -y agentcash@latest search "$q" --format json || true
+          done
+
+          echo '=== BANKR X402 SEARCH ==='
+          for q in "${queries[@]}"; do
+            echo "--- QUERY: $q"
+            # SEARCH ONLY. Bankr documents x402 search as unauthenticated; never use x402 call here.
+            npx -y @bankr/cli x402 search "$q" --raw || true
+          done
+
+          echo 'NO_SPEND_PROBE_COMPLETE=YES'
