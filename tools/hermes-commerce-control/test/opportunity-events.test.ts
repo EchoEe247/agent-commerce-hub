@@ -3,11 +3,12 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
+import { CommerceError } from "../src/core/errors.js";
 import {
   normalizeAndPersistEvent,
   type OpportunityEventNormalizer,
 } from "../src/opportunities/events.js";
-import { canonicalOpportunityId } from "../src/opportunities/models.js";
+import { canonicalOpportunityId, type OpportunityCandidate } from "../src/opportunities/models.js";
 import { JsonlOpportunityStore } from "../src/opportunities/store.js";
 
 const NOW = "2026-08-27T13:00:00.000Z";
@@ -90,6 +91,37 @@ test("push event identity collapses against an RSS-origin listing with the same 
     assert.equal(result.results.length, 0);
     assert.equal(result.duplicatesDropped, 1);
     assert.equal(result.persisted, 0);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("push event seam rejects malformed normalized candidates before persistence", async () => {
+  const root = await mkdtemp(join(tmpdir(), "commerce-event-invalid-"));
+  try {
+    const store = new JsonlOpportunityStore(join(root, "opportunities.jsonl"));
+    const malformed: OpportunityEventNormalizer = {
+      id: "redditapis_monitor",
+      normalize() {
+        return [
+          {
+            id: "opp_bad",
+            source: "redditapis_monitor",
+            externalId: "bad",
+            title: "bad",
+            observedAt: NOW,
+            tags: ["reddit"],
+            metadata: { nested: 123 },
+          } as unknown as OpportunityCandidate,
+        ];
+      },
+    };
+
+    await assert.rejects(
+      normalizeAndPersistEvent(malformed, {}, store, () => NOW),
+      (error: unknown) => error instanceof CommerceError && error.code === "SCHEMA_VIOLATION",
+    );
+    assert.equal((await store.list()).length, 0);
   } finally {
     await rm(root, { recursive: true, force: true });
   }
