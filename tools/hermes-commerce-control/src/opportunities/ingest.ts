@@ -8,10 +8,12 @@
 import type { SafeFetch } from "../network/safe-fetch.js";
 import { dedupeOpportunities } from "./dedupe.js";
 import type { OpportunitySourceAdapter } from "./adapters/interface.js";
-import type {
-  OpportunityAggregateResult,
-  OpportunityQuery,
-  OpportunitySourceStatus,
+import {
+  parseOpportunityCandidate,
+  type OpportunityAggregateResult,
+  type OpportunityCandidate,
+  type OpportunityQuery,
+  type OpportunitySourceStatus,
 } from "./models.js";
 
 export interface OpportunityIngestorOptions {
@@ -23,7 +25,7 @@ export interface OpportunityIngestorOptions {
 interface AdapterOutcome {
   readonly id: string;
   readonly status: OpportunitySourceStatus;
-  readonly results: readonly import("./models.js").OpportunityCandidate[];
+  readonly results: readonly OpportunityCandidate[];
 }
 
 export class OpportunityIngestor {
@@ -50,11 +52,12 @@ export class OpportunityIngestor {
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), this.adapterBudgetMs);
       try {
-        const results = await adapter.discover(query, {
+        const raw = await adapter.discover(query, {
           fetch: this.fetch,
           clock: this.clock,
           signal: controller.signal,
         });
+        const results = raw.map((candidate) => parseOpportunityCandidate(candidate));
         return {
           id: adapter.id,
           status: {
@@ -84,7 +87,7 @@ export class OpportunityIngestor {
 
     const outcomes = await this.runBounded(tasks);
     const sources: Record<string, OpportunitySourceStatus> = {};
-    const combined: import("./models.js").OpportunityCandidate[] = [];
+    const combined: OpportunityCandidate[] = [];
     for (const outcome of outcomes) {
       sources[outcome.id] = outcome.status;
       combined.push(...outcome.results);
