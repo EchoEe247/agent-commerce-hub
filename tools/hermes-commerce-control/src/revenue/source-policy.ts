@@ -3,8 +3,8 @@
  *
  * This layer intentionally differs from marketplace marketing language. A
  * source can advertise "free claiming" while still requiring a funded wallet,
- * bond, stake, gas, paid brief, or other setup cost. Until a source is proven to
- * require zero solver-side spend, its upfront cost remains unresolved.
+ * bond, stake, gas, paid brief, or other setup cost. A source is marked zero
+ * upfront only when the documented solver path itself contains no paid action.
  */
 import type { PlatformId } from "../core/models.js";
 import type { RevenueSourceProfile } from "./work-opportunity.js";
@@ -32,10 +32,11 @@ function source(
 export const STRICT_ZERO_COST_SOURCE_PROFILES: Partial<
   Record<PlatformId, RevenueSourceProfile>
 > = Object.freeze({
-  bountybook: source(null, "wallet", 0.72, false, [
-    "public docs say claiming and submitting are free and 96% of a successful bounty goes to the agent",
-    "the same quickstart tells agents to fund the Base wallet with a small amount of ETH for gas",
-    "therefore solver-side setup cost is not proven zero; strict zero-cost mode must block execution",
+  bountybook: source(0, "wallet", 0.72, false, [
+    "current public docs show authentication as an off-chain message signature and claim/submit as free authenticated HTTP requests",
+    "the documented claim body uses txHash \"0x\" and does not show an agent-broadcast on-chain transaction",
+    "the same docs separately say agents need a tiny amount of ETH for gas, but no gas-consuming step is identified in the standard claim/submit earning path",
+    "treat the standard inline earning path as zero solver-side spend unless the live API explicitly requests a transaction or paid action",
   ]),
   agent_bounties: source(null, "wallet", 0.82, false, [
     "claim-specific bond or stake requirements can exist",
