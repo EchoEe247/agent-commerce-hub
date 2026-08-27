@@ -168,6 +168,34 @@ test("malformed persisted evaluation does not suppress a future valid evaluation
   }
 });
 
+test("shape-valid but semantically impossible persisted evaluation is ignored on replay", async () => {
+  const root = await mkdtemp(join(tmpdir(), "opportunity-eval-semantic-"));
+  try {
+    const path = join(root, "evaluations.jsonl");
+    const impossible = {
+      ...validEvaluation,
+      executionRoute: "ai_direct",
+      capabilities: { aiCanComplete: true, humanRequired: true, physicalPresence: true },
+    };
+    await writeFile(
+      path,
+      `${JSON.stringify({
+        requestId: prepared.requestId,
+        opportunityId: prepared.opportunityId,
+        evaluatorId: "fixture-evaluator",
+        evaluatedAt: "2026-08-27T15:00:00.000Z",
+        evaluation: impossible,
+      })}\n`,
+      "utf8",
+    );
+    const store = new JsonlOpportunityEvaluationResultStore(path);
+    assert.equal((await store.seenKeys()).size, 0);
+    assert.equal((await store.list()).length, 0);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
 test("truncated evaluation tail is repaired before the next append", async () => {
   const root = await mkdtemp(join(tmpdir(), "opportunity-eval-tail-"));
   try {
