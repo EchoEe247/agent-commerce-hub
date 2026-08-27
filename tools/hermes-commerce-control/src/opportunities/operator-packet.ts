@@ -33,6 +33,13 @@ export interface OpportunityOperatorPreparationPacket {
     readonly postedAt?: string | undefined;
     readonly observedAt: string;
   };
+  readonly triage: {
+    readonly decision: RankedOpportunity["triage"]["decision"];
+    readonly score: number;
+    readonly reasons: readonly string[];
+    readonly cautionFlags: readonly string[];
+    readonly budget?: RankedOpportunity["triage"]["signals"]["budget"] | undefined;
+  };
   readonly ranking: {
     readonly score: number;
     readonly priorityBand: RankedOpportunity["priorityBand"];
@@ -53,6 +60,8 @@ export interface OpportunityOperatorPreparationPacket {
     readonly economics: RankedOpportunity["evaluationRecord"]["evaluation"]["economics"];
     readonly capabilities: RankedOpportunity["evaluationRecord"]["evaluation"]["capabilities"];
     readonly reasons: readonly string[];
+    readonly blockers: readonly string[];
+    readonly nextChecks: readonly string[];
   };
   readonly readiness: OperatorReadinessState;
   readonly nextSafeStep: OperatorNextStep;
@@ -104,9 +113,6 @@ function deliveryConsiderations(entry: RankedOpportunity): readonly string[] {
   if (evaluation.estimatedEffortMinutes !== null) {
     out.push(`Current estimated effort: ${String(evaluation.estimatedEffortMinutes)} minute(s); re-check before commitment.`);
   }
-  if (evaluation.economics.executionCost === null) {
-    out.push("Execution cost is not established; calculate it before evaluating margin or committing resources.");
-  }
   return uniqueNonEmpty(out);
 }
 
@@ -119,6 +125,15 @@ function requiredChecks(entry: RankedOpportunity): readonly string[] {
   ];
   if (evaluation.economics.payout === null) {
     checks.push("Verify compensation and payment terms before deciding whether to pursue.");
+  }
+  if (evaluation.economics.executionCost === null) {
+    checks.push("Estimate execution cost before deciding whether to pursue.");
+  }
+  if (evaluation.economics.payout !== null && evaluation.economics.margin === null) {
+    checks.push("Estimate expected margin before deciding whether to pursue.");
+  }
+  if (entry.executionRoute === "unknown") {
+    checks.push("Determine the execution route before deciding whether to pursue.");
   }
   if (entry.opportunity.url === undefined) {
     checks.push("Locate and verify the current source listing before any pursuit decision.");
@@ -169,6 +184,8 @@ export function prepareOpportunityOperatorPacket(
     opportunityId: entry.opportunity.id,
     currentRequestId: entry.currentRequestId,
     evaluatorId: entry.evaluationRecord.evaluatorId,
+    evaluatedAt: entry.evaluationRecord.evaluatedAt,
+    evaluationHash: canonicalHash(evaluation),
     operatorAction: entry.operatorAction,
     score: entry.score,
     readiness: ready.state,
@@ -184,6 +201,13 @@ export function prepareOpportunityOperatorPacket(
       ...(entry.opportunity.url === undefined ? {} : { url: entry.opportunity.url }),
       ...(entry.opportunity.postedAt === undefined ? {} : { postedAt: entry.opportunity.postedAt }),
       observedAt: entry.opportunity.observedAt,
+    }),
+    triage: Object.freeze({
+      decision: entry.triage.decision,
+      score: entry.triage.score,
+      reasons: entry.triage.reasons,
+      cautionFlags: entry.triage.cautionFlags,
+      ...(entry.triage.signals.budget === undefined ? {} : { budget: entry.triage.signals.budget }),
     }),
     ranking: Object.freeze({
       score: entry.score,
@@ -205,6 +229,8 @@ export function prepareOpportunityOperatorPacket(
       economics: evaluation.economics,
       capabilities: evaluation.capabilities,
       reasons: evaluation.reasons,
+      blockers: evaluation.blockers,
+      nextChecks: evaluation.nextChecks,
     }),
     readiness: ready.state,
     nextSafeStep: ready.nextStep,
@@ -222,6 +248,7 @@ export function prepareOpportunityOperatorPackets(
   limit = 25,
 ): readonly OpportunityOperatorPreparationPacket[] {
   const boundedLimit = Number.isFinite(limit) ? Math.max(0, Math.min(1_000, Math.trunc(limit))) : 25;
+  if (boundedLimit === 0) return Object.freeze([]);
   const out: OpportunityOperatorPreparationPacket[] = [];
   for (const entry of entries) {
     if (!(OPERATOR_PACKET_ACTIONS as readonly string[]).includes(entry.operatorAction)) continue;
