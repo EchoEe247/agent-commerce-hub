@@ -6,7 +6,11 @@
  * RSS availability is not treated as guaranteed infrastructure, so the adapter
  * remains isolated behind the generic OpportunitySourceAdapter contract.
  */
-import { canonicalOpportunityId, type OpportunityCandidate, type OpportunityQuery } from "../models.js";
+import {
+  canonicalOpportunityId,
+  type OpportunityCandidate,
+  type OpportunityQuery,
+} from "../models.js";
 import type { OpportunityAdapterContext, OpportunitySourceAdapter } from "./interface.js";
 
 const SUBREDDIT_RE = /^[A-Za-z0-9_]{2,21}$/;
@@ -48,6 +52,12 @@ export function buildRedditAtomUrl(
   return url.toString();
 }
 
+function decodeCodePoint(raw: string, radix: 10 | 16): string | undefined {
+  const code = Number.parseInt(raw, radix);
+  if (!Number.isFinite(code) || code < 0 || code > 0x10ffff) return undefined;
+  return String.fromCodePoint(code);
+}
+
 function decodeEntities(input: string): string {
   const named: Readonly<Record<string, string>> = {
     amp: "&",
@@ -59,14 +69,8 @@ function decodeEntities(input: string): string {
   };
   return input.replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi, (full, entity: string) => {
     const lower = entity.toLowerCase();
-    if (lower.startsWith("#x")) {
-      const code = Number.parseInt(lower.slice(2), 16);
-      return Number.isFinite(code) ? String.fromCodePoint(code) : full;
-    }
-    if (lower.startsWith("#")) {
-      const code = Number.parseInt(lower.slice(1), 10);
-      return Number.isFinite(code) ? String.fromCodePoint(code) : full;
-    }
+    if (lower.startsWith("#x")) return decodeCodePoint(lower.slice(2), 16) ?? full;
+    if (lower.startsWith("#")) return decodeCodePoint(lower.slice(1), 10) ?? full;
     return named[lower] ?? full;
   });
 }
@@ -91,7 +95,7 @@ function tagValue(xml: string, tag: string): string | undefined {
 }
 
 function attrValue(xml: string, tag: string, attr: string): string | undefined {
-  const tagMatch = new RegExp(`<${tag}\\b([^>]*)\\/?\s*>`, "i").exec(xml);
+  const tagMatch = new RegExp(`<${tag}\\b([^>]*)\\/?\\s*>`, "i").exec(xml);
   const attrs = tagMatch?.[1];
   if (attrs === undefined) return undefined;
   const attrMatch = new RegExp(`${attr}\\s*=\\s*(["'])([\\s\\S]*?)\\1`, "i").exec(attrs);
@@ -139,7 +143,11 @@ export function parseRedditAtom(xml: string, options: ParseRedditAtomOptions): O
     if (community !== undefined) metadata.subreddit = community;
 
     out.push({
-      id: canonicalOpportunityId({ source: "reddit_rss", externalId, ...(url === undefined ? {} : { url }) }),
+      id: canonicalOpportunityId({
+        source: "reddit_rss",
+        externalId,
+        ...(url === undefined ? {} : { url }),
+      }),
       source: "reddit_rss",
       externalId,
       title,
@@ -156,10 +164,21 @@ export function parseRedditAtom(xml: string, options: ParseRedditAtomOptions): O
   return out;
 }
 
-function matchesQuery(candidate: OpportunityCandidate, query: OpportunityQuery): boolean {
-  if (query.communities !== undefined && query.communities.length > 0) {
-    const allowed = new Set(query.communities.map((v) => normalizeSubreddit(v).toLowerCase()));
-    if (candidate.community === undefined || !allowed.has(candidate.community.toLowerCase())) return false;
+function normalizedCommunityFilter(query: OpportunityQuery): ReadonlySet<string> | undefined {
+  if (query.communities === undefined || query.communities.length === 0) return undefined;
+  return new Set(query.communities.map((value) => normalizeSubreddit(value).toLowerCase()));
+}
+
+function matchesQuery(
+  candidate: OpportunityCandidate,
+  query: OpportunityQuery,
+  communities: ReadonlySet<string> | undefined,
+): boolean {
+  if (
+    communities !== undefined &&
+    (candidate.community === undefined || !communities.has(candidate.community.toLowerCase()))
+  ) {
+    return false;
   }
   if (query.q !== undefined && query.q.trim() !== "") {
     const needle = query.q.trim().toLowerCase();
@@ -186,13 +205,11 @@ export class RedditRssOpportunityAdapter implements OpportunitySourceAdapter {
     query: OpportunityQuery,
     context: OpportunityAdapterContext,
   ): Promise<readonly OpportunityCandidate[]> {
-    const requested = query.communities === undefined || query.communities.length === 0
-      ? this.subreddits
-      : this.subreddits.filter((subreddit) =>
-          new Set(query.communities?.map((v) => normalizeSubreddit(v).toLowerCase()) ?? []).has(
-            subreddit.toLowerCase(),
-          ),
-        );
+    const communityFilter = normalizedCommunityFilter(query);
+    const requested =
+      communityFilter === undefined
+        ? this.subreddits
+        : this.subreddits.filter((subreddit) => communityFilter.has(subreddit.toLowerCase()));
     if (requested.length === 0) return [];
 
     const feedUrl = buildRedditAtomUrl(requested, this.baseUrl, this.feedLimit);
@@ -200,8 +217,11 @@ export class RedditRssOpportunityAdapter implements OpportunitySourceAdapter {
       signal: context.signal,
       headers: { accept: "application/atom+xml, application/xml;q=0.9, text/xml;q=0.8" },
     });
-    const parsed = parseRedditAtom(response.text, { observedAt: context.clock(), feedUrl: response.url });
-    const filtered = parsed.filter((candidate) => matchesQuery(candidate, query));
+    const parsed = parseRedditAtom(response.text, {
+      observedAt: context.clock(),
+      feedUrl: response.url,
+    });
+    const filtered = parsed.filter((candidate) => matchesQuery(candidate, query, communityFilter));
     return query.limit === undefined ? filtered : filtered.slice(0, Math.max(0, query.limit));
   }
 }
