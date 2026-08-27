@@ -68,6 +68,18 @@ test("default evaluation queue prepares candidate and review but not determinist
   assert.ok(queue.every((item) => item.prompt.includes("Return JSON only")));
 });
 
+test("an explicitly empty decision list keeps the safe default rather than including rejects", async () => {
+  const queue = await prepareOpportunityEvaluationQueue(
+    store,
+    resolveOpportunityProfile("demand").triage,
+    { decisions: [] },
+  );
+  assert.deepEqual(
+    queue.map((item) => item.opportunityId),
+    ["opp_queue_candidate", "opp_queue_review"],
+  );
+});
+
 test("prepared queue identity is deterministic and packet omits author/source metadata", async () => {
   const first = await prepareOpportunityEvaluationQueue(
     store,
