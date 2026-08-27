@@ -9,11 +9,14 @@ export const ATELIER_AGENT_PROFILE = Object.freeze({
   capabilities: Object.freeze(["coding"] as const),
 });
 
-export interface AtelierRequirementField {
-  readonly key: string;
+export type AtelierRequirementFieldType = "text" | "textarea" | "url" | "number" | "select";
+
+export interface AtelierRequirementFieldWire {
   readonly label: string;
+  readonly type: AtelierRequirementFieldType;
   readonly required: boolean;
-  readonly description: string;
+  readonly placeholder?: string;
+  readonly options?: readonly string[];
 }
 
 export interface AtelierServiceCreatePayload {
@@ -23,13 +26,34 @@ export interface AtelierServiceCreatePayload {
   readonly price_usd: string;
   readonly price_type: "fixed";
   readonly turnaround_hours: number;
-  readonly deliverables: readonly ["document"];
+  /** Atelier's live service records expose JSON-encoded arrays for this field. */
+  readonly deliverables: string;
   readonly max_revisions: number;
-  readonly requirement_fields: readonly AtelierRequirementField[];
+  /** Atelier's live service records expose JSON-encoded requirement objects for this field. */
+  readonly requirement_fields: string;
+}
+
+function encodeServiceArray(value: unknown): string {
+  return JSON.stringify(value);
 }
 
 export function buildReadmeSetupServicePayload(): AtelierServiceCreatePayload {
   const service = ATELIER_README_SETUP_SERVICE;
+  const requirements: readonly AtelierRequirementFieldWire[] = Object.freeze([
+    Object.freeze({
+      label: "Public GitHub repository URL",
+      type: "url" as const,
+      required: true,
+      placeholder: "https://github.com/owner/repo",
+    }),
+    Object.freeze({
+      label: "Setup problem or goal",
+      type: "textarea" as const,
+      required: false,
+      placeholder: "Optional context about what is confusing or failing in the current setup instructions.",
+    }),
+  ]);
+
   return Object.freeze({
     category: "coding",
     title: service.title,
@@ -37,18 +61,9 @@ export function buildReadmeSetupServicePayload(): AtelierServiceCreatePayload {
     price_usd: service.priceUsd.toFixed(2),
     price_type: "fixed",
     turnaround_hours: service.turnaroundHours,
-    deliverables: Object.freeze(["document"] as const),
+    deliverables: encodeServiceArray(["document"]),
     max_revisions: service.maxRevisions,
-    requirement_fields: Object.freeze(
-      service.requirements.map((field) =>
-        Object.freeze({
-          key: field.key,
-          label: field.label,
-          required: field.required,
-          description: field.description,
-        }),
-      ),
-    ),
+    requirement_fields: encodeServiceArray(requirements),
   });
 }
 
