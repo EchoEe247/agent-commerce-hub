@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { CommerceError } from "../core/errors.js";
 import { canonicalJson } from "../core/ids.js";
-import type { OpportunityCandidate } from "./models.js";
+import type { OpportunityCandidate, OpportunitySourceId } from "./models.js";
 import type { OpportunityTriageResult } from "./triage.js";
 
 export const OPPORTUNITY_RECOMMENDATIONS = ["reject", "watch", "pursue", "manual_review"] as const;
@@ -14,6 +14,11 @@ export const OPPORTUNITY_EXECUTION_ROUTES = [
   "unknown",
 ] as const;
 export const OPPORTUNITY_RISK_LEVELS = ["low", "medium", "high"] as const;
+
+/** Hard context bounds before a listing is handed to any model/provider. */
+export const MAX_EVALUATION_TITLE_CHARS = 2_000;
+export const MAX_EVALUATION_BODY_CHARS = 12_000;
+export const MAX_EVALUATION_TAGS = 32;
 
 const moneyRangeSchema = z
   .object({
@@ -53,9 +58,25 @@ export const opportunityEvaluationSchema = z
 
 export type OpportunityEvaluation = z.infer<typeof opportunityEvaluationSchema>;
 
+export interface OpportunityEvaluationListing {
+  readonly id: string;
+  readonly source: OpportunitySourceId;
+  readonly externalId: string;
+  readonly title: string;
+  readonly titleTruncated: boolean;
+  readonly body?: string | undefined;
+  readonly bodyTruncated: boolean;
+  readonly url?: string | undefined;
+  readonly community?: string | undefined;
+  readonly postedAt?: string | undefined;
+  readonly observedAt: string;
+  readonly tags: readonly string[];
+}
+
 export interface OpportunityEvaluationPacket {
   readonly schemaVersion: 1;
-  readonly opportunity: OpportunityCandidate;
+  /** Bounded, non-secret listing facts only. Author/source metadata are omitted. */
+  readonly opportunity: OpportunityEvaluationListing;
   readonly triage: OpportunityTriageResult;
 }
 
@@ -83,6 +104,33 @@ export interface OpportunityEvaluationSkipped {
 
 export type OpportunityEvaluationRun = OpportunityEvaluationCompleted | OpportunityEvaluationSkipped;
 
+function boundText(value: string, max: number): { readonly text: string; readonly truncated: boolean } {
+  if (value.length <= max) return Object.freeze({ text: value, truncated: false });
+  return Object.freeze({ text: value.slice(0, max), truncated: true });
+}
+
+export function compactOpportunityForEvaluation(
+  opportunity: OpportunityCandidate,
+): OpportunityEvaluationListing {
+  const title = boundText(opportunity.title, MAX_EVALUATION_TITLE_CHARS);
+  const body = opportunity.body === undefined ? undefined : boundText(opportunity.body, MAX_EVALUATION_BODY_CHARS);
+  const tags = Object.freeze(opportunity.tags.slice(0, MAX_EVALUATION_TAGS));
+  return Object.freeze({
+    id: opportunity.id,
+    source: opportunity.source,
+    externalId: opportunity.externalId,
+    title: title.text,
+    titleTruncated: title.truncated,
+    ...(body === undefined ? {} : { body: body.text }),
+    bodyTruncated: body?.truncated ?? false,
+    ...(opportunity.url === undefined ? {} : { url: opportunity.url }),
+    ...(opportunity.community === undefined ? {} : { community: opportunity.community }),
+    ...(opportunity.postedAt === undefined ? {} : { postedAt: opportunity.postedAt }),
+    observedAt: opportunity.observedAt,
+    tags,
+  });
+}
+
 export function buildOpportunityEvaluationPacket(
   opportunity: OpportunityCandidate,
   triage: OpportunityTriageResult,
@@ -93,7 +141,11 @@ export function buildOpportunityEvaluationPacket(
       `triage result ${triage.opportunityId} does not belong to opportunity ${opportunity.id}`,
     );
   }
-  return Object.freeze({ schemaVersion: 1 as const, opportunity, triage });
+  return Object.freeze({
+    schemaVersion: 1 as const,
+    opportunity: compactOpportunityForEvaluation(opportunity),
+    triage,
+  });
 }
 
 function assertMoneyRange(name: string, value: { minUsd: number; maxUsd: number | null }): void {
