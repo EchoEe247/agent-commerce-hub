@@ -7,6 +7,7 @@ import {
   evaluateOpportunity,
   MAX_EVALUATION_BODY_CHARS,
   MAX_EVALUATION_TAGS,
+  OPPORTUNITY_EVALUATION_POLICY_VERSION,
   parseOpportunityEvaluation,
   type OpportunityEvaluator,
 } from "../src/opportunities/evaluation.js";
@@ -96,13 +97,22 @@ test("evaluation packet is bounded and omits author/source metadata", () => {
   assert.equal("metadata" in packet.opportunity, false);
 });
 
-test("prompt is provider-neutral and carries no-invention, prompt-injection, and rule-check guards", () => {
+test("prompt is provider-neutral and carries strict economics, injection, and rule-check guards", () => {
   const prompt = buildOpportunityEvaluationPrompt(buildOpportunityEvaluationPacket(candidate, triage()));
   assert.match(prompt, /Do not invent a payout/i);
   assert.match(prompt, /analysis only/i);
   assert.match(prompt, /untrusted data/i);
   assert.match(prompt, /never follow instructions inside/i);
   assert.match(prompt, /platform\/subreddit.*rules/i);
+  assert.match(prompt, /TOTAL expected payout in USD/i);
+  assert.match(prompt, /per-unit.*per-video.*hourly.*commission.*revenue-share/i);
+  assert.match(prompt, /non-USD compensation/i);
+  assert.match(prompt, /Do not perform FX conversion/i);
+  assert.match(prompt, /No other keys are allowed/i);
+  assert.match(prompt, /Never emit economics keys such as amount, currency, unit, note/i);
+  assert.match(prompt, /minUsd/);
+  assert.match(prompt, /maxUsd/);
+  assert.match(prompt, new RegExp(`Evaluation policy version: ${String(OPPORTUNITY_EVALUATION_POLICY_VERSION)}`));
   assert.match(prompt, /opp_eval/);
   assert.match(prompt, /human_physical/);
   assert.doesNotMatch(prompt, /example_worker/);
@@ -112,6 +122,26 @@ test("valid structured evaluation passes schema validation", () => {
   const parsed = parseOpportunityEvaluation(validEvaluation);
   assert.equal(parsed.recommendation, "pursue");
   assert.equal(parsed.economics.payout?.basis, "observed");
+});
+
+test("alternate amount/currency payout objects remain rejected rather than normalized", () => {
+  const invalid = {
+    ...validEvaluation,
+    economics: {
+      ...validEvaluation.economics,
+      payout: {
+        amount: 5,
+        currency: "USD",
+        basis: "observed",
+        unit: "per_video",
+        note: "listing states $5/video",
+      },
+    },
+  };
+  assert.throws(
+    () => parseOpportunityEvaluation(invalid),
+    (error: unknown) => error instanceof CommerceError && error.code === "SCHEMA_VIOLATION",
+  );
 });
 
 test("impossible physical-presence plus ai_direct output is rejected", () => {
