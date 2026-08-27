@@ -24,6 +24,7 @@ import {
   OPPORTUNITY_PROFILE_IDS,
   resolveOpportunityProfile,
 } from "./profiles.js";
+import { summarizeOpportunitySourceHealth } from "./runtime-health.js";
 import {
   triageOpportunities,
   type OpportunityTriageProfile,
@@ -71,7 +72,9 @@ Triage is deterministic and conservative. Caution signals are not fraud verdicts
 ambiguous listings remain reviewable for a later model/human evaluator.
 
 The source is Reddit's public Atom/RSS feed. RSS is treated as a replaceable
-adapter, not a guaranteed long-term dependency.
+adapter, not a guaranteed long-term dependency. A pass exits non-zero when no
+configured source completes successfully, so an outage cannot masquerade as an
+empty healthy feed.
 `;
 
 function parseLimit(raw: string | undefined): number | undefined {
@@ -153,6 +156,7 @@ async function main(): Promise<void> {
     ...(values.query === undefined ? {} : { q: values.query }),
     ...(limit === undefined ? {} : { limit }),
   });
+  const sourceHealth = summarizeOpportunitySourceHealth(result.sources);
 
   const namedProfile = resolveOpportunityProfile(values.profile ?? process.env.OPPORTUNITY_PROFILE);
   const preferredTerms = values["prefer-term"] ?? envCsv("OPPORTUNITY_PREFERRED_TERMS");
@@ -178,7 +182,7 @@ async function main(): Promise<void> {
   const triageById = new Map(triage.map((entry) => [entry.opportunityId, entry] as const));
 
   const output = {
-    ok: true,
+    ok: sourceHealth.ok,
     mode: "read-only",
     source: "reddit_rss",
     subreddits,
@@ -186,6 +190,7 @@ async function main(): Promise<void> {
     count: result.results.length,
     persisted: result.persisted,
     duplicatesDropped: result.duplicatesDropped,
+    sourceHealth,
     sources: result.sources,
     profile: namedProfile.id,
     triageProfile,
@@ -196,6 +201,7 @@ async function main(): Promise<void> {
 
   if (values.json === true) {
     process.stdout.write(`${JSON.stringify(output)}\n`);
+    if (!sourceHealth.ok) process.exitCode = 2;
     return;
   }
 
@@ -203,6 +209,10 @@ async function main(): Promise<void> {
     [
       `Reddit RSS opportunity pass: ${String(result.results.length)} new, ` +
         `${String(result.duplicatesDropped)} duplicate(s) dropped`,
+      `source health: ${sourceHealth.ok ? (sourceHealth.degraded ? "degraded" : "ok") : "failed"}`,
+      ...(sourceHealth.failedSources.length === 0
+        ? []
+        : [`failed sources: ${sourceHealth.failedSources.join(", ")}`]),
       `profile: ${namedProfile.id}`,
       `triage: ${String(triageCounts.candidate ?? 0)} candidate, ` +
         `${String(triageCounts.review ?? 0)} review, ${String(triageCounts.reject ?? 0)} reject`,
@@ -218,6 +228,7 @@ async function main(): Promise<void> {
       }),
     ].join("\n") + "\n",
   );
+  if (!sourceHealth.ok) process.exitCode = 2;
 }
 
 main().catch((error: unknown) => {
