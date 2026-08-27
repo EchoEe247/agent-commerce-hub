@@ -62,9 +62,24 @@ function evidenceRequiresReference(kind: VerificationEvidenceKind): boolean {
   return kind === "source_reference" || kind === "executor_quote" || kind === "counterparty_confirmation";
 }
 
+function assertPublicSourceReference(reference: string): void {
+  let url: URL;
+  try {
+    url = new URL(reference);
+  } catch {
+    throw new Error("source_reference evidence requires a valid HTTP(S) URL");
+  }
+  if ((url.protocol !== "https:" && url.protocol !== "http:") || url.username !== "" || url.password !== "") {
+    throw new Error("source_reference evidence requires a credential-free HTTP(S) URL");
+  }
+}
+
 function assertEvidenceSemantics(evidence: OpportunityVerificationResolution["evidence"]): void {
   if (evidenceRequiresReference(evidence.kind) && (evidence.reference === undefined || evidence.reference.trim() === "")) {
     throw new Error(`${evidence.kind} evidence requires a non-empty reference`);
+  }
+  if (evidence.kind === "source_reference" && evidence.reference !== undefined) {
+    assertPublicSourceReference(evidence.reference.trim());
   }
 }
 
