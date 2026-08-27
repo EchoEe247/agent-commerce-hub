@@ -106,9 +106,15 @@ function normalizedTerm(term: string): string {
   return term.trim().toLowerCase();
 }
 
+function escapeRegex(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 function containsPhrase(haystack: string, phrase: string): boolean {
   const needle = normalizedTerm(phrase);
-  return needle !== "" && haystack.includes(needle);
+  if (needle === "") return false;
+  const pattern = escapeRegex(needle).replace(/\\ /g, "\\s+");
+  return new RegExp(`(?:^|[^a-z0-9])${pattern}(?:$|[^a-z0-9])`, "i").test(haystack);
 }
 
 function matchingTerms(haystack: string, terms: readonly string[] | undefined): string[] {
@@ -154,7 +160,7 @@ export function extractUsdBudget(text: string): BudgetSignal | undefined {
     const min = asAmount(match[1]);
     if (min === undefined) continue;
     const max = asAmount(match[2]);
-    const suffix = max === undefined ? match[2] : match[3];
+    const suffix = max === undefined ? (match[3] ?? match[2]) : match[3];
     const low = max === undefined ? min : Math.min(min, max);
     const high = max === undefined ? undefined : Math.max(min, max);
     return Object.freeze({
