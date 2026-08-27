@@ -2,6 +2,7 @@ import { canonicalHash } from "../core/ids.js";
 import {
   buildOpportunityEvaluationPacket,
   buildOpportunityEvaluationPrompt,
+  OPPORTUNITY_EVALUATION_POLICY_VERSION,
   type OpportunityEvaluationPacket,
 } from "./evaluation.js";
 import type { OpportunityStore } from "./store.js";
@@ -9,8 +10,9 @@ import type { OpportunityTriageDecision, OpportunityTriageProfile } from "./tria
 import { reviewStoredOpportunities } from "./review.js";
 
 export interface PreparedOpportunityEvaluation {
-  /** Stable request identity derived from the bounded packet, not wall-clock time. */
+  /** Stable request identity derived from evaluation policy + bounded packet, not wall-clock time. */
   readonly requestId: string;
+  readonly policyVersion: number;
   readonly opportunityId: string;
   readonly triageDecision: OpportunityTriageDecision;
   readonly triageScore: number;
@@ -47,9 +49,13 @@ function boundedScore(value: number | undefined): number {
 export function buildPreparedOpportunityEvaluation(
   packet: OpportunityEvaluationPacket,
 ): PreparedOpportunityEvaluation {
-  const requestId = `evalreq_${canonicalHash(packet).slice(0, 32)}`;
+  const requestId = `evalreq_${canonicalHash({
+    policyVersion: OPPORTUNITY_EVALUATION_POLICY_VERSION,
+    packet,
+  }).slice(0, 32)}`;
   return Object.freeze({
     requestId,
+    policyVersion: OPPORTUNITY_EVALUATION_POLICY_VERSION,
     opportunityId: packet.opportunity.id,
     triageDecision: packet.triage.decision,
     triageScore: packet.triage.score,
@@ -62,8 +68,9 @@ export function buildPreparedOpportunityEvaluation(
  * Prepare bounded, provider-neutral model requests from durable opportunity state.
  *
  * This stage never calls a model. It is intentionally safe to run before a local
- * provider/coordinator is configured, and its stable request IDs let a later
- * runtime deduplicate evaluation work without coupling this package to a provider.
+ * provider/coordinator is configured. Stable request IDs include the evaluation
+ * policy version so semantic prompt changes invalidate older persisted results
+ * rather than silently treating them as current.
  */
 export async function prepareOpportunityEvaluationQueue(
   store: OpportunityStore,
