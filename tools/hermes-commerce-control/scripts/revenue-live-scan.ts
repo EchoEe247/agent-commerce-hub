@@ -28,6 +28,7 @@ import {
 } from "../src/revenue/work-opportunity.js";
 import { evaluateProfitEconomics } from "../src/revenue/profit-economics.js";
 import { STRICT_ZERO_COST_SOURCE_PROFILES } from "../src/revenue/source-policy.js";
+import { assessBountyBookReliability } from "../src/revenue/bountybook-reliability.js";
 
 const config = loadConfig(process.env);
 const adapters: CommerceAdapter[] = [
@@ -40,6 +41,37 @@ const adapters: CommerceAdapter[] = [
   new The402Adapter(config.adapters.the402.baseUrl),
   new PayShAdapter(),
 ];
+
+async function readBountyBookReliability(): Promise<
+  ReturnType<typeof assessBountyBookReliability> & { readonly httpStatus: number | null }
+> {
+  try {
+    const response = await fetch("https://api.bountybook.ai/oracle/stats", {
+      headers: { Accept: "application/json" },
+      signal: AbortSignal.timeout(10_000),
+    });
+    let body: unknown = null;
+    if (response.ok) {
+      try {
+        body = await response.json();
+      } catch {
+        body = null;
+      }
+    }
+    return Object.freeze({
+      ...assessBountyBookReliability(body),
+      httpStatus: response.status,
+    });
+  } catch {
+    return Object.freeze({
+      ...assessBountyBookReliability(null),
+      httpStatus: null,
+    });
+  }
+}
+
+const bountybookReliability = await readBountyBookReliability();
+const bountybookSuppressed = bountybookReliability.pursuitSuppressed;
 
 const revenueOptions: RevenueEvaluationOptions = {
   minRewardUsd: 1,
@@ -81,8 +113,17 @@ const evaluated = earnable.map((work) => {
   return { work, revenue, profit };
 });
 
+function sourceReliabilityBlocked(source: string): boolean {
+  return source === "bountybook" && bountybookSuppressed;
+}
+
 const pursuit = evaluated
-  .filter((entry) => entry.revenue.eligible && entry.profit.pursuitEligible)
+  .filter(
+    (entry) =>
+      entry.revenue.eligible &&
+      entry.profit.pursuitEligible &&
+      !sourceReliabilityBlocked(entry.work.source),
+  )
   .sort((a, b) => {
     const ap = a.profit.expectedNetProfitUsd ?? -1;
     const bp = b.profit.expectedNetProfitUsd ?? -1;
@@ -94,22 +135,37 @@ const pursuit = evaluated
   });
 
 const watchlist = evaluated
-  .filter((entry) => entry.revenue.eligible && !entry.profit.pursuitEligible)
-  .map((entry) => ({
-    id: entry.work.id,
-    source: entry.work.source,
-    externalId: entry.work.externalId,
-    title: entry.work.title,
-    url: entry.work.url ?? null,
-    rewardUsd: entry.revenue.rewardUsd,
-    expectedRevenueUsd: entry.revenue.expectedRevenueUsd,
-    successProbability: entry.profit.successProbability,
-    expectedNetProfitUsd: entry.profit.expectedNetProfitUsd,
-    lossIfNoPayoutUsd: entry.profit.lossIfNoPayoutUsd,
-    blockers: entry.profit.blockers,
-    flags: entry.profit.flags,
-    sourceNotes: entry.profit.sourceProfile.notes,
-  }));
+  .filter(
+    (entry) =>
+      entry.revenue.eligible &&
+      (!entry.profit.pursuitEligible || sourceReliabilityBlocked(entry.work.source)),
+  )
+  .map((entry) => {
+    const reliabilityBlocked = sourceReliabilityBlocked(entry.work.source);
+    return {
+      id: entry.work.id,
+      source: entry.work.source,
+      externalId: entry.work.externalId,
+      title: entry.work.title,
+      url: entry.work.url ?? null,
+      rewardUsd: entry.revenue.rewardUsd,
+      expectedRevenueUsd: entry.revenue.expectedRevenueUsd,
+      successProbability: entry.profit.successProbability,
+      expectedNetProfitUsd: entry.profit.expectedNetProfitUsd,
+      lossIfNoPayoutUsd: entry.profit.lossIfNoPayoutUsd,
+      blockers: [
+        ...new Set([
+          ...entry.profit.blockers,
+          ...(reliabilityBlocked ? ["source_verifier_degraded"] : []),
+        ]),
+      ].sort(),
+      flags: entry.profit.flags,
+      sourceNotes: [
+        ...entry.profit.sourceProfile.notes,
+        ...(reliabilityBlocked ? [bountybookReliability.reason] : []),
+      ],
+    };
+  });
 
 const rejected = evaluated
   .filter((entry) => !entry.revenue.eligible)
@@ -126,7 +182,7 @@ const rejected = evaluated
   }));
 
 const payload = {
-  schemaVersion: 2,
+  schemaVersion: 3,
   mode: "A",
   policy: {
     boundedRiskMode: true,
@@ -135,11 +191,15 @@ const payload = {
     minimumExpectedNetProfitUsd: 3,
     minimumSuccessProbability: 0.5,
     maximumLossIfNoPayoutUsd: 0.25,
+    liveSourceReliabilityGate: true,
   },
   scanStartedAt,
   generatedAt: new Date().toISOString(),
   financialActionExecuted: false,
   externalMutationExecuted: false,
+  sourceReliability: {
+    bountybook: bountybookReliability,
+  },
   sources: discovered.sources,
   counts: {
     discovered: discovered.results.length,
