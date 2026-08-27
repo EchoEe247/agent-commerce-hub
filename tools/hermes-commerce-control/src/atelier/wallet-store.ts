@@ -48,17 +48,21 @@ function decodeSecret(raw: Uint8Array): Buffer {
   finally { seed.fill(0); }
 }
 
+function walletMetadata(address: string): Readonly<Record<string, string>> {
+  return Object.freeze({
+    address,
+    chain: ATELIER_WALLET_CHAIN,
+    keyFormat: "ed25519-seed-v2",
+    purpose: ATELIER_WALLET_PURPOSE,
+  });
+}
+
 export function createAtelierWalletKeystore(path: string, passphrase: string): Readonly<{ address: string; path: string }> {
   if (existsSync(path)) throw new Error("Atelier wallet keystore already exists; refusing overwrite");
   const material = generateAtelierSolanaWalletMaterial();
   const secret = encodeSecret(material.privateKeyPkcs8);
   try {
-    const envelope = encryptSecret(secret, passphrase, {
-      address: material.address,
-      chain: ATELIER_WALLET_CHAIN,
-      keyFormat: "ed25519-seed-v2",
-      purpose: ATELIER_WALLET_PURPOSE,
-    });
+    const envelope = encryptSecret(secret, passphrase, walletMetadata(material.address));
     writeEncryptedSecretFile(path, envelope);
     return Object.freeze({ address: material.address, path });
   } finally {
@@ -86,5 +90,24 @@ export function loadAtelierWalletKeystore(path: string, passphrase: string): Sto
     return Object.freeze({ address: expectedAddress, privateKeyPkcs8 });
   } finally {
     decrypted.fill(0);
+  }
+}
+
+export function rekeyAtelierWalletKeystore(
+  path: string,
+  oldPassphrase: string,
+  newPassphrase: string,
+): Readonly<{ address: string; path: string }> {
+  if (!existsSync(path)) throw new Error("Atelier wallet keystore does not exist");
+  if (oldPassphrase === newPassphrase) throw new Error("new Atelier wallet passphrase must differ from the old passphrase");
+  const wallet = loadAtelierWalletKeystore(path, oldPassphrase);
+  const secret = encodeSecret(wallet.privateKeyPkcs8);
+  try {
+    const envelope = encryptSecret(secret, newPassphrase, walletMetadata(wallet.address));
+    writeEncryptedSecretFile(path, envelope);
+    return Object.freeze({ address: wallet.address, path });
+  } finally {
+    wallet.privateKeyPkcs8.fill(0);
+    secret.fill(0);
   }
 }
