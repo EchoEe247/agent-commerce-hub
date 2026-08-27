@@ -15,6 +15,12 @@ export const VERIFICATION_EVIDENCE_KINDS = [
 ] as const;
 export type VerificationEvidenceKind = (typeof VERIFICATION_EVIDENCE_KINDS)[number];
 
+const resolutionIdSchema = z.string().regex(/^opver_[a-f0-9]{32}$/);
+const dependencyResolutionIdsSchema = z
+  .array(resolutionIdSchema)
+  .max(16)
+  .refine((values) => new Set(values).size === values.length, "dependsOnResolutionIds must be unique");
+
 const evidenceSchema = z
   .object({
     kind: z.enum(VERIFICATION_EVIDENCE_KINDS),
@@ -26,11 +32,12 @@ const evidenceSchema = z
 const persistedResolutionSchema = z
   .object({
     schemaVersion: z.literal(1),
-    resolutionId: z.string().regex(/^opver_[a-f0-9]{32}$/),
+    resolutionId: resolutionIdSchema,
     dossierId: z.string().regex(/^opdos_[a-f0-9]{32}$/),
     checkId: z.string().regex(/^opcheck_[a-f0-9]{32}$/),
     outcome: z.enum(VERIFICATION_RESOLUTION_OUTCOMES),
     evidence: evidenceSchema,
+    dependsOnResolutionIds: dependencyResolutionIdsSchema.optional(),
     recordedAt: z
       .string()
       .min(1)
@@ -49,6 +56,8 @@ export interface OpportunityVerificationResolution {
     readonly reference?: string | undefined;
     readonly note: string;
   };
+  /** Exact prerequisite resolution IDs used by a derived calculation. */
+  readonly dependsOnResolutionIds?: readonly string[] | undefined;
   readonly recordedAt: string;
 }
 
@@ -74,13 +83,29 @@ function assertPublicSourceReference(reference: string): void {
   }
 }
 
-function assertEvidenceSemantics(evidence: OpportunityVerificationResolution["evidence"]): void {
+function assertEvidenceSemantics(record: {
+  readonly evidence: OpportunityVerificationResolution["evidence"];
+  readonly dependsOnResolutionIds?: readonly string[] | undefined;
+}): void {
+  const { evidence, dependsOnResolutionIds } = record;
   if (evidenceRequiresReference(evidence.kind) && (evidence.reference === undefined || evidence.reference.trim() === "")) {
     throw new Error(`${evidence.kind} evidence requires a non-empty reference`);
   }
   if (evidence.kind === "source_reference" && evidence.reference !== undefined) {
     assertPublicSourceReference(evidence.reference.trim());
   }
+  if ((dependsOnResolutionIds?.length ?? 0) > 0 && evidence.kind !== "calculation") {
+    throw new Error("dependsOnResolutionIds are only valid for calculation evidence");
+  }
+}
+
+function normalizeDependencyResolutionIds(
+  values: readonly string[] | undefined,
+): readonly string[] | undefined {
+  if (values === undefined || values.length === 0) return undefined;
+  if (values.length > 16) throw new Error("dependsOnResolutionIds may contain at most 16 entries");
+  const normalized = [...new Set(values.map((value) => resolutionIdSchema.parse(value.trim())))].sort();
+  return normalized.length === 0 ? undefined : Object.freeze(normalized);
 }
 
 export function buildOpportunityVerificationResolution(input: {
@@ -88,9 +113,11 @@ export function buildOpportunityVerificationResolution(input: {
   readonly checkId: string;
   readonly outcome: VerificationResolutionOutcome;
   readonly evidence: OpportunityVerificationResolution["evidence"];
+  readonly dependsOnResolutionIds?: readonly string[] | undefined;
   readonly recordedAt?: string | undefined;
 }): OpportunityVerificationResolution {
-  assertEvidenceSemantics(input.evidence);
+  const dependsOnResolutionIds = normalizeDependencyResolutionIds(input.dependsOnResolutionIds);
+  assertEvidenceSemantics({ evidence: input.evidence, dependsOnResolutionIds });
   const recordedAt = input.recordedAt ?? new Date().toISOString();
   const base = persistedResolutionSchema
     .omit({ resolutionId: true })
@@ -100,6 +127,7 @@ export function buildOpportunityVerificationResolution(input: {
       checkId: input.checkId,
       outcome: input.outcome,
       evidence: input.evidence,
+      ...(dependsOnResolutionIds === undefined ? {} : { dependsOnResolutionIds }),
       recordedAt,
     });
   const resolutionId = `opver_${canonicalHash(base).slice(0, 32)}`;
@@ -121,7 +149,7 @@ function parsePersistedResolution(value: unknown): OpportunityVerificationResolu
   const parsed = persistedResolutionSchema.safeParse(value);
   if (!parsed.success) return undefined;
   try {
-    assertEvidenceSemantics(parsed.data.evidence);
+    assertEvidenceSemantics(parsed.data);
     return Object.freeze(parsed.data);
   } catch {
     return undefined;
@@ -137,7 +165,7 @@ export class JsonlOpportunityVerificationResolutionStore implements OpportunityV
 
   async append(record: OpportunityVerificationResolution): Promise<void> {
     const parsed = persistedResolutionSchema.parse(record);
-    assertEvidenceSemantics(parsed.evidence);
+    assertEvidenceSemantics(parsed);
     await mkdir(dirname(this.#path), { recursive: true });
     await this.#repairTailBeforeAppend();
     await appendFile(this.#path, `${canonicalJson(parsed)}\n`, { encoding: "utf8", mode: 0o600 });
