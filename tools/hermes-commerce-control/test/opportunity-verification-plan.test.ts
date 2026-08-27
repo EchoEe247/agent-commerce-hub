@@ -148,6 +148,61 @@ test("check-specific evidence cannot satisfy the wrong verification kind", () =>
   assert.equal(check.state, "requires_external_verification");
 });
 
+test("later incompatible evidence does not erase earlier applicable evidence", () => {
+  const current = dossier();
+  const initial = buildOpportunityVerificationPlan(current);
+  const compensation = byKind(initial, "compensation_terms");
+  const valid = buildOpportunityVerificationResolution({
+    dossierId: current.dossierId,
+    checkId: compensation.checkId,
+    outcome: "satisfied",
+    evidence: {
+      kind: "source_reference",
+      reference: "https://example.test/compensation",
+      note: "Verified compensation from the source.",
+    },
+    recordedAt: "2026-08-27T16:00:00.000Z",
+  });
+  const wrongLater = buildOpportunityVerificationResolution({
+    dossierId: current.dossierId,
+    checkId: compensation.checkId,
+    outcome: "satisfied",
+    evidence: {
+      kind: "executor_quote",
+      reference: "quote:not-buyer-compensation",
+      note: "Wrong evidence type recorded later.",
+    },
+    recordedAt: "2026-08-27T17:00:00.000Z",
+  });
+  const plan = buildOpportunityVerificationPlan(current, [valid, wrongLater]);
+  const check = byKind(plan, "compensation_terms");
+  assert.equal(check.state, "resolved");
+  assert.equal(check.appliedResolutionId, valid.resolutionId);
+  assert.equal(check.evidenceAccepted, true);
+});
+
+test("resolution evidence is scoped to the current dossier identity", () => {
+  const current = dossier();
+  const initial = buildOpportunityVerificationPlan(current);
+  const compensation = byKind(initial, "compensation_terms");
+  const stale = buildOpportunityVerificationResolution({
+    dossierId: `opdos_${"b".repeat(32)}`,
+    checkId: compensation.checkId,
+    outcome: "satisfied",
+    evidence: {
+      kind: "source_reference",
+      reference: "https://example.test/stale",
+      note: "Evidence from a different dossier revision.",
+    },
+    recordedAt: "2026-08-27T18:00:00.000Z",
+  });
+  const plan = buildOpportunityVerificationPlan(current, [stale]);
+  const check = byKind(plan, "compensation_terms");
+  assert.equal(check.state, "requires_external_verification");
+  assert.equal(check.appliedResolutionId, null);
+  assert.equal(check.evidenceAccepted, null);
+});
+
 test("a failed accepted check stops readiness at failed_check", () => {
   const current = dossier();
   const initial = buildOpportunityVerificationPlan(current);
