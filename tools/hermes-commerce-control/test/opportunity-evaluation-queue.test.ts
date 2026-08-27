@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { canonicalHash } from "../src/core/ids.js";
+import { OPPORTUNITY_EVALUATION_POLICY_VERSION } from "../src/opportunities/evaluation.js";
 import { prepareOpportunityEvaluationQueue } from "../src/opportunities/evaluation-queue.js";
 import type { OpportunityCandidate } from "../src/opportunities/models.js";
 import { resolveOpportunityProfile } from "../src/opportunities/profiles.js";
@@ -65,6 +67,7 @@ test("default evaluation queue prepares candidate and review but not determinist
     ],
   );
   assert.ok(queue.every((item) => item.requestId.startsWith("evalreq_")));
+  assert.ok(queue.every((item) => item.policyVersion === OPPORTUNITY_EVALUATION_POLICY_VERSION));
   assert.ok(queue.every((item) => item.prompt.includes("Return JSON only")));
 });
 
@@ -80,7 +83,7 @@ test("an explicitly empty decision list keeps the safe default rather than inclu
   );
 });
 
-test("prepared queue identity is deterministic and packet omits author/source metadata", async () => {
+test("prepared queue identity is deterministic, policy-versioned, and packet omits author/source metadata", async () => {
   const first = await prepareOpportunityEvaluationQueue(
     store,
     resolveOpportunityProfile("demand").triage,
@@ -92,11 +95,15 @@ test("prepared queue identity is deterministic and packet omits author/source me
     { decisions: ["candidate"], limit: 1 },
   );
   assert.equal(first[0]?.requestId, second[0]?.requestId);
-  const packet = first[0]?.packet;
-  assert.ok(packet !== undefined);
+  const prepared = first[0];
+  assert.ok(prepared !== undefined);
+  assert.equal(prepared.policyVersion, OPPORTUNITY_EVALUATION_POLICY_VERSION);
+  const legacyPacketOnlyId = `evalreq_${canonicalHash(prepared.packet).slice(0, 32)}`;
+  assert.notEqual(prepared.requestId, legacyPacketOnlyId);
+  const packet = prepared.packet;
   assert.equal("author" in packet.opportunity, false);
   assert.equal("metadata" in packet.opportunity, false);
-  assert.doesNotMatch(first[0]?.prompt ?? "", /not-needed-by-model/);
+  assert.doesNotMatch(prepared.prompt, /not-needed-by-model/);
 });
 
 test("minimum score is applied before queue limit", async () => {
