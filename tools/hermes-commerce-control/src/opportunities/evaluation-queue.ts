@@ -25,6 +25,25 @@ export interface OpportunityEvaluationQueueOptions {
   readonly scanLimit?: number | undefined;
 }
 
+const DEFAULT_QUEUE_DECISIONS = Object.freeze(["candidate", "review"] as const);
+
+function boundedInteger(
+  value: number | undefined,
+  fallback: number,
+  minimum: number,
+  maximum: number,
+): number {
+  const selected = value ?? fallback;
+  if (!Number.isFinite(selected)) return fallback;
+  return Math.max(minimum, Math.min(maximum, Math.trunc(selected)));
+}
+
+function boundedScore(value: number | undefined): number {
+  const selected = value ?? 0;
+  if (!Number.isFinite(selected)) return 0;
+  return Math.max(0, Math.min(100, selected));
+}
+
 export function buildPreparedOpportunityEvaluation(
   packet: OpportunityEvaluationPacket,
 ): PreparedOpportunityEvaluation {
@@ -51,9 +70,12 @@ export async function prepareOpportunityEvaluationQueue(
   profile: OpportunityTriageProfile = {},
   options: OpportunityEvaluationQueueOptions = {},
 ): Promise<readonly PreparedOpportunityEvaluation[]> {
-  const decisions = options.decisions ?? (["candidate", "review"] as const);
-  const scanLimit = Math.max(1, Math.min(10_000, Math.trunc(options.scanLimit ?? 1_000)));
-  const outputLimit = Math.max(0, Math.min(scanLimit, Math.trunc(options.limit ?? 50)));
+  const decisions =
+    options.decisions === undefined || options.decisions.length === 0
+      ? DEFAULT_QUEUE_DECISIONS
+      : options.decisions;
+  const scanLimit = boundedInteger(options.scanLimit, 1_000, 1, 10_000);
+  const outputLimit = boundedInteger(options.limit, 50, 0, scanLimit);
   if (outputLimit === 0) return Object.freeze([]);
 
   const reviewed = await reviewStoredOpportunities(store, profile, {
@@ -61,7 +83,7 @@ export async function prepareOpportunityEvaluationQueue(
     limit: scanLimit,
     scanLimit,
   });
-  const minimumScore = Math.max(0, Math.min(100, options.minimumScore ?? 0));
+  const minimumScore = boundedScore(options.minimumScore);
   const out: PreparedOpportunityEvaluation[] = [];
   for (const entry of reviewed) {
     if (entry.triage.score < minimumScore) continue;
