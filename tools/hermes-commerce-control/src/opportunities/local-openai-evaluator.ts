@@ -30,10 +30,12 @@ function normalizeLoopbackBaseUrl(raw: string): URL {
     throw new CommerceError("INVALID_URL", "local evaluator URL may not contain credentials, query, or fragment");
   }
   const host = url.hostname.replace(/^\[|\]$/g, "").toLowerCase();
-  if (host !== "127.0.0.1" && host !== "localhost" && host !== "::1") {
-    throw new CommerceError("SSRF_BLOCKED", "local evaluator endpoint must be loopback-only", {
-      hostname: url.hostname,
-    });
+  if (host !== "127.0.0.1" && host !== "::1") {
+    throw new CommerceError(
+      "SSRF_BLOCKED",
+      "local evaluator endpoint must use a literal loopback address (127.0.0.1 or ::1)",
+      { hostname: url.hostname },
+    );
   }
   if (url.port === "") {
     throw new CommerceError("INVALID_URL", "local evaluator URL must include an explicit port");
@@ -106,7 +108,7 @@ function extractAssistantJson(envelope: unknown): unknown {
 }
 
 /**
- * OpenAI-compatible evaluator restricted to an explicit loopback HTTP endpoint.
+ * OpenAI-compatible evaluator restricted to an explicit literal loopback HTTP endpoint.
  *
  * It carries no API key and sends no Authorization/Cookie headers. This adapter
  * is intentionally local-only so a provider change cannot silently turn a free
