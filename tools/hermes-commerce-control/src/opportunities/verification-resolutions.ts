@@ -20,6 +20,13 @@ const dependencyResolutionIdsSchema = z
   .array(resolutionIdSchema)
   .max(16)
   .refine((values) => new Set(values).size === values.length, "dependsOnResolutionIds must be unique");
+const canonicalRecordedAtSchema = z
+  .string()
+  .regex(
+    /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/,
+    "recordedAt must use canonical UTC millisecond format YYYY-MM-DDTHH:mm:ss.sssZ",
+  )
+  .refine((value) => Number.isFinite(Date.parse(value)), "recordedAt must be a valid timestamp");
 
 const evidenceSchema = z
   .object({
@@ -38,10 +45,7 @@ const persistedResolutionSchema = z
     outcome: z.enum(VERIFICATION_RESOLUTION_OUTCOMES),
     evidence: evidenceSchema,
     dependsOnResolutionIds: dependencyResolutionIdsSchema.optional(),
-    recordedAt: z
-      .string()
-      .min(1)
-      .refine((value) => Number.isFinite(Date.parse(value)), "recordedAt must be a valid timestamp"),
+    recordedAt: canonicalRecordedAtSchema,
   })
   .strict();
 
