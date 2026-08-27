@@ -126,3 +126,37 @@ test("push event seam rejects malformed normalized candidates before persistence
     await rm(root, { recursive: true, force: true });
   }
 });
+
+test("push event seam rejects candidates attributed to a different source", async () => {
+  const root = await mkdtemp(join(tmpdir(), "commerce-event-provenance-"));
+  try {
+    const store = new JsonlOpportunityStore(join(root, "opportunities.jsonl"));
+    const mismatched: OpportunityEventNormalizer = {
+      id: "redditapis_monitor",
+      normalize() {
+        return [
+          {
+            id: "opp_wrong_source",
+            source: "reddit_rss",
+            externalId: "wrong-source",
+            title: "[HIRING] Wrongly attributed event",
+            observedAt: NOW,
+            tags: ["reddit"],
+            metadata: {},
+          },
+        ];
+      },
+    };
+
+    await assert.rejects(
+      normalizeAndPersistEvent(mismatched, {}, store, () => NOW),
+      (error: unknown) =>
+        error instanceof CommerceError &&
+        error.code === "SCHEMA_VIOLATION" &&
+        /emitted candidate source reddit_rss/i.test(error.message),
+    );
+    assert.equal((await store.list()).length, 0);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
