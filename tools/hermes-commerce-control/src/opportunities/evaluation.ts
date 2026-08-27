@@ -1,0 +1,195 @@
+import { z } from "zod";
+import { CommerceError } from "../core/errors.js";
+import { canonicalJson } from "../core/ids.js";
+import type { OpportunityCandidate } from "./models.js";
+import type { OpportunityTriageResult } from "./triage.js";
+
+export const OPPORTUNITY_RECOMMENDATIONS = ["reject", "watch", "pursue", "manual_review"] as const;
+export const OPPORTUNITY_EXECUTION_ROUTES = [
+  "ai_direct",
+  "human_remote",
+  "human_physical",
+  "hybrid",
+  "manual",
+  "unknown",
+] as const;
+export const OPPORTUNITY_RISK_LEVELS = ["low", "medium", "high"] as const;
+
+const moneyRangeSchema = z
+  .object({
+    minUsd: z.number().finite().nonnegative(),
+    maxUsd: z.number().finite().nonnegative().nullable(),
+    basis: z.enum(["observed", "inferred"]),
+  })
+  .strict();
+
+export const opportunityEvaluationSchema = z
+  .object({
+    schemaVersion: z.literal(1),
+    recommendation: z.enum(OPPORTUNITY_RECOMMENDATIONS),
+    executionRoute: z.enum(OPPORTUNITY_EXECUTION_ROUTES),
+    risk: z.enum(OPPORTUNITY_RISK_LEVELS),
+    confidence: z.number().finite().min(0).max(1),
+    estimatedEffortMinutes: z.number().int().nonnegative().nullable(),
+    economics: z
+      .object({
+        payout: moneyRangeSchema.nullable(),
+        executionCost: moneyRangeSchema.nullable(),
+        margin: moneyRangeSchema.nullable(),
+      })
+      .strict(),
+    capabilities: z
+      .object({
+        aiCanComplete: z.boolean(),
+        humanRequired: z.boolean(),
+        physicalPresence: z.boolean(),
+      })
+      .strict(),
+    reasons: z.array(z.string().min(1).max(500)).min(1).max(8),
+    blockers: z.array(z.string().min(1).max(500)).max(8),
+    nextChecks: z.array(z.string().min(1).max(500)).max(8),
+  })
+  .strict();
+
+export type OpportunityEvaluation = z.infer<typeof opportunityEvaluationSchema>;
+
+export interface OpportunityEvaluationPacket {
+  readonly schemaVersion: 1;
+  readonly opportunity: OpportunityCandidate;
+  readonly triage: OpportunityTriageResult;
+}
+
+/**
+ * Provider seam only. The opportunity subsystem owns no model key, subscription,
+ * SDK, or provider preference. A local coordinator/free model adapter can satisfy
+ * this contract later without changing ingestion or triage.
+ */
+export interface OpportunityEvaluator {
+  readonly id: string;
+  evaluate(packet: OpportunityEvaluationPacket): Promise<unknown>;
+}
+
+export interface OpportunityEvaluationCompleted {
+  readonly status: "completed";
+  readonly evaluator: string;
+  readonly evaluatedAt: string;
+  readonly evaluation: OpportunityEvaluation;
+}
+
+export interface OpportunityEvaluationSkipped {
+  readonly status: "skipped";
+  readonly reason: "deterministic_reject";
+}
+
+export type OpportunityEvaluationRun = OpportunityEvaluationCompleted | OpportunityEvaluationSkipped;
+
+export function buildOpportunityEvaluationPacket(
+  opportunity: OpportunityCandidate,
+  triage: OpportunityTriageResult,
+): OpportunityEvaluationPacket {
+  if (opportunity.id !== triage.opportunityId) {
+    throw new CommerceError(
+      "INVALID_INPUT",
+      `triage result ${triage.opportunityId} does not belong to opportunity ${opportunity.id}`,
+    );
+  }
+  return Object.freeze({ schemaVersion: 1 as const, opportunity, triage });
+}
+
+function assertMoneyRange(name: string, value: { minUsd: number; maxUsd: number | null }): void {
+  if (value.maxUsd !== null && value.maxUsd < value.minUsd) {
+    throw new CommerceError(
+      "SCHEMA_VIOLATION",
+      `${name}.maxUsd cannot be less than ${name}.minUsd`,
+    );
+  }
+}
+
+/** Validate an untrusted model/provider response before anything downstream sees it. */
+export function parseOpportunityEvaluation(value: unknown): OpportunityEvaluation {
+  let parsed: OpportunityEvaluation;
+  try {
+    parsed = opportunityEvaluationSchema.parse(value);
+  } catch (error) {
+    throw new CommerceError("SCHEMA_VIOLATION", "opportunity evaluator returned invalid JSON shape", {
+      cause: error instanceof Error ? error.name : "unknown",
+    });
+  }
+  if (parsed.economics.payout !== null) assertMoneyRange("economics.payout", parsed.economics.payout);
+  if (parsed.economics.executionCost !== null) {
+    assertMoneyRange("economics.executionCost", parsed.economics.executionCost);
+  }
+  if (parsed.economics.margin !== null) assertMoneyRange("economics.margin", parsed.economics.margin);
+
+  // A physical-presence requirement necessarily routes through a human or manual
+  // path. Reject impossible combinations instead of silently repairing them.
+  if (parsed.capabilities.physicalPresence && parsed.executionRoute === "ai_direct") {
+    throw new CommerceError(
+      "SCHEMA_VIOLATION",
+      "physicalPresence=true is incompatible with executionRoute=ai_direct",
+    );
+  }
+  return parsed;
+}
+
+/**
+ * Stable provider-neutral prompt. It is deliberately strict about unsupported
+ * economics: unknown payout stays null, while any cost/margin estimate must say
+ * it is inferred rather than presenting an estimate as an observed fact.
+ */
+export function buildOpportunityEvaluationPrompt(packet: OpportunityEvaluationPacket): string {
+  return [
+    "Evaluate this revenue opportunity for a commerce/opportunity router.",
+    "Return JSON only. Do not include markdown or commentary outside the JSON object.",
+    "Rules:",
+    "- Do not invent a payout. If the listing/triage does not establish one, economics.payout must be null.",
+    "- Observed monetary facts use basis=observed. Estimated worker/execution costs and margins use basis=inferred.",
+    "- A caution flag is not proof of fraud. Use risk/reasons/nextChecks rather than asserting a scam without evidence.",
+    "- Distinguish work AI can complete from remote-human, physical-human, hybrid, and manual paths.",
+    "- This is analysis only: do not contact anyone, submit work, claim a task, or move money.",
+    "- Use null for estimatedEffortMinutes when the listing is too ambiguous to estimate responsibly.",
+    `Allowed recommendation: ${OPPORTUNITY_RECOMMENDATIONS.join(" | ")}`,
+    `Allowed executionRoute: ${OPPORTUNITY_EXECUTION_ROUTES.join(" | ")}`,
+    `Allowed risk: ${OPPORTUNITY_RISK_LEVELS.join(" | ")}`,
+    "Required JSON shape:",
+    canonicalJson({
+      schemaVersion: 1,
+      recommendation: "manual_review",
+      executionRoute: "unknown",
+      risk: "medium",
+      confidence: 0.5,
+      estimatedEffortMinutes: null,
+      economics: { payout: null, executionCost: null, margin: null },
+      capabilities: { aiCanComplete: false, humanRequired: false, physicalPresence: false },
+      reasons: ["reason"],
+      blockers: [],
+      nextChecks: [],
+    }),
+    "Opportunity packet:",
+    canonicalJson(packet),
+  ].join("\n");
+}
+
+/**
+ * Runs the expensive/model-assisted layer only after deterministic triage. A
+ * deterministic reject never consumes model quota.
+ */
+export async function evaluateOpportunity(
+  evaluator: OpportunityEvaluator,
+  opportunity: OpportunityCandidate,
+  triage: OpportunityTriageResult,
+  clock: () => string = (): string => new Date().toISOString(),
+): Promise<OpportunityEvaluationRun> {
+  if (triage.decision === "reject") {
+    return Object.freeze({ status: "skipped" as const, reason: "deterministic_reject" as const });
+  }
+  const packet = buildOpportunityEvaluationPacket(opportunity, triage);
+  const raw = await evaluator.evaluate(packet);
+  const evaluation = parseOpportunityEvaluation(raw);
+  return Object.freeze({
+    status: "completed" as const,
+    evaluator: evaluator.id,
+    evaluatedAt: clock(),
+    evaluation,
+  });
+}
