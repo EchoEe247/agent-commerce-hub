@@ -17,7 +17,11 @@ import { BountyBookAdapter } from "../src/adapters/bountybook/index.js";
 import { The402Adapter } from "../src/adapters/the402/index.js";
 import { PayShAdapter } from "../src/adapters/paysh/index.js";
 import { aggregateWork } from "../src/aggregate/work.js";
-import { rankRevenueWork } from "../src/revenue/work-opportunity.js";
+import {
+  evaluateRevenueWork,
+  rankRevenueWork,
+  type RevenueEvaluationOptions,
+} from "../src/revenue/work-opportunity.js";
 
 const config = loadConfig(process.env);
 const adapters: CommerceAdapter[] = [
@@ -30,11 +34,7 @@ const adapters: CommerceAdapter[] = [
   new PayShAdapter(),
 ];
 
-const registry = new AdapterRegistry(config, adapters);
-const scanStartedAt = new Date().toISOString();
-const discovered = await registry.discoverWork({ limit: 50, minReward: "1" });
-const earnable = aggregateWork(discovered.results);
-const ranked = rankRevenueWork(earnable, {
+const revenueOptions: RevenueEvaluationOptions = {
   minRewardUsd: 1,
   minAutomationFraction: 0.5,
   zeroUpfrontOnly: true,
@@ -51,10 +51,15 @@ const ranked = rankRevenueWork(earnable, {
     "report",
     "dataset",
   ],
-});
+};
 
+const registry = new AdapterRegistry(config, adapters);
+const scanStartedAt = new Date().toISOString();
+const discovered = await registry.discoverWork({ limit: 50, minReward: "1" });
+const earnable = aggregateWork(discovered.results);
+const ranked = rankRevenueWork(earnable, revenueOptions);
 const rejected = earnable
-  .map((work) => ({ work, revenue: rankCandidate(work) }))
+  .map((work) => ({ work, revenue: evaluateRevenueWork(work, revenueOptions) }))
   .filter((entry) => !entry.revenue.eligible)
   .map((entry) => ({
     id: entry.work.id,
@@ -64,37 +69,6 @@ const rejected = earnable
     blockers: entry.revenue.blockers,
     flags: entry.revenue.flags,
   }));
-
-function rankCandidate(work: (typeof earnable)[number]) {
-  // Keep one evaluator implementation as the source of truth. Import lazily is
-  // unnecessary here; the helper just makes the rejected-output map readable.
-  const match = rankRevenueWork([work], {
-    minRewardUsd: 1,
-    minAutomationFraction: 0.5,
-    zeroUpfrontOnly: true,
-    avoidKycRequired: true,
-    excludeIntegrityRisk: true,
-    capabilities: ["research", "data", "analysis", "code", "automation", "lead", "prospect", "report", "dataset"],
-  })[0];
-  if (match !== undefined) return match.revenue;
-
-  // rankRevenueWork intentionally drops blocked work, so evaluate directly only
-  // for the audit trail of why an item was rejected.
-  return evaluateForRejection(work);
-}
-
-async function impossible(): Promise<never> {
-  throw new Error("unreachable");
-}
-void impossible;
-
-function evaluateForRejection(work: (typeof earnable)[number]) {
-  // Static import kept here to make the live scanner's no-side-effect boundary
-  // obvious while still producing rejection reasons.
-  return evaluator(work);
-}
-
-import { evaluateRevenueWork as evaluator } from "../src/revenue/work-opportunity.js";
 
 const payload = {
   schemaVersion: 1,
