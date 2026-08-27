@@ -6,6 +6,8 @@
  * or browser-observed listing is a discovery signal first; only later should a
  * validated opportunity be promoted into a commerce/workflow-specific shape.
  */
+import { z } from "zod";
+import { CommerceError } from "../core/errors.js";
 import { canonicalHash, normalizeResourceUrl } from "../core/ids.js";
 
 export const OPPORTUNITY_SOURCE_IDS = [
@@ -32,6 +34,38 @@ export interface OpportunityCandidate {
   readonly tags: readonly string[];
   /** Small, non-secret source facts useful for later enrichment/debugging. */
   readonly metadata: Readonly<Record<string, string>>;
+}
+
+/**
+ * Runtime validation boundary used for adapter output, event normalization, and
+ * persisted JSONL replay. A source cannot smuggle arbitrary nested objects into
+ * the evaluator just because TypeScript trusted its compile-time return type.
+ */
+export const opportunityCandidateSchema = z
+  .object({
+    id: z.string().min(1).max(128),
+    source: z.enum(OPPORTUNITY_SOURCE_IDS),
+    externalId: z.string().min(1).max(1024),
+    title: z.string().min(1).max(20_000),
+    body: z.string().max(1_000_000).optional(),
+    url: z.string().url().max(20_000).optional(),
+    author: z.string().max(1024).optional(),
+    community: z.string().max(1024).optional(),
+    postedAt: z.string().max(128).optional(),
+    observedAt: z.string().min(1).max(128),
+    tags: z.array(z.string().min(1).max(1024)).max(256),
+    metadata: z.record(z.string().max(1024), z.string().max(20_000)),
+  })
+  .strict();
+
+export function parseOpportunityCandidate(value: unknown): OpportunityCandidate {
+  try {
+    return opportunityCandidateSchema.parse(value) as OpportunityCandidate;
+  } catch (error) {
+    throw new CommerceError("SCHEMA_VIOLATION", "opportunity source returned invalid candidate", {
+      cause: error instanceof Error ? error.name : "unknown",
+    });
+  }
 }
 
 export interface OpportunityQuery {
