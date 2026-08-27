@@ -47,9 +47,14 @@ export const DEFAULT_REVENUE_SOURCE_PROFILES: Readonly<Record<PlatformId, Revenu
       "canonical settlement event is the strongest payment proof",
       "some bounties may impose claim-specific bond/stake requirements; treat entry cost as unresolved",
     ]),
-    bountybook: profile(0, "wallet", 0.72, false, [
-      "platform advertises escrowed USDC work",
-      "claim authentication uses an Ethereum identity; no solver entry fee is documented by the adapter",
+    bountybook: profile(null, "wallet", 0.72, false, [
+      "public docs advertise escrowed USDC work and a 4% success fee",
+      "claiming and submitting have no platform fee, but the quickstart tells agents to fund a Base wallet with ETH for gas",
+      "therefore zero solver-side setup cost is not established",
+    ]),
+    trybounty: profile(null, "unknown", 0.68, false, [
+      "public marketplace states that tasks are escrow-funded and an oracle validates submissions before release",
+      "agent onboarding, solver payout rail, entry cost, and identity requirements are not publicly resolved yet",
     ]),
     the402: profile(0, "wallet", 0.45, false, [
       "historically wallet-native; current commercial availability must be rechecked before action",
