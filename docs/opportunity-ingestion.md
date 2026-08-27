@@ -13,6 +13,12 @@ The initial Reddit path does **not** depend on OAuth, signup credits, or a paid 
 
 The architecture assumes Reddit RSS can change or disappear. It is an adapter, not a permanent infrastructure promise.
 
+### Redditapis integration status
+
+As researched on 2026-08-27, Redditapis' current pricing page says every account gets one all-of-Reddit new-post keyword monitor at roughly 60-second cadence with webhook/Slack/Discord delivery and no per-match/API-credit charge. Its public MCP tool catalog also describes that free entitlement. However, the MCP README still contains older wording saying monitoring has no free tier, and the exact generic signed webhook envelope/header contract is not exposed in the client code inspected so far.
+
+For that reason this repository does **not** guess a webhook payload or signature format. The `redditapis_monitor` source ID is reserved behind the provider-independent boundary; implementation should land only after the delivery contract can be verified from an authoritative schema or a real test delivery.
+
 ## Current implementation
 
 `tools/hermes-commerce-control/src/opportunities/`
@@ -24,9 +30,23 @@ The architecture assumes Reddit RSS can change or disappear. It is an adapter, n
 - `ingest.ts` — bounded multi-source execution with failure isolation.
 - `store.ts` — local JSONL persistence for durable seen-ID dedupe.
 - `pipeline.ts` — discover + dedupe + persist orchestration.
-- `cli.ts` — runnable Reddit RSS watcher.
+- `triage.ts` — zero-cost deterministic pre-triage before model/enrichment spending.
+- `cli.ts` — runnable Reddit RSS watcher with optional triage profile.
 
 Canonical identity prefers the listing's normalized public URL. That means the same Reddit listing can later arrive from RSS and a webhook/API adapter and still collapse to one opportunity.
+
+## Zero-cost triage
+
+Triage is deliberately conservative. It extracts explicit USD amounts, paid/unpaid language, remote/local language, caller-configured preferred/excluded terms, and a few caution signals. It returns `candidate`, `review`, or `reject` without using a model.
+
+A hard rejection is limited to caller-controlled or explicit facts such as:
+
+- explicit unpaid/volunteer language;
+- an explicit local/in-person requirement when the profile requires remote work;
+- a caller-supplied excluded phrase;
+- a clearly fixed USD price below a caller-supplied minimum.
+
+Hourly amounts are never compared against a fixed-project minimum. Caution signals reduce score but are **not** treated as proof that a listing is fraudulent. Unknown or ambiguous cases remain reviewable for a later model/human evaluator.
 
 ## Run
 
@@ -39,10 +59,28 @@ node --import tsx src/opportunities/cli.ts \
   --json
 ```
 
-Or configure the subreddit set once:
+A zero-cost triage profile can be supplied without changing code:
+
+```bash
+node --import tsx src/opportunities/cli.ts \
+  --subreddit forhire \
+  --subreddit slavelabour \
+  --prefer-term automation \
+  --prefer-term "api integration" \
+  --prefer-term crm \
+  --require-remote \
+  --min-fixed-usd 25 \
+  --json
+```
+
+Or configure it through environment variables:
 
 ```bash
 export OPPORTUNITY_REDDIT_SUBREDDITS=forhire,slavelabour
+export OPPORTUNITY_PREFERRED_TERMS='automation,api integration,crm'
+export OPPORTUNITY_EXCLUDED_TERMS='survey,physical pickup'
+export OPPORTUNITY_REQUIRE_REMOTE=true
+export OPPORTUNITY_MIN_FIXED_USD=25
 node --import tsx src/opportunities/cli.ts --json
 ```
 
@@ -73,8 +111,8 @@ Every source should normalize into the same opportunity model before evaluation.
 
 ## Next stages
 
-- Add opportunity scoring/evaluation as a separate deterministic/model-assisted layer.
-- Add a webhook normalizer for the permanent-free Redditapis monitor.
+- Add model-assisted evaluation only after deterministic triage so model usage remains sparse.
+- Add a webhook normalizer for the permanent-free Redditapis monitor once its delivery contract is verified.
 - Add an email/event normalizer for RedditAlert if it remains useful.
 - Spend limited API credits only for candidates that survive cheap filtering.
 - Promote the JSONL store behind a stable repository interface to SQLite once the evaluation schema stabilizes.
