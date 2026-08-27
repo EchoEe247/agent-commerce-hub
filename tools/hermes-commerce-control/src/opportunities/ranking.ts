@@ -1,8 +1,5 @@
 import type { OpportunityCandidate } from "./models.js";
-import type {
-  OpportunityEvaluation,
-  OpportunityExecutionRoute,
-} from "./evaluation.js";
+import type { OpportunityEvaluation } from "./evaluation.js";
 import type {
   OpportunityEvaluationResultStore,
   PersistedOpportunityEvaluation,
@@ -13,6 +10,8 @@ import {
   type OpportunityTriageProfile,
   type OpportunityTriageResult,
 } from "./triage.js";
+
+type OpportunityExecutionRoute = OpportunityEvaluation["executionRoute"];
 
 export const OPPORTUNITY_OPERATOR_ACTIONS = [
   "review_for_pursuit",
