@@ -35,6 +35,8 @@ Each controlled check is classified into a bounded kind and resolution mode. Eff
 
 Current check kinds include upstream operator review, compensation terms, execution cost, margin, execution route, source listing, and route/capability consistency.
 
+Verification policy version 2 rotates `opcheck_*` identities from the initial ledger policy and hardens derived-check semantics.
+
 ## Evidence compatibility
 
 Evidence is intentionally check-specific:
@@ -48,6 +50,26 @@ Evidence is intentionally check-specific:
 An executor quote therefore cannot satisfy buyer compensation terms, and an operator attestation cannot masquerade as source verification.
 
 External evidence kinds (`source_reference`, `executor_quote`, `counterparty_confirmation`) require a non-empty reference. A `source_reference` must specifically be a credential-free HTTP(S) URL; quote and counterparty-confirmation references may be opaque local receipt/reference IDs.
+
+## Derived calculations
+
+A derived check is not allowed to become resolved merely because a calculation record exists. The plan resolves prerequisite checks first.
+
+When all prerequisites are resolved, the derived check exposes `currentDependencyResolutionIds`. A calculation must be recorded **after** those prerequisite records and bind to that exact set of resolution IDs:
+
+```bash
+npm run opportunities:record-verification -- \
+  --dossier-id opdos_... \
+  --check-id opcheck_margin_... \
+  --outcome satisfied \
+  --evidence-kind calculation \
+  --depends-on-resolution-id opver_compensation_... \
+  --depends-on-resolution-id opver_execution_cost_... \
+  --note 'Margin recalculated from the currently verified compensation and execution cost.' \
+  --json
+```
+
+Dependency ID order does not matter; the recorder canonicalizes it. A calculation recorded before its prerequisites, missing their IDs, or tied to stale prerequisite resolution IDs is not accepted. If a prerequisite later changes to a newer resolution record, the old derived calculation becomes unresolved automatically and must be recalculated against the new dependency IDs.
 
 ## Record local evidence
 
