@@ -71,6 +71,8 @@ npm run opportunities:record-verification -- \
 
 Dependency ID order does not matter; the recorder canonicalizes it. A calculation recorded before its prerequisites, missing their IDs, or tied to stale prerequisite resolution IDs is not accepted. If a prerequisite later changes to a newer resolution record, the old derived calculation becomes unresolved automatically and must be recalculated against the new dependency IDs.
 
+Verification-record timestamps are deliberately constrained to canonical UTC millisecond form, `YYYY-MM-DDTHH:mm:ss.sssZ`, which is the format produced by `Date.toISOString()`. Higher-precision fractional seconds and timezone-offset forms are rejected so JavaScript millisecond timestamp comparisons cannot silently collapse distinct evidence ordering.
+
 ## Record local evidence
 
 A verified fact can be appended to the local ledger with:
