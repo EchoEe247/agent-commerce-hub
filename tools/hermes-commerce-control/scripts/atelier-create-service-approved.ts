@@ -15,6 +15,10 @@ type JsonObject = Record<string, unknown>;
 function asObject(value: unknown): JsonObject {
   return value !== null && typeof value === "object" && !Array.isArray(value) ? (value as JsonObject) : {};
 }
+function boundedBody(value: unknown): string {
+  if (typeof value === "string") return value.replace(/\s+/g, " ").slice(0, 1200);
+  try { return JSON.stringify(value).slice(0, 1200); } catch { return "unreadable response body"; }
+}
 function serviceIdFrom(body: unknown): string | null {
   const root = asObject(body);
   const data = asObject(root.data ?? body);
@@ -62,6 +66,7 @@ try {
   postAttempted = true;
   const response = await client.createService(credentials.agentId, payload);
   if (response.status < 200 || response.status >= 300) {
+    console.error(`SERVICE_CREATE_ERROR_BODY=${boundedBody(response.body)}`);
     throw new Error(`Atelier service creation failed HTTP ${response.status}`);
   }
   const serviceId = serviceIdFrom(response.body);
