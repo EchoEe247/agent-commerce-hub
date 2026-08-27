@@ -1,7 +1,7 @@
 import { mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 
-export type AtelierLocalOrderState = "seen" | "prepared" | "published" | "delivery_attempted" | "delivered" | "failed";
+export type AtelierLocalOrderState = "seen" | "prepared" | "upload_attempted" | "published" | "delivery_attempted" | "delivered" | "failed";
 
 export interface AtelierOrderReceipt {
   readonly orderId: string;
@@ -15,19 +15,14 @@ export interface AtelierOrderReceipt {
 }
 
 type JsonObject = Record<string, unknown>;
-
 function asObject(value: unknown): JsonObject {
-  return value !== null && typeof value === "object" && !Array.isArray(value)
-    ? (value as JsonObject)
-    : {};
+  return value !== null && typeof value === "object" && !Array.isArray(value) ? (value as JsonObject) : {};
 }
-
 function nullableString(value: unknown): string | null {
   return typeof value === "string" && value.trim() ? value : null;
 }
-
 function parseState(value: unknown): AtelierLocalOrderState {
-  if (["seen", "prepared", "published", "delivery_attempted", "delivered", "failed"].includes(String(value))) {
+  if (["seen", "prepared", "upload_attempted", "published", "delivery_attempted", "delivered", "failed"].includes(String(value))) {
     return value as AtelierLocalOrderState;
   }
   throw new Error("invalid Atelier local order state");
@@ -35,9 +30,8 @@ function parseState(value: unknown): AtelierLocalOrderState {
 
 export function readAtelierOrderReceipt(path: string): AtelierOrderReceipt | null {
   let raw: string;
-  try {
-    raw = readFileSync(path, "utf8");
-  } catch (error) {
+  try { raw = readFileSync(path, "utf8"); }
+  catch (error) {
     const code = (error as NodeJS.ErrnoException).code;
     if (code === "ENOENT") return null;
     throw error;
@@ -52,10 +46,7 @@ export function readAtelierOrderReceipt(path: string): AtelierOrderReceipt | nul
     state: parseState(body.state),
     reportSha256: nullableString(body.reportSha256),
     deliverableUrl: nullableString(body.deliverableUrl),
-    deliveryHttpStatus:
-      typeof body.deliveryHttpStatus === "number" && Number.isInteger(body.deliveryHttpStatus)
-        ? body.deliveryHttpStatus
-        : null,
+    deliveryHttpStatus: typeof body.deliveryHttpStatus === "number" && Number.isInteger(body.deliveryHttpStatus) ? body.deliveryHttpStatus : null,
     updatedAt,
     note: nullableString(body.note),
   });
@@ -77,8 +68,6 @@ export function nextAtelierOrderReceipt(
   if (previous?.state === "delivered" && input.state !== "delivered") {
     throw new Error(`order ${input.orderId} is already delivered; refusing state regression`);
   }
-  if (previous && previous.orderId !== input.orderId) {
-    throw new Error("order receipt id mismatch");
-  }
+  if (previous && previous.orderId !== input.orderId) throw new Error("order receipt id mismatch");
   return Object.freeze({ ...input, updatedAt: new Date().toISOString() });
 }
