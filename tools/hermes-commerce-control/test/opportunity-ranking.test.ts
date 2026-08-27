@@ -109,8 +109,8 @@ function evaluationStore(rows: readonly PersistedOpportunityEvaluation[]): Oppor
     async append() {
       throw new Error("ranking fixture is read-only");
     },
-    async list(limit = 1_000) {
-      return rows.slice(0, limit);
+    async list(limit) {
+      return limit === undefined ? rows : rows.slice(0, limit);
     },
   };
 }
@@ -132,7 +132,9 @@ test("pursue/low-risk AI opportunity outranks manual-review work", async () => {
     }),
     evaluation("opp_manual", "local-openai:hy3-free", "2026-08-27T15:02:00.000Z"),
   ];
-  const ranked = await rankStoredOpportunities(opportunityStore, evaluationStore(rows), demandProfile);
+  const ranked = await rankStoredOpportunities(opportunityStore, evaluationStore(rows), demandProfile, {
+    asOf: "2026-08-27T16:00:00.000Z",
+  });
   assert.equal(ranked[0]?.opportunity.id, "opp_ai");
   assert.equal(ranked[0]?.operatorAction, "review_for_pursuit");
   assert.equal(ranked[0]?.priorityBand, "high");
@@ -149,7 +151,9 @@ test("high-risk pursue and unresolved blockers are routed to manual review", asy
       blockers: ["counterparty identity not verified"],
     }),
   ];
-  const ranked = await rankStoredOpportunities(opportunityStore, evaluationStore(rows), demandProfile);
+  const ranked = await rankStoredOpportunities(opportunityStore, evaluationStore(rows), demandProfile, {
+    asOf: "2026-08-27T16:00:00.000Z",
+  });
   assert.equal(ranked[0]?.operatorAction, "manual_review");
   assert.match(ranked[0]?.routingReasons.join(" ") ?? "", /high-risk|blocker/i);
 });
@@ -174,7 +178,7 @@ test("current deterministic reject overrides a stale positive evaluation", async
     opportunityStore,
     evaluationStore(rows),
     demandProfile,
-    { actions: ["reject"] },
+    { actions: ["reject"], asOf: "2026-09-30T00:00:00.000Z" },
   );
   assert.equal(ranked.length, 1);
   assert.equal(ranked[0]?.operatorAction, "reject");
@@ -196,6 +200,7 @@ test("stale non-rejected model evaluation is not reused after triage packet chan
     opportunityStore,
     evaluationStore([old]),
     changedProfile,
+    { asOf: "2026-08-27T16:00:00.000Z" },
   );
   assert.equal(ranked.length, 0);
 });
@@ -212,7 +217,9 @@ test("latest current evaluation wins by default and evaluator filter can select 
     capabilities: { aiCanComplete: true, humanRequired: false, physicalPresence: false },
   });
 
-  const latest = await rankStoredOpportunities(opportunityStore, evaluationStore([older, newer]), demandProfile);
+  const latest = await rankStoredOpportunities(opportunityStore, evaluationStore([older, newer]), demandProfile, {
+    asOf: "2026-08-27T16:00:00.000Z",
+  });
   assert.equal(latest[0]?.evaluationRecord.evaluatorId, "local-openai:mimo-v2.5-free");
   assert.equal(latest[0]?.operatorAction, "review_for_pursuit");
 
@@ -220,7 +227,7 @@ test("latest current evaluation wins by default and evaluator filter can select 
     opportunityStore,
     evaluationStore([older, newer]),
     demandProfile,
-    { evaluatorId: "local-openai:hy3-free" },
+    { evaluatorId: "local-openai:hy3-free", asOf: "2026-08-27T16:00:00.000Z" },
   );
   assert.equal(filtered[0]?.evaluationRecord.evaluatorId, "local-openai:hy3-free");
   assert.equal(filtered[0]?.operatorAction, "manual_review");
@@ -241,8 +248,58 @@ test("minimum score and action filters are applied after ranking", async () => {
     opportunityStore,
     evaluationStore(rows),
     demandProfile,
-    { actions: ["review_for_pursuit"], minimumScore: 60, limit: 1 },
+    { actions: ["review_for_pursuit"], minimumScore: 60, limit: 1, asOf: "2026-08-27T16:00:00.000Z" },
   );
   assert.equal(ranked.length, 1);
   assert.equal(ranked[0]?.opportunity.id, "opp_ai");
+});
+
+test("aged non-rejected opportunity/evaluation is excluded by default and can be included explicitly", async () => {
+  const row = evaluation("opp_ai", "local-openai:hy3-free", "2026-08-27T15:01:00.000Z", {
+    recommendation: "pursue",
+    executionRoute: "ai_direct",
+    risk: "low",
+    confidence: 0.9,
+    capabilities: { aiCanComplete: true, humanRequired: false, physicalPresence: false },
+  });
+
+  const aged = await rankStoredOpportunities(
+    opportunityStore,
+    evaluationStore([row]),
+    demandProfile,
+    { asOf: "2026-09-05T16:00:00.000Z" },
+  );
+  assert.equal(aged.length, 0);
+
+  const unbounded = await rankStoredOpportunities(
+    opportunityStore,
+    evaluationStore([row]),
+    demandProfile,
+    { asOf: "2026-09-05T16:00:00.000Z", maxAgeHours: 0 },
+  );
+  assert.equal(unbounded.length, 1);
+});
+
+test("ranking requests the full evaluation store before evaluator/opportunity filtering", async () => {
+  const row = evaluation("opp_ai", "local-openai:hy3-free", "2026-08-27T15:01:00.000Z");
+  let requestedLimit: number | undefined = 12345;
+  const store: OpportunityEvaluationResultStore = {
+    async seenKeys() {
+      return new Set();
+    },
+    async append() {
+      throw new Error("ranking fixture is read-only");
+    },
+    async list(limit) {
+      requestedLimit = limit;
+      return [row];
+    },
+  };
+
+  const ranked = await rankStoredOpportunities(opportunityStore, store, demandProfile, {
+    evaluatorId: "local-openai:hy3-free",
+    asOf: "2026-08-27T16:00:00.000Z",
+  });
+  assert.equal(requestedLimit, undefined);
+  assert.equal(ranked.length, 1);
 });
