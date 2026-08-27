@@ -66,6 +66,7 @@ test("dossier preserves checks and blocks pursuit while economics are unresolved
   assert.match(dossier.verification.requiredChecks.join(" "), /compensation and payment terms/i);
   assert.match(dossier.verification.requiredChecks.join(" "), /execution cost/i);
   assert.equal(dossier.contactBrief.status, "clarification_draft_ready");
+  assert.equal(dossier.contactBrief.requiresOperatorReview, true);
   assert.equal(dossier.contactBrief.sendAllowed, false);
   assert.equal(dossier.boundary.externalActionsAllowed, false);
 });
@@ -92,18 +93,23 @@ test("clean pursue state can become decision-ready but never send-authorized", (
   assert.equal(dossier.safeNextStep, "decide_whether_to_prepare_contact");
   assert.equal(dossier.verification.blocking, false);
   assert.equal(dossier.contactBrief.status, "operator_draft_ready");
+  assert.equal(dossier.contactBrief.requiresOperatorReview, true);
   assert.equal(dossier.contactBrief.sendAllowed, false);
   assert.equal(dossier.boundary.externalActionsAllowed, false);
 });
 
-test("dossier identity is stable and changes when required checks change", () => {
+test("dossier identity is stable and changes with any material operator-packet change", () => {
   const first = buildOpportunityPursuitDossier(operatorPacket());
   const second = buildOpportunityPursuitDossier(operatorPacket());
-  const changed = buildOpportunityPursuitDossier(
+  const changedChecks = buildOpportunityPursuitDossier(
     operatorPacket({ nextChecks: ["Confirm a different requirement"] }),
   );
+  const changedReason = buildOpportunityPursuitDossier(
+    operatorPacket({ reasons: ["different model reasoning with same route"] }),
+  );
   assert.equal(first.dossierId, second.dossierId);
-  assert.notEqual(first.dossierId, changed.dossierId);
+  assert.notEqual(first.dossierId, changedChecks.dossierId);
+  assert.notEqual(first.dossierId, changedReason.dossierId);
 });
 
 test("dossier does not carry the raw listing body", () => {
