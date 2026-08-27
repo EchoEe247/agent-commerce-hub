@@ -34,3 +34,12 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - run: npm test
+      - name: Read-only live revenue scan
+        run: node --import tsx scripts/revenue-live-scan.ts | tee /tmp/revenue-opportunities.json
+      - name: Upload scan receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: revenue-opportunities-${{ github.run_id }}
+          path: /tmp/revenue-opportunities.json
+          retention-days: 7
+          if-no-files-found: error
