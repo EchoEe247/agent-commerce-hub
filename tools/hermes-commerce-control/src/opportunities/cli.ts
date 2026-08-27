@@ -39,6 +39,7 @@ Source options:
 Zero-cost triage options:
       --prefer-term <text>    positive-fit phrase (repeatable)
       --exclude-term <text>   hard-exclusion phrase (repeatable)
+      --require-demand        reject explicit [FOR HIRE]/[OFFER]-style seller posts
       --require-remote        reject explicitly local/in-person listings
       --min-fixed-usd <n>     reject known fixed-price listings below this USD amount
 
@@ -50,6 +51,7 @@ Environment fallbacks:
   OPPORTUNITY_REDDIT_SUBREDDITS=forhire,slavelabour
   OPPORTUNITY_PREFERRED_TERMS=automation,api integration,crm
   OPPORTUNITY_EXCLUDED_TERMS=survey,physical pickup
+  OPPORTUNITY_REQUIRE_DEMAND=true
   OPPORTUNITY_REQUIRE_REMOTE=true
   OPPORTUNITY_MIN_FIXED_USD=25
 
@@ -102,6 +104,7 @@ async function main(): Promise<void> {
       "state-file": { type: "string" },
       "prefer-term": { type: "string", multiple: true },
       "exclude-term": { type: "string", multiple: true },
+      "require-demand": { type: "boolean", default: false },
       "require-remote": { type: "boolean", default: false },
       "min-fixed-usd": { type: "string" },
       json: { type: "boolean", default: false },
@@ -144,10 +147,12 @@ async function main(): Promise<void> {
     values["min-fixed-usd"] ?? process.env.OPPORTUNITY_MIN_FIXED_USD,
     "min-fixed-usd",
   );
+  const requireDemand = values["require-demand"] === true || envBoolean("OPPORTUNITY_REQUIRE_DEMAND");
   const requireRemote = values["require-remote"] === true || envBoolean("OPPORTUNITY_REQUIRE_REMOTE");
   const triageProfile: OpportunityTriageProfile = {
     ...(preferredTerms.length === 0 ? {} : { preferredTerms }),
     ...(excludedTerms.length === 0 ? {} : { excludedTerms }),
+    ...(requireDemand ? { requireDemand: true } : {}),
     ...(requireRemote ? { requireRemote: true } : {}),
     ...(minimumKnownFixedUsd === undefined ? {} : { minimumKnownFixedUsd }),
   };
