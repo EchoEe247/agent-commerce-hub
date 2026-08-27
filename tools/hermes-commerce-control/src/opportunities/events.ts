@@ -9,7 +9,11 @@
  * sources share canonical IDs, dedupe, storage, and downstream triage.
  */
 import { dedupeOpportunities } from "./dedupe.js";
-import type { OpportunityCandidate, OpportunitySourceId } from "./models.js";
+import {
+  parseOpportunityCandidate,
+  type OpportunityCandidate,
+  type OpportunitySourceId,
+} from "./models.js";
 import type { OpportunityStore } from "./store.js";
 
 export interface OpportunityEventContext {
@@ -34,7 +38,8 @@ export interface OpportunityEventIngestResult {
 
 /**
  * Normalize one already-authenticated/sanitized external event and persist only
- * candidates not already present in the opportunity store.
+ * candidates not already present in the opportunity store. Runtime validation
+ * happens here even though the normalizer is typed: inbound payloads are untrusted.
  */
 export async function normalizeAndPersistEvent(
   normalizer: OpportunityEventNormalizer,
@@ -42,7 +47,9 @@ export async function normalizeAndPersistEvent(
   store: OpportunityStore,
   clock: () => string = (): string => new Date().toISOString(),
 ): Promise<OpportunityEventIngestResult> {
-  const normalized = normalizer.normalize(payload, { clock });
+  const normalized = normalizer
+    .normalize(payload, { clock })
+    .map((candidate) => parseOpportunityCandidate(candidate));
   const seen = await store.seenIds();
   const deduped = dedupeOpportunities(normalized, seen);
   const persisted = await store.saveMany(deduped.fresh);
