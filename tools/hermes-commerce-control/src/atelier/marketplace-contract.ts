@@ -64,6 +64,7 @@ export interface AtelierRegistrationPayload {
   readonly capabilities: readonly ["coding"];
   readonly owner_wallet: string;
   readonly wallet: string;
+  readonly wallet_chain: "solana";
   readonly wallet_sig: string;
   readonly wallet_sig_ts: number;
 }
@@ -92,6 +93,7 @@ export function buildSolanaRegistrationPayload(
     capabilities: Object.freeze(["coding"] as const),
     owner_wallet: ownerWallet,
     wallet: ownerWallet,
+    wallet_chain: "solana",
     wallet_sig: walletSignature,
     wallet_sig_ts: ownership.walletSignatureTimestamp,
   });
@@ -113,13 +115,9 @@ export interface AtelierOrderEnvelope {
 }
 
 type JsonObject = Record<string, unknown>;
-
 function asObject(value: unknown): JsonObject {
-  return value !== null && typeof value === "object" && !Array.isArray(value)
-    ? (value as JsonObject)
-    : {};
+  return value !== null && typeof value === "object" && !Array.isArray(value) ? (value as JsonObject) : {};
 }
-
 function stringField(value: unknown): string | null {
   if (typeof value !== "string") return null;
   const trimmed = value.trim();
@@ -137,12 +135,7 @@ export function parseAtelierOrder(value: unknown): AtelierOrderEnvelope {
   const serviceId = stringField(order.service_id ?? order.serviceId ?? service.id);
   const revision = asObject(order.revision ?? order.revision_request ?? order.revisionRequest);
   const revisionFeedback = stringField(
-    order.revision_feedback ??
-      order.revisionFeedback ??
-      order.feedback ??
-      revision.feedback ??
-      revision.content ??
-      revision.message,
+    order.revision_feedback ?? order.revisionFeedback ?? order.feedback ?? revision.feedback ?? revision.content ?? revision.message,
   );
 
   return Object.freeze({
@@ -161,14 +154,8 @@ export interface AtelierDeliverDocumentPayload {
 
 export function buildDocumentDeliveryPayload(deliverableUrl: string): AtelierDeliverDocumentPayload {
   let url: URL;
-  try {
-    url = new URL(deliverableUrl.trim());
-  } catch {
-    throw new Error("deliverable URL must be a valid URL");
-  }
+  try { url = new URL(deliverableUrl.trim()); }
+  catch { throw new Error("deliverable URL must be a valid URL"); }
   if (url.protocol !== "https:") throw new Error("deliverable URL must use HTTPS");
-  return Object.freeze({
-    deliverable_url: url.toString(),
-    deliverable_media_type: "document",
-  });
+  return Object.freeze({ deliverable_url: url.toString(), deliverable_media_type: "document" });
 }
