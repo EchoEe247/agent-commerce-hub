@@ -28,31 +28,36 @@ It does **not** fetch Reddit, invoke a model, consume provider quota, contact a 
 
 Each dossier contains:
 
-- a stable `opdos_*` ID derived from the complete compact operator packet, so any material packet/evaluation/provenance change produces a new dossier identity;
+- a stable `opdos_*` ID derived from the complete compact operator packet plus the dossier policy version, so any material packet/evaluation/provenance change produces a new dossier identity;
 - compact source identity/title/community/URL facts, without the raw listing body;
 - current rank score, priority band, operator action, execution route, request/evaluator provenance, and routing reasons;
 - payout, execution-cost, and margin state with explicit known/unknown flags;
 - an execution-preparation plan appropriate to AI, remote-human, physical-human, hybrid, manual, or unknown routes;
-- unresolved verification checks and whether they are currently blocking;
+- controlled deterministic verification checks and a count of upstream operator-packet checks that still require review;
 - a contact **brief** for later operator drafting, not a sent message;
 - the inherited external-action approval boundary.
+
+Evaluator `reasons`, `blockers`, and `nextChecks` are not copied into the dossier or contact brief. If upstream model-assisted checks exist, the dossier records only their count and points the operator back to the source operator packet. This prevents model-echoed listing text or prompt-injection content from flowing into a future drafting stage.
 
 ## Dossier status
 
 - `blocked_on_checks` — unresolved checks remain. Safe next step: `resolve_checks`.
-- `operator_review_required` — no concrete check remains, but routing/model state still requires manual review. Safe next step: `review_dossier`.
+- `operator_review_required` — no concrete deterministic check remains, but routing/model state still requires manual review. Safe next step: `review_dossier`.
 - `ready_for_pursuit_decision` — current state is internally ready for an operator to decide whether a contact draft should be prepared. Safe next step: `decide_whether_to_prepare_contact`.
+
+Route/capability contradictions are converted into blocking deterministic checks. For example, `ai_direct` cannot be treated as decision-ready when the evaluation simultaneously says a human is required or AI cannot complete the work.
 
 None of these states authorizes external activity.
 
 ## Contact brief
 
-A dossier includes a bounded contact brief with one of two states:
+A dossier includes a bounded contact brief with one of three states:
 
+- `operator_review_blocked` — manual review or a route/capability inconsistency must be resolved before a draft-ready state;
 - `clarification_draft_ready` — unresolved facts should be clarified before commitment;
 - `operator_draft_ready` — the internal state is ready for an operator-reviewed draft.
 
-The brief contains talking points, clarification items, and drafting guidance. Model-assisted talking points remain internal notes and must be reviewed before being reused in any message. The brief deliberately does not carry the raw Reddit body and always sets:
+The brief contains only controlled drafting facts/questions derived from structured state. It does not copy evaluator free text. It deliberately does not carry the raw Reddit body and always sets:
 
 ```json
 {
