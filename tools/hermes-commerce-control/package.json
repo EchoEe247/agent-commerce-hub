@@ -28,7 +28,11 @@
     "opportunities:prepare-operator": "node --import tsx src/opportunities/operator-packet-cli.ts",
     "opportunities:prepare-operator:built": "node dist/opportunities/operator-packet-cli.js",
     "opportunities:prepare-pursuit": "node --import tsx src/opportunities/pursuit-dossier-cli.ts",
-    "opportunities:prepare-pursuit:built": "node dist/opportunities/pursuit-dossier-cli.js"
+    "opportunities:prepare-pursuit:built": "node dist/opportunities/pursuit-dossier-cli.js",
+    "opportunities:verification-plan": "node --import tsx src/opportunities/verification-plan-cli.ts",
+    "opportunities:verification-plan:built": "node dist/opportunities/verification-plan-cli.js",
+    "opportunities:record-verification": "node --import tsx src/opportunities/record-verification-cli.ts",
+    "opportunities:record-verification:built": "node dist/opportunities/record-verification-cli.js"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.30.0",
