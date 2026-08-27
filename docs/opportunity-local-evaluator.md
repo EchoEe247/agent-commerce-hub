@@ -25,13 +25,15 @@ The command:
 
 ## Hard boundaries
 
-The adapter intentionally accepts only an explicit `http://` loopback endpoint (`127.0.0.1`, `localhost`, or `::1`) with an explicit port. It does not accept remote URLs and has no API-key/Authorization/Cookie mechanism. Redirects are refused.
+The adapter intentionally accepts only an explicit `http://` **literal loopback** endpoint (`127.0.0.1` or `::1`) with an explicit port. DNS hostnames such as `localhost` are deliberately refused so the local-only guarantee does not depend on host resolution. It does not accept remote URLs and has no API-key/Authorization/Cookie mechanism. Redirects are refused.
 
 This keeps the first model-assisted path permanent-free/local-first. Supporting a remote paid provider later should be a separate adapter with explicit credential and cost policy rather than silently broadening this one.
 
 The model response must contain strict JSON text in the assistant `message.content`. Markdown fences or repair heuristics are rejected rather than silently corrected.
 
 The evaluator performs analysis only. It cannot contact posters, comment, DM, claim work, submit work, hire workers, or move money.
+
+Evaluation persistence is append-only JSONL. Existing rows are schema-validated before they count for dedupe, and a truncated final record is repaired before the next append so a crash cannot poison the following result.
 
 ## Runtime proof after merge
 
