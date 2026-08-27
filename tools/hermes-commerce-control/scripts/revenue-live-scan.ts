@@ -14,6 +14,7 @@ import { Agent402Adapter } from "../src/adapters/agent402/index.js";
 import { PipRailAdapter } from "../src/adapters/piprail/index.js";
 import { AgentBountiesAdapter } from "../src/adapters/agent-bounties/index.js";
 import { BountyBookAdapter } from "../src/adapters/bountybook/index.js";
+import { TryBountyAdapter } from "../src/adapters/trybounty/index.js";
 import { The402Adapter } from "../src/adapters/the402/index.js";
 import { PayShAdapter } from "../src/adapters/paysh/index.js";
 import { aggregateWork } from "../src/aggregate/work.js";
@@ -31,6 +32,7 @@ const adapters: CommerceAdapter[] = [
   new PipRailAdapter(),
   new AgentBountiesAdapter(config.adapters.agent_bounties.baseUrl),
   new BountyBookAdapter(),
+  new TryBountyAdapter(config.adapters.trybounty.baseUrl),
   new The402Adapter(config.adapters.the402.baseUrl),
   new PayShAdapter(),
 ];
