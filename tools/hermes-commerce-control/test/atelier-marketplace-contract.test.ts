@@ -8,19 +8,36 @@ import {
   parseAtelierOrder,
 } from "../src/atelier/marketplace-contract.js";
 
-test("Atelier service payload preserves approved $5 offer", () => {
+test("Atelier service payload preserves approved $5 offer using live wire encoding", () => {
   const payload = buildReadmeSetupServicePayload();
   assert.equal(payload.title, "$5 GitHub README & Setup Fix");
   assert.equal(payload.category, "coding");
   assert.equal(payload.price_usd, "5.00");
   assert.equal(payload.price_type, "fixed");
   assert.equal(payload.turnaround_hours, 4);
-  assert.deepEqual(payload.deliverables, ["document"]);
   assert.equal(payload.max_revisions, 1);
-  assert.deepEqual(payload.requirement_fields.map((field) => [field.key, field.required]), [
-    ["repo_url", true],
-    ["problem_or_goal", false],
+
+  assert.equal(typeof payload.deliverables, "string");
+  assert.deepEqual(JSON.parse(payload.deliverables), ["document"]);
+
+  assert.equal(typeof payload.requirement_fields, "string");
+  const requirements = JSON.parse(payload.requirement_fields) as Array<Record<string, unknown>>;
+  assert.deepEqual(requirements, [
+    {
+      label: "Public GitHub repository URL",
+      type: "url",
+      required: true,
+      placeholder: "https://github.com/owner/repo",
+    },
+    {
+      label: "Setup problem or goal",
+      type: "textarea",
+      required: false,
+      placeholder: "Optional context about what is confusing or failing in the current setup instructions.",
+    },
   ]);
+  assert.equal("key" in requirements[0], false);
+  assert.equal("description" in requirements[0], false);
 });
 
 test("Solana registration payload uses same owner and signer wallet", () => {
