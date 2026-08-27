@@ -28,6 +28,7 @@ export type OpportunityOperatorAction = (typeof OPPORTUNITY_OPERATOR_ACTIONS)[nu
 export const OPPORTUNITY_PRIORITY_BANDS = ["high", "medium", "low", "blocked"] as const;
 export type OpportunityPriorityBand = (typeof OPPORTUNITY_PRIORITY_BANDS)[number];
 export type OpportunityEvaluationFreshness = "current" | "stale_rejected";
+export const DEFAULT_RANKING_MAX_AGE_HOURS = 168;
 
 export interface OpportunityRankComponents {
   readonly triage: number;
@@ -60,6 +61,10 @@ export interface OpportunityRankingOptions {
   readonly minimumScore?: number | undefined;
   readonly limit?: number | undefined;
   readonly scanLimit?: number | undefined;
+  /** Maximum age for non-rejected opportunity/evaluation state. 0 disables age filtering. */
+  readonly maxAgeHours?: number | undefined;
+  /** Deterministic clock injection for tests/replay. Defaults to current wall clock. */
+  readonly asOf?: string | undefined;
 }
 
 const RECOMMENDATION_SCORE: Readonly<Record<OpportunityEvaluation["recommendation"], number>> = {
@@ -103,6 +108,12 @@ function boundedScore(value: number | undefined): number {
   const selected = value ?? 0;
   if (!Number.isFinite(selected)) return 0;
   return Math.max(0, Math.min(100, selected));
+}
+
+function boundedAgeHours(value: number | undefined): number {
+  const selected = value ?? DEFAULT_RANKING_MAX_AGE_HOURS;
+  if (!Number.isFinite(selected) || selected < 0) return DEFAULT_RANKING_MAX_AGE_HOURS;
+  return Math.min(24 * 365, selected);
 }
 
 function amountSignal(value: number | undefined): number {
@@ -226,6 +237,20 @@ function evaluatedAtMillis(value: string): number {
   return Number.isFinite(parsed) ? parsed : Number.NEGATIVE_INFINITY;
 }
 
+function firstValidTimestamp(...values: readonly (string | undefined)[]): number | undefined {
+  for (const value of values) {
+    if (value === undefined) continue;
+    const parsed = Date.parse(value);
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  return undefined;
+}
+
+function ageHours(asOfMillis: number, timestampMillis: number | undefined): number | undefined {
+  if (timestampMillis === undefined) return undefined;
+  return Math.max(0, asOfMillis - timestampMillis) / 3_600_000;
+}
+
 function isNewerEvaluation(
   candidate: PersistedOpportunityEvaluation,
   current: PersistedOpportunityEvaluation,
@@ -259,6 +284,8 @@ function selectNewest(
  * for the exact current packet/request ID, so changing deterministic triage cannot
  * silently reuse stale model reasoning. Current deterministic rejects may surface
  * with an older evaluation only for provenance; they remain forced to score 0.
+ * Non-rejected rows also default to a seven-day age window so obsolete listings or
+ * evaluations cannot remain pursuit candidates indefinitely.
  */
 export async function rankStoredOpportunities(
   opportunityStore: OpportunityStore,
@@ -272,7 +299,7 @@ export async function rankStoredOpportunities(
 
   const [opportunities, evaluations] = await Promise.all([
     opportunityStore.list(scanLimit),
-    evaluationStore.list(10_000),
+    evaluationStore.list(),
   ]);
   const evaluationsByOpportunity = new Map<string, PersistedOpportunityEvaluation[]>();
   for (const row of evaluations) {
@@ -287,6 +314,9 @@ export async function rankStoredOpportunities(
       ? undefined
       : new Set(options.actions);
   const evaluatorId = options.evaluatorId?.trim();
+  const maxAgeHours = boundedAgeHours(options.maxAgeHours);
+  const asOfMillis = options.asOf === undefined ? Date.now() : Date.parse(options.asOf);
+  if (!Number.isFinite(asOfMillis)) throw new Error("ranking asOf must be a valid timestamp");
   const ranked: RankedOpportunity[] = [];
 
   for (const opportunity of opportunities) {
@@ -299,6 +329,22 @@ export async function rankStoredOpportunities(
       currentEvaluation ??
       (triage.decision === "reject" ? selectNewest(rows, evaluatorId) : undefined);
     if (evaluation === undefined) continue;
+
+    if (triage.decision !== "reject" && maxAgeHours > 0) {
+      const opportunityAge = ageHours(
+        asOfMillis,
+        firstValidTimestamp(opportunity.postedAt, opportunity.observedAt),
+      );
+      const evaluationAge = ageHours(asOfMillis, evaluatedAtMillis(evaluation.evaluatedAt));
+      if (
+        opportunityAge === undefined ||
+        evaluationAge === undefined ||
+        opportunityAge > maxAgeHours ||
+        evaluationAge > maxAgeHours
+      ) {
+        continue;
+      }
+    }
 
     const entry = rankOpportunity(opportunity, triage, evaluation, currentRequestId);
     if (entry.score < minimumScore) continue;
