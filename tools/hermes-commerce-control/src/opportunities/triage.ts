@@ -27,11 +27,15 @@ export interface OpportunityTriageProfile {
   readonly excludedTerms?: readonly string[] | undefined;
   /** Reject an explicitly local/in-person listing. Unknown location stays reviewable. */
   readonly requireRemote?: boolean | undefined;
+  /** Reject an explicit seller/service-offer post; ambiguous intent stays reviewable. */
+  readonly requireDemand?: boolean | undefined;
   /** Only applied to a clearly fixed-price USD amount, never hourly/unknown amounts. */
   readonly minimumKnownFixedUsd?: number | undefined;
 }
 
 export interface OpportunityTriageSignals {
+  readonly demandIntent: boolean;
+  readonly supplyIntent: boolean;
   readonly paidIntent: boolean;
   readonly unpaidIntent: boolean;
   readonly remote: boolean;
@@ -53,7 +57,6 @@ export interface OpportunityTriageResult {
 
 const PAID_TERMS = [
   "hiring",
-  "hire",
   "paid",
   "budget",
   "bounty",
@@ -89,6 +92,21 @@ const LOCAL_TERMS = [
   "pickup",
   "pick up",
   "physical location",
+] as const;
+
+const DEMAND_PATTERNS = [
+  /^\s*\[(?:hiring|task|request|wanted|job)\]/i,
+  /\blooking\s+to\s+hire\b/i,
+  /\blooking\s+for\s+(?:someone|a\s+developer|a\s+freelancer|a\s+contractor|help)\b/i,
+  /\bneed\s+(?:someone|a\s+developer|a\s+freelancer|a\s+contractor|help)\b/i,
+  /\bseeking\s+(?:someone|a\s+developer|a\s+freelancer|a\s+contractor|help)\b/i,
+] as const;
+
+const SUPPLY_PATTERNS = [
+  /^\s*\[(?:for\s+hire|offer|offering)\]/i,
+  /\bavailable\s+for\s+(?:work|projects?|hire)\b/i,
+  /\bhire\s+me\b/i,
+  /\bmy\s+(?:freelance\s+)?services\b/i,
 ] as const;
 
 const CAUTION_PATTERNS: ReadonlyArray<readonly [RegExp, string]> = [
@@ -182,6 +200,8 @@ export function triageOpportunity(
   profile: OpportunityTriageProfile = {},
 ): OpportunityTriageResult {
   const text = normalizedText(candidate);
+  const demandIntent = DEMAND_PATTERNS.some((pattern) => pattern.test(text));
+  const supplyIntent = SUPPLY_PATTERNS.some((pattern) => pattern.test(text));
   const paidIntent = PAID_TERMS.some((term) => containsPhrase(text, term));
   const unpaidIntent = UNPAID_TERMS.some((term) => containsPhrase(text, term));
   const remote = REMOTE_TERMS.some((term) => containsPhrase(text, term));
@@ -195,6 +215,14 @@ export function triageOpportunity(
   let score = 45;
   let hardReject = false;
 
+  if (demandIntent) {
+    score += 12;
+    reasons.push("explicit buyer/demand intent");
+  }
+  if (supplyIntent) {
+    score -= 20;
+    reasons.push("explicit seller/service-offer intent");
+  }
   if (paidIntent) {
     score += 10;
     reasons.push("explicit paid/hiring language");
@@ -212,6 +240,11 @@ export function triageOpportunity(
     reasons.push(`preferred term match: ${preferredTermMatches.join(", ")}`);
   }
 
+  if (profile.requireDemand === true && supplyIntent && !demandIntent) {
+    score -= 40;
+    hardReject = true;
+    reasons.push("explicit seller/service-offer post conflicts with demand-only profile");
+  }
   if (unpaidIntent) {
     score -= 60;
     hardReject = true;
@@ -273,6 +306,8 @@ export function triageOpportunity(
       : "review";
 
   const signals: OpportunityTriageSignals = Object.freeze({
+    demandIntent,
+    supplyIntent,
     paidIntent,
     unpaidIntent,
     remote,
