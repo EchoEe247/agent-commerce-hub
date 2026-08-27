@@ -51,6 +51,7 @@ export interface OpportunityPursuitDossier {
     readonly talkingPoints: readonly string[];
     readonly clarificationItems: readonly string[];
     readonly draftGuidance: readonly string[];
+    readonly requiresOperatorReview: true;
     readonly sendAllowed: false;
   };
   readonly boundary: OpportunityOperatorPreparationPacket["boundary"];
@@ -137,12 +138,14 @@ function contactBrief(packet: OpportunityOperatorPreparationPacket): Opportunity
     ? [
         "Reference the source listing and ask only for the unresolved facts needed to decide fit.",
         "Do not promise price, timing, delivery, acceptance, or availability while required checks remain unresolved.",
+        "Treat talking points and clarification items as internal, model-assisted notes that require operator review before reuse in any message.",
         "Do not mention automated discovery, model scoring, internal risk labels, or internal execution routing.",
         "Keep any future message concise and non-committal until the operator explicitly approves contact.",
       ]
     : [
         "Reference the source listing and state interest without implying that work has already been accepted.",
         "State only capabilities and economics that have actually been verified.",
+        "Treat talking points as internal, model-assisted notes that require operator review before reuse in any message.",
         "Confirm deliverables, timeline, and acceptance criteria before any commitment.",
         "Do not mention automated discovery, model scoring, internal risk labels, or internal execution routing.",
       ];
@@ -154,6 +157,7 @@ function contactBrief(packet: OpportunityOperatorPreparationPacket): Opportunity
     talkingPoints,
     clarificationItems,
     draftGuidance: Object.freeze(guidance),
+    requiresOperatorReview: true as const,
     sendAllowed: false as const,
   });
 }
@@ -175,16 +179,9 @@ export function buildOpportunityPursuitDossier(
 
   const state = dossierStatus(packet);
   const economics = packet.assessment.economics;
-  const dossierId = `opdos_${canonicalHash({
-    schemaVersion: 1,
-    packetId: packet.packetId,
-    currentRequestId: packet.ranking.currentRequestId,
-    evaluatorId: packet.ranking.evaluatorId,
-    evaluatedAt: packet.ranking.evaluatedAt,
-    readiness: packet.readiness,
-    requiredChecks: packet.requiredChecks,
-    score: packet.ranking.score,
-  }).slice(0, 32)}`;
+  // Hash the complete compact operator packet, not selected score/check fields, so
+  // any material packet/evaluation/provenance change produces a new dossier identity.
+  const dossierId = `opdos_${canonicalHash({ schemaVersion: 1, packet }).slice(0, 32)}`;
 
   return Object.freeze({
     schemaVersion: 1 as const,
