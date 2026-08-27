@@ -32,6 +32,11 @@ function safeJson(value: unknown): string {
 function keySet(value: unknown): string[] {
   return Object.keys(asObject(value)).sort();
 }
+function parseJsonArray(value: string): unknown[] {
+  const parsed: unknown = JSON.parse(value);
+  if (!Array.isArray(parsed)) throw new Error("expected JSON-encoded array");
+  return parsed;
+}
 async function getJson(url: string, apiKey?: string): Promise<{ status: number; body: unknown }> {
   const response = await fetch(url, {
     method: "GET",
@@ -55,6 +60,8 @@ const session = await getAtelierApiSession();
 if (session.agentId !== AGENT_ID) throw new Error(`unexpected broker agent id ${session.agentId}`);
 
 const payload = buildReadmeSetupServicePayload();
+const plannedRequirements = parseJsonArray(payload.requirement_fields);
+const plannedDeliverables = parseJsonArray(payload.deliverables);
 const root = join(homedir(), ".hermes", "commerce-control");
 const receiptPath = join(root, "receipts", "atelier-service-create-attempt-1.json");
 const statePath = join(root, "state", "atelier-readme-service.json");
@@ -76,7 +83,7 @@ const requirementShapeCounts = new Map<string, number>();
 for (const value of requirementSamples) {
   const shape = Array.isArray(value)
     ? `array:${value.map((item) => keySet(item).join(",")).join("|")}`
-    : `object:${keySet(value).join(",")}`;
+    : `${typeof value}:${keySet(value).join(",")}`;
   requirementShapeCounts.set(shape, (requirementShapeCounts.get(shape) ?? 0) + 1);
 }
 
@@ -104,8 +111,10 @@ console.log(`SERVICE_RECEIPT_EXISTS=${existsSync(receiptPath) ? "yes" : "no"}`);
 console.log(`SERVICE_STATE_EXISTS=${existsSync(statePath) ? "yes" : "no"}`);
 console.log(`PLANNED_PAYLOAD=${safeJson(payload)}`);
 console.log(`PLANNED_PAYLOAD_KEYS=${Object.keys(payload).sort().join(",")}`);
-console.log(`PLANNED_REQUIREMENT_FIELDS_TYPE=${Array.isArray(payload.requirement_fields) ? "array" : typeof payload.requirement_fields}`);
-console.log(`PLANNED_REQUIREMENT_FIELD_KEYS=${payload.requirement_fields.map((field) => Object.keys(field).sort().join(",")).join("|")}`);
+console.log(`PLANNED_REQUIREMENT_FIELDS_TYPE=${typeof payload.requirement_fields}`);
+console.log(`PLANNED_REQUIREMENT_FIELD_KEYS=${plannedRequirements.map((field) => Object.keys(asObject(field)).sort().join(",")).join("|")}`);
+console.log(`PLANNED_DELIVERABLES_TYPE=${typeof payload.deliverables}`);
+console.log(`PLANNED_DELIVERABLE_COUNT=${plannedDeliverables.length}`);
 console.log(`PUBLIC_REQUIREMENT_SAMPLE_COUNT=${requirementSamples.length}`);
 console.log(`PUBLIC_REQUIREMENT_SHAPES=${safeJson(Object.fromEntries(requirementShapeCounts))}`);
 console.log(`PUBLIC_SERVICE_FIELD_SHAPES=${safeJson(Object.fromEntries(serviceFieldShapeCounts))}`);
