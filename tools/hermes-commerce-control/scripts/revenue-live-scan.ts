@@ -1,10 +1,14 @@
 #!/usr/bin/env node
 /**
- * Read-only live revenue scan.
+ * Read-only live revenue/profit scan.
  *
- * Queries the already-supported public work adapters, keeps only currently
- * earnable work, then applies the revenue-first evaluator. It never prepares or
- * broadcasts a claim, sends credentials, signs anything, or moves value.
+ * Queries supported public work adapters, keeps only currently earnable work,
+ * then applies revenue and profit economics. Advertised reward is never treated
+ * as profit: success fees, attempt costs, failed-attempt loss and payout
+ * probability are explicit. Unknown costs stay unresolved and block pursuit.
+ *
+ * This script never prepares or broadcasts a claim, sends credentials, signs
+ * anything, or moves value.
  */
 import { loadConfig } from "../src/config.js";
 import { AdapterRegistry } from "../src/adapters/registry.js";
@@ -20,9 +24,9 @@ import { PayShAdapter } from "../src/adapters/paysh/index.js";
 import { aggregateWork } from "../src/aggregate/work.js";
 import {
   evaluateRevenueWork,
-  rankRevenueWork,
   type RevenueEvaluationOptions,
 } from "../src/revenue/work-opportunity.js";
+import { evaluateProfitEconomics } from "../src/revenue/profit-economics.js";
 import { STRICT_ZERO_COST_SOURCE_PROFILES } from "../src/revenue/source-policy.js";
 
 const config = loadConfig(process.env);
@@ -62,9 +66,47 @@ const registry = new AdapterRegistry(config, adapters);
 const scanStartedAt = new Date().toISOString();
 const discovered = await registry.discoverWork({ limit: 50, minReward: "1" });
 const earnable = aggregateWork(discovered.results);
-const ranked = rankRevenueWork(earnable, revenueOptions);
-const rejected = earnable
-  .map((work) => ({ work, revenue: evaluateRevenueWork(work, revenueOptions) }))
+
+const evaluated = earnable.map((work) => {
+  const revenue = evaluateRevenueWork(work, revenueOptions);
+  const profit = evaluateProfitEconomics(work, revenue, {
+    minExpectedNetProfitUsd: 3,
+    minSuccessProbability: 0.5,
+    maxLossIfNoPayoutUsd: 0.25,
+    requireResolvedCosts: true,
+  });
+  return { work, revenue, profit };
+});
+
+const pursuit = evaluated
+  .filter((entry) => entry.revenue.eligible && entry.profit.pursuitEligible)
+  .sort((a, b) => {
+    const ap = a.profit.expectedNetProfitUsd ?? -1;
+    const bp = b.profit.expectedNetProfitUsd ?? -1;
+    if (bp !== ap) return bp - ap;
+    if (b.profit.successProbability !== a.profit.successProbability) {
+      return b.profit.successProbability - a.profit.successProbability;
+    }
+    return a.work.id < b.work.id ? -1 : a.work.id > b.work.id ? 1 : 0;
+  });
+
+const watchlist = evaluated
+  .filter((entry) => entry.revenue.eligible && !entry.profit.pursuitEligible)
+  .map((entry) => ({
+    id: entry.work.id,
+    source: entry.work.source,
+    title: entry.work.title,
+    rewardUsd: entry.revenue.rewardUsd,
+    expectedRevenueUsd: entry.revenue.expectedRevenueUsd,
+    successProbability: entry.profit.successProbability,
+    expectedNetProfitUsd: entry.profit.expectedNetProfitUsd,
+    lossIfNoPayoutUsd: entry.profit.lossIfNoPayoutUsd,
+    blockers: entry.profit.blockers,
+    flags: entry.profit.flags,
+    sourceNotes: entry.profit.sourceProfile.notes,
+  }));
+
+const rejected = evaluated
   .filter((entry) => !entry.revenue.eligible)
   .map((entry) => ({
     id: entry.work.id,
@@ -77,9 +119,15 @@ const rejected = earnable
   }));
 
 const payload = {
-  schemaVersion: 1,
+  schemaVersion: 2,
   mode: "A",
-  policy: "strict-zero-upfront",
+  policy: {
+    zeroUpfrontRequired: true,
+    resolvedCostsRequired: true,
+    minimumExpectedNetProfitUsd: 3,
+    minimumSuccessProbability: 0.5,
+    maximumLossIfNoPayoutUsd: 0.25,
+  },
   scanStartedAt,
   generatedAt: new Date().toISOString(),
   financialActionExecuted: false,
@@ -88,10 +136,11 @@ const payload = {
   counts: {
     discovered: discovered.results.length,
     earnable: earnable.length,
-    revenueEligible: ranked.length,
-    rejected: rejected.length,
+    pursuitEligible: pursuit.length,
+    watchlist: watchlist.length,
+    revenueRejected: rejected.length,
   },
-  opportunities: ranked.map((entry, index) => ({
+  opportunities: pursuit.map((entry, index) => ({
     rank: index + 1,
     id: entry.work.id,
     source: entry.work.source,
@@ -101,14 +150,20 @@ const payload = {
     reward: entry.work.reward,
     verifier: entry.work.verification.type,
     funding: entry.work.funding,
-    expectedRevenueUsd: entry.revenue.expectedRevenueUsd,
+    advertisedRewardUsd: entry.profit.advertisedRewardUsd,
+    successFeeUsd: entry.profit.successFeeUsd,
+    attemptCostUsd: entry.profit.attemptCostUsd,
+    netProfitOnSuccessUsd: entry.profit.netProfitOnSuccessUsd,
+    expectedNetProfitUsd: entry.profit.expectedNetProfitUsd,
+    lossIfNoPayoutUsd: entry.profit.lossIfNoPayoutUsd,
+    successProbability: entry.profit.successProbability,
     automationFraction: entry.revenue.automationFraction,
     paymentConfidence: entry.revenue.paymentConfidence,
     acceptanceProbability: entry.revenue.acceptanceProbability,
-    score: entry.revenue.breakdown.total,
-    flags: entry.revenue.flags,
-    sourceNotes: entry.revenue.sourceProfile.notes,
+    flags: [...entry.revenue.flags, ...entry.profit.flags],
+    sourceNotes: [...entry.revenue.sourceProfile.notes, ...entry.profit.sourceProfile.notes],
   })),
+  watchlist,
   rejected,
 };
 
