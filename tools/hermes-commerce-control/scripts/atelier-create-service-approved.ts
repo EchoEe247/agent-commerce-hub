@@ -2,9 +2,9 @@
 import { chmodSync, existsSync, mkdirSync, renameSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
-import { loadAtelierAgentAuthKeystore } from "../src/atelier/agent-auth-store.js";
 import { AtelierApiClient } from "../src/atelier/api-client.js";
 import { buildReadmeSetupServicePayload } from "../src/atelier/marketplace-contract.js";
+import { getAtelierApiSession } from "../src/security/atelier-access-client.js";
 
 if (process.env.ATELIER_SERVICE_LISTING_APPROVED !== "yes") {
   console.error("ERROR: explicit Atelier service-listing approval is required");
@@ -24,13 +24,6 @@ function serviceIdFrom(body: unknown): string | null {
   }
   return null;
 }
-async function readPassphrase(): Promise<string> {
-  let raw = "";
-  for await (const chunk of process.stdin) raw += String(chunk);
-  const passphrase = raw.replace(/[\r\n]+$/, "");
-  if (passphrase.length < 16) throw new Error("keystore passphrase must be at least 16 characters");
-  return passphrase;
-}
 function writeState(path: string, value: unknown): void {
   mkdirSync(dirname(path), { recursive: true, mode: 0o700 });
   chmodSync(dirname(path), 0o700);
@@ -41,7 +34,6 @@ function writeState(path: string, value: unknown): void {
 }
 
 const root = join(homedir(), ".hermes", "commerce-control");
-const authPath = process.env.ATELIER_AGENT_AUTH_KEYSTORE_PATH?.trim() || join(root, "secrets", "atelier-agent-auth.keystore.json");
 const statePath = process.env.ATELIER_SERVICE_STATE_PATH?.trim() || join(root, "state", "atelier-readme-service.json");
 const receiptPath = process.env.ATELIER_SERVICE_RECEIPT_PATH?.trim() || join(root, "receipts", "atelier-service-create-attempt-1.json");
 
@@ -49,8 +41,7 @@ let postAttempted = false;
 try {
   if (existsSync(statePath)) throw new Error("Atelier service state already exists; refusing duplicate listing");
   if (existsSync(receiptPath)) throw new Error("Atelier service one-shot receipt already exists; refusing retry");
-  const passphrase = await readPassphrase();
-  const credentials = loadAtelierAgentAuthKeystore(authPath, passphrase);
+  const credentials = await getAtelierApiSession();
   const payload = buildReadmeSetupServicePayload();
 
   mkdirSync(dirname(receiptPath), { recursive: true, mode: 0o700 });
@@ -60,6 +51,7 @@ try {
   });
 
   console.log("ATELIER_SERVICE_LISTING_AUTHORIZATION_USED=yes");
+  console.log("AUTH_SOURCE=atelier_access_broker");
   console.log("ONE_SHOT_RECEIPT_ARMED=yes");
   console.log(`AGENT_ID=${credentials.agentId}`);
   console.log(`SERVICE_TITLE=${payload.title}`);
