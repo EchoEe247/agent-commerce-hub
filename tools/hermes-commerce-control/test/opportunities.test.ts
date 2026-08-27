@@ -3,10 +3,16 @@ import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
+import { CommerceError } from "../src/core/errors.js";
 import { dedupeOpportunities } from "../src/opportunities/dedupe.js";
 import { OpportunityIngestor } from "../src/opportunities/ingest.js";
-import { canonicalOpportunityId, type OpportunityCandidate } from "../src/opportunities/models.js";
+import {
+  canonicalOpportunityId,
+  parseOpportunityCandidate,
+  type OpportunityCandidate,
+} from "../src/opportunities/models.js";
 import { discoverAndPersist } from "../src/opportunities/pipeline.js";
+import type { OpportunitySourceAdapter } from "../src/opportunities/adapters/interface.js";
 import {
   buildRedditAtomUrl,
   parseRedditAtom,
@@ -90,6 +96,22 @@ test("canonical opportunity IDs dedupe the same listing across providers", () =>
   assert.equal(result.duplicates.length, 1);
 });
 
+test("runtime candidate schema rejects malformed source metadata", () => {
+  assert.throws(
+    () =>
+      parseOpportunityCandidate({
+        id: "opp_bad",
+        source: "reddit_rss",
+        externalId: "t3_bad",
+        title: "bad",
+        observedAt: NOW,
+        tags: ["reddit"],
+        metadata: { nested: { unexpected: true } },
+      }),
+    (error: unknown) => error instanceof CommerceError && error.code === "SCHEMA_VIOLATION",
+  );
+});
+
 test("Reddit RSS adapter filters locally after one feed read", async () => {
   const requested: string[] = [];
   const adapter = new RedditRssOpportunityAdapter({ subreddits: ["forhire", "slavelabour"] });
@@ -110,6 +132,38 @@ test("Reddit RSS adapter filters locally after one feed read", async () => {
   assert.equal(requested.length, 1);
   assert.equal(result.length, 1);
   assert.equal(result[0]?.externalId, "t3_example1");
+});
+
+test("ingestor isolates a malformed source instead of poisoning good results", async () => {
+  const bad: OpportunitySourceAdapter = {
+    id: "generic_rss",
+    async discover() {
+      return [
+        {
+          id: "opp_bad",
+          source: "generic_rss",
+          externalId: "bad",
+          title: "bad",
+          observedAt: NOW,
+          tags: [],
+          metadata: { invalid: 123 },
+        } as unknown as OpportunityCandidate,
+      ];
+    },
+  };
+  const good = new RedditRssOpportunityAdapter({ subreddits: ["forhire", "slavelabour"] });
+  const ingestor = new OpportunityIngestor(
+    {
+      text: async (url) => ({ status: 200, url, headers: {}, bytes: FEED.length, text: FEED }),
+    },
+    [bad, good],
+    { clock: () => NOW, adapterBudgetMs: 2_000 },
+  );
+
+  const result = await ingestor.discover();
+  assert.equal(result.sources.generic_rss?.status, "degraded");
+  assert.equal(result.sources.reddit_rss?.status, "ok");
+  assert.equal(result.results.length, 2);
 });
 
 test("pipeline persists fresh opportunities and drops them on the next pass", async () => {
