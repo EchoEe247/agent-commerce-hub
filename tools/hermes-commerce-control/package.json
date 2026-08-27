@@ -14,7 +14,9 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "node --import tsx --test test/**/*.test.ts",
     "test:serial": "node --import tsx --test --test-concurrency=1 test/**/*.test.ts",
-    "test:contracts": "node --import tsx --test test/config.test.ts test/policy.test.ts test/mcp.test.ts test/security-adversarial.test.ts"
+    "test:contracts": "node --import tsx --test test/config.test.ts test/policy.test.ts test/mcp.test.ts test/security-adversarial.test.ts",
+    "opportunities:watch": "node --import tsx src/opportunities/cli.ts",
+    "opportunities:watch:built": "node dist/opportunities/cli.js"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.30.0",
