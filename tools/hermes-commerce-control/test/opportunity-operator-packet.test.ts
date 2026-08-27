@@ -52,17 +52,22 @@ function ranked(overrides: Partial<PersistedOpportunityEvaluation["evaluation"]>
   return rankOpportunity(candidate, triage, evaluationRecord, requestId);
 }
 
-test("manual-review packet surfaces checks and preserves explicit approval boundary", () => {
+test("manual-review packet surfaces checks, provenance, and explicit approval boundary", () => {
   const packet = prepareOpportunityOperatorPacket(ranked());
   assert.equal(packet.schemaVersion, 1);
   assert.match(packet.packetId, /^opprep_[a-f0-9]{32}$/);
   assert.equal(packet.ranking.operatorAction, "manual_review");
   assert.equal(packet.ranking.executionRoute, "human_remote");
+  assert.equal(packet.ranking.evaluationFreshness, "current");
+  assert.equal(packet.triage.decision === "candidate" || packet.triage.decision === "review", true);
   assert.equal(packet.readiness, "needs_checks");
   assert.equal(packet.nextSafeStep, "resolve_checks");
   assert.match(packet.requiredChecks.join(" "), /scope and acceptance criteria/i);
   assert.match(packet.requiredChecks.join(" "), /compensation and payment terms/i);
+  assert.match(packet.requiredChecks.join(" "), /execution cost/i);
   assert.match(packet.deliveryConsiderations.join(" "), /remote human executor/i);
+  assert.equal(packet.assessment.nextChecks.length, 1);
+  assert.equal("body" in packet.opportunity, false, "raw listing body must not be copied into operator packet");
   assert.equal(packet.boundary.externalActionsAllowed, false);
   assert.deepEqual(packet.boundary.requiresExplicitApprovalBefore, EXTERNAL_ACTIONS_REQUIRING_APPROVAL);
 });
@@ -91,15 +96,47 @@ test("clean pursue packet becomes ready only for an operator decision, not an ex
   assert.equal(packet.boundary.externalActionsAllowed, false);
 });
 
-test("packet identity is deterministic for identical ranked state", () => {
-  const entry = ranked();
-  assert.equal(
-    prepareOpportunityOperatorPacket(entry).packetId,
-    prepareOpportunityOperatorPacket(entry).packetId,
-  );
+test("unknown economics or route cannot be marked ready for an operator decision", () => {
+  const entry = ranked({
+    recommendation: "pursue",
+    executionRoute: "unknown",
+    risk: "low",
+    confidence: 0.8,
+    economics: {
+      payout: { minUsd: 100, maxUsd: null, basis: "observed" },
+      executionCost: null,
+      margin: null,
+    },
+    capabilities: { aiCanComplete: false, humanRequired: false, physicalPresence: false },
+    blockers: [],
+    nextChecks: [],
+  });
+  const packet = prepareOpportunityOperatorPacket(entry);
+  assert.equal(packet.readiness, "needs_checks");
+  assert.match(packet.requiredChecks.join(" "), /execution cost/i);
+  assert.match(packet.requiredChecks.join(" "), /margin/i);
+  assert.match(packet.requiredChecks.join(" "), /execution route/i);
 });
 
-test("watch and reject rows cannot become operator preparation packets", () => {
+test("packet identity is deterministic but changes when selected evaluation content changes", () => {
+  const first = prepareOpportunityOperatorPacket(ranked());
+  const again = prepareOpportunityOperatorPacket(ranked());
+  const changed = prepareOpportunityOperatorPacket(ranked({ confidence: 0.6 }));
+  assert.equal(first.packetId, again.packetId);
+  assert.notEqual(first.packetId, changed.packetId);
+});
+
+test("stale, watch, and reject rows cannot become operator preparation packets", () => {
+  const current = ranked();
+  const stale = rankOpportunity(
+    current.opportunity,
+    current.triage,
+    current.evaluationRecord,
+    "evalreq_different_current_request",
+  );
+  assert.equal(stale.evaluationFreshness, "stale_rejected");
+  assert.throws(() => prepareOpportunityOperatorPacket(stale), /current evaluation/i);
+
   const watch = ranked({ recommendation: "watch" });
   assert.equal(watch.operatorAction, "watch");
   assert.throws(() => prepareOpportunityOperatorPacket(watch), /does not support action/i);
@@ -109,4 +146,8 @@ test("watch and reject rows cannot become operator preparation packets", () => {
   assert.equal(reject.operatorAction, "reject");
   assert.throws(() => prepareOpportunityOperatorPacket(reject), /does not support action/i);
   assert.deepEqual(prepareOpportunityOperatorPackets([reject]), []);
+});
+
+test("batch packet preparation honors a zero limit", () => {
+  assert.deepEqual(prepareOpportunityOperatorPackets([ranked()], 0), []);
 });
