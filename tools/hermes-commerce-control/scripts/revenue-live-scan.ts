@@ -22,6 +22,7 @@ import {
   rankRevenueWork,
   type RevenueEvaluationOptions,
 } from "../src/revenue/work-opportunity.js";
+import { STRICT_ZERO_COST_SOURCE_PROFILES } from "../src/revenue/source-policy.js";
 
 const config = loadConfig(process.env);
 const adapters: CommerceAdapter[] = [
@@ -38,8 +39,10 @@ const revenueOptions: RevenueEvaluationOptions = {
   minRewardUsd: 1,
   minAutomationFraction: 0.5,
   zeroUpfrontOnly: true,
+  requireKnownZeroUpfront: true,
   avoidKycRequired: true,
   excludeIntegrityRisk: true,
+  sourceProfiles: STRICT_ZERO_COST_SOURCE_PROFILES,
   capabilities: [
     "research",
     "data",
@@ -68,11 +71,13 @@ const rejected = earnable
     rewardUsd: entry.revenue.rewardUsd,
     blockers: entry.revenue.blockers,
     flags: entry.revenue.flags,
+    sourceNotes: entry.revenue.sourceProfile.notes,
   }));
 
 const payload = {
   schemaVersion: 1,
   mode: "A",
+  policy: "strict-zero-upfront",
   scanStartedAt,
   generatedAt: new Date().toISOString(),
   financialActionExecuted: false,
@@ -100,6 +105,7 @@ const payload = {
     acceptanceProbability: entry.revenue.acceptanceProbability,
     score: entry.revenue.breakdown.total,
     flags: entry.revenue.flags,
+    sourceNotes: entry.revenue.sourceProfile.notes,
   })),
   rejected,
 };
