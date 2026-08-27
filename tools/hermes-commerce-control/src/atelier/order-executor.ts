@@ -144,19 +144,20 @@ export async function executeAtelierReadmeOrderOnce(input: {
 
   if (receipt.state === "published") {
     if (!receipt.deliverableUrl) throw new Error(`published order ${orderId} is missing deliverable URL`);
+    const deliverableUrl = receipt.deliverableUrl;
     receipt = transition(receiptPath, receipt, {
       orderId,
       serviceId: input.serviceId,
       state: "delivery_attempted",
       reportSha256: receipt.reportSha256,
-      deliverableUrl: receipt.deliverableUrl,
+      deliverableUrl,
       deliveryHttpStatus: null,
       note: "delivery POST armed; automatic retry forbidden if outcome is ambiguous",
     });
 
     let response;
     try {
-      response = await input.client.deliverDocument(orderId, receipt.deliverableUrl);
+      response = await input.client.deliverDocument(orderId, deliverableUrl);
     } catch (error) {
       return Object.freeze({
         orderId,
@@ -172,7 +173,7 @@ export async function executeAtelierReadmeOrderOnce(input: {
         serviceId: input.serviceId,
         state: "delivery_attempted",
         reportSha256: receipt.reportSha256,
-        deliverableUrl: receipt.deliverableUrl,
+        deliverableUrl,
         deliveryHttpStatus: response.status,
         note: `delivery returned HTTP ${response.status}; no automatic retry`,
       });
@@ -184,7 +185,7 @@ export async function executeAtelierReadmeOrderOnce(input: {
       serviceId: input.serviceId,
       state: "delivered",
       reportSha256: receipt.reportSha256,
-      deliverableUrl: receipt.deliverableUrl,
+      deliverableUrl,
       deliveryHttpStatus: response.status,
       note: `delivered ${phase}`,
     });
