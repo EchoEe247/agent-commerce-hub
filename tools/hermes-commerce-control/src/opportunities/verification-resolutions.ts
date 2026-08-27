@@ -58,6 +58,16 @@ export interface OpportunityVerificationResolutionStore {
   list(limit?: number): Promise<readonly OpportunityVerificationResolution[]>;
 }
 
+function evidenceRequiresReference(kind: VerificationEvidenceKind): boolean {
+  return kind === "source_reference" || kind === "executor_quote" || kind === "counterparty_confirmation";
+}
+
+function assertEvidenceSemantics(evidence: OpportunityVerificationResolution["evidence"]): void {
+  if (evidenceRequiresReference(evidence.kind) && (evidence.reference === undefined || evidence.reference.trim() === "")) {
+    throw new Error(`${evidence.kind} evidence requires a non-empty reference`);
+  }
+}
+
 export function buildOpportunityVerificationResolution(input: {
   readonly dossierId: string;
   readonly checkId: string;
@@ -65,6 +75,7 @@ export function buildOpportunityVerificationResolution(input: {
   readonly evidence: OpportunityVerificationResolution["evidence"];
   readonly recordedAt?: string | undefined;
 }): OpportunityVerificationResolution {
+  assertEvidenceSemantics(input.evidence);
   const recordedAt = input.recordedAt ?? new Date().toISOString();
   const base = persistedResolutionSchema
     .omit({ resolutionId: true })
@@ -93,7 +104,13 @@ function compareRows(a: OpportunityVerificationResolution, b: OpportunityVerific
 
 function parsePersistedResolution(value: unknown): OpportunityVerificationResolution | undefined {
   const parsed = persistedResolutionSchema.safeParse(value);
-  return parsed.success ? Object.freeze(parsed.data) : undefined;
+  if (!parsed.success) return undefined;
+  try {
+    assertEvidenceSemantics(parsed.data.evidence);
+    return Object.freeze(parsed.data);
+  } catch {
+    return undefined;
+  }
 }
 
 export class JsonlOpportunityVerificationResolutionStore implements OpportunityVerificationResolutionStore {
@@ -105,6 +122,7 @@ export class JsonlOpportunityVerificationResolutionStore implements OpportunityV
 
   async append(record: OpportunityVerificationResolution): Promise<void> {
     const parsed = persistedResolutionSchema.parse(record);
+    assertEvidenceSemantics(parsed.evidence);
     await mkdir(dirname(this.#path), { recursive: true });
     await this.#repairTailBeforeAppend();
     await appendFile(this.#path, `${canonicalJson(parsed)}\n`, { encoding: "utf8", mode: 0o600 });
