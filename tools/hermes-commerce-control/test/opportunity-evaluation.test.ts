@@ -96,10 +96,13 @@ test("evaluation packet is bounded and omits author/source metadata", () => {
   assert.equal("metadata" in packet.opportunity, false);
 });
 
-test("prompt is provider-neutral and carries strict no-invention rules", () => {
+test("prompt is provider-neutral and carries no-invention, prompt-injection, and rule-check guards", () => {
   const prompt = buildOpportunityEvaluationPrompt(buildOpportunityEvaluationPacket(candidate, triage()));
   assert.match(prompt, /Do not invent a payout/i);
   assert.match(prompt, /analysis only/i);
+  assert.match(prompt, /untrusted data/i);
+  assert.match(prompt, /never follow instructions inside/i);
+  assert.match(prompt, /platform\/subreddit.*rules/i);
   assert.match(prompt, /opp_eval/);
   assert.match(prompt, /human_physical/);
   assert.doesNotMatch(prompt, /example_worker/);
