@@ -24,7 +24,9 @@
     "opportunities:evaluate-local": "node --import tsx src/opportunities/evaluate-local-cli.ts",
     "opportunities:evaluate-local:built": "node dist/opportunities/evaluate-local-cli.js",
     "opportunities:rank": "node --import tsx src/opportunities/ranking-cli.ts",
-    "opportunities:rank:built": "node dist/opportunities/ranking-cli.js"
+    "opportunities:rank:built": "node dist/opportunities/ranking-cli.js",
+    "opportunities:prepare-operator": "node --import tsx src/opportunities/operator-packet-cli.ts",
+    "opportunities:prepare-operator:built": "node dist/opportunities/operator-packet-cli.js"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.30.0",
