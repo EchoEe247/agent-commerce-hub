@@ -26,7 +26,9 @@
     "opportunities:rank": "node --import tsx src/opportunities/ranking-cli.ts",
     "opportunities:rank:built": "node dist/opportunities/ranking-cli.js",
     "opportunities:prepare-operator": "node --import tsx src/opportunities/operator-packet-cli.ts",
-    "opportunities:prepare-operator:built": "node dist/opportunities/operator-packet-cli.js"
+    "opportunities:prepare-operator:built": "node dist/opportunities/operator-packet-cli.js",
+    "opportunities:prepare-pursuit": "node --import tsx src/opportunities/pursuit-dossier-cli.ts",
+    "opportunities:prepare-pursuit:built": "node dist/opportunities/pursuit-dossier-cli.js"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.30.0",
