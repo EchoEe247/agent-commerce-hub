@@ -13,6 +13,7 @@ export const PLATFORM_IDS = [
   "piprail",
   "agent_bounties",
   "bountybook",
+  "trybounty",
   "the402",
   "paysh",
 ] as const;
