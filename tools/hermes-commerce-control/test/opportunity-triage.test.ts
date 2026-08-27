@@ -25,7 +25,7 @@ test("extractUsdBudget ignores bare numbers and parses fixed USD ranges", () => 
     minUsd: 75,
     maxUsd: 125,
     basis: "fixed",
-    matchedText: "$75-$125 USD for the project".replace("for the ", ""),
+    matchedText: "$75-$125 USD",
   });
 });
 
