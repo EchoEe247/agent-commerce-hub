@@ -87,6 +87,16 @@ test("for-hire seller post is rejected by a demand-only profile even when it mat
   assert.ok(result.reasons.some((reason) => reason.includes("demand-only")));
 });
 
+test("compact FORHIRE tag is also recognized as seller supply", () => {
+  const result = triageOpportunity(
+    opportunity("[FORHIRE] Python automation developer", "Remote. Available for projects."),
+    { requireDemand: true },
+  );
+  assert.equal(result.signals.supplyIntent, true);
+  assert.equal(result.signals.demandIntent, false);
+  assert.equal(result.decision, "reject");
+});
+
 test("task tags are demand while offer tags are supply", () => {
   const task = triageOpportunity(
     opportunity("[TASK] Automate a spreadsheet", "Pay $50 for project."),
