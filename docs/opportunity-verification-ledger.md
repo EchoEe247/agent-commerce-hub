@@ -47,7 +47,7 @@ Evidence is intentionally check-specific:
 
 An executor quote therefore cannot satisfy buyer compensation terms, and an operator attestation cannot masquerade as source verification.
 
-External evidence kinds (`source_reference`, `executor_quote`, `counterparty_confirmation`) require a non-empty reference.
+External evidence kinds (`source_reference`, `executor_quote`, `counterparty_confirmation`) require a non-empty reference. A `source_reference` must specifically be a credential-free HTTP(S) URL; quote and counterparty-confirmation references may be opaque local receipt/reference IDs.
 
 ## Record local evidence
 
@@ -64,7 +64,7 @@ npm run opportunities:record-verification -- \
   --json
 ```
 
-Recording is append-only. The latest applicable record for a current dossier/check pair is used. Evidence is scoped to the `dossierId` and `checkId`; when upstream evaluation or dossier state changes, identities rotate and old evidence no longer applies automatically.
+Recording is append-only. The latest applicable record for a current dossier/check pair is used. Evidence is scoped to the `dossierId` and `checkId`; when upstream evaluation or dossier state changes, identities rotate and old evidence no longer applies automatically. A later incompatible evidence record is ignored rather than erasing an earlier compatible resolution.
 
 A `failed` outcome does not silently reject or contact anything. It moves the verification plan to `failed_check` for operator review.
 
