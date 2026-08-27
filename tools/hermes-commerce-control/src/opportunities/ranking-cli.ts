@@ -6,6 +6,7 @@ import { loadConfig } from "../config.js";
 import { JsonlOpportunityEvaluationResultStore } from "./evaluation-results.js";
 import { OPPORTUNITY_PROFILE_IDS, resolveOpportunityProfile } from "./profiles.js";
 import {
+  DEFAULT_RANKING_MAX_AGE_HOURS,
   OPPORTUNITY_OPERATOR_ACTIONS,
   rankStoredOpportunities,
   type OpportunityOperatorAction,
@@ -29,6 +30,8 @@ Options:
       --evaluator <id>          only use evaluations from this exact evaluator ID
       --action <name>           review_for_pursuit | manual_review | watch | reject | all (repeatable)
       --min-score <0-100>       minimum deterministic rank score (default: 0)
+      --max-age-hours <n>       max age for non-rejected listing/evaluation state (default: ${String(DEFAULT_RANKING_MAX_AGE_HOURS)}; 0 disables)
+      --as-of <timestamp>       ranking clock for deterministic replay (default: now)
       --limit <n>               max ranked rows (default: 25)
       --scan-limit <n>          max persisted opportunities to inspect (default: 1000)
       --state-file <path>       opportunity JSONL store
@@ -54,6 +57,21 @@ function score(raw: string | undefined): number {
     throw new Error("--min-score must be a number from 0 to 100");
   }
   return value;
+}
+
+function maxAgeHours(raw: string | undefined): number {
+  if (raw === undefined) return DEFAULT_RANKING_MAX_AGE_HOURS;
+  const value = Number(raw);
+  if (!Number.isFinite(value) || value < 0) {
+    throw new Error("--max-age-hours must be a non-negative number");
+  }
+  return value;
+}
+
+function asOfTimestamp(raw: string | undefined): string {
+  if (raw === undefined) return new Date().toISOString();
+  if (!Number.isFinite(Date.parse(raw))) throw new Error("--as-of must be a valid timestamp");
+  return raw;
 }
 
 function actions(raw: readonly string[] | undefined): readonly OpportunityOperatorAction[] {
@@ -133,6 +151,8 @@ async function main(): Promise<void> {
       evaluator: { type: "string" },
       action: { type: "string", multiple: true },
       "min-score": { type: "string" },
+      "max-age-hours": { type: "string" },
+      "as-of": { type: "string" },
       limit: { type: "string" },
       "scan-limit": { type: "string" },
       "state-file": { type: "string" },
@@ -155,6 +175,8 @@ async function main(): Promise<void> {
   const profile = resolveOpportunityProfile(values.profile ?? process.env.OPPORTUNITY_PROFILE);
   const selectedActions = actions(values.action);
   const minimumScore = score(values["min-score"]);
+  const selectedMaxAgeHours = maxAgeHours(values["max-age-hours"]);
+  const asOf = asOfTimestamp(values["as-of"]);
   const limit = positiveInt(values.limit, "limit", 25);
   const scanLimit = positiveInt(values["scan-limit"], "scan-limit", 1_000);
   const evaluatorId = values.evaluator?.trim() || process.env.OPPORTUNITY_EVALUATOR_ID?.trim();
@@ -167,6 +189,8 @@ async function main(): Promise<void> {
       ...(evaluatorId === undefined || evaluatorId === "" ? {} : { evaluatorId }),
       actions: selectedActions,
       minimumScore,
+      maxAgeHours: selectedMaxAgeHours,
+      asOf,
       limit,
       scanLimit,
     },
@@ -179,6 +203,8 @@ async function main(): Promise<void> {
     evaluatorId: evaluatorId ?? null,
     actions: selectedActions,
     minimumScore,
+    maxAgeHours: selectedMaxAgeHours,
+    asOf,
     stateFile,
     evaluationFile,
     count: ranked.length,
@@ -201,6 +227,7 @@ async function main(): Promise<void> {
       `Ranked opportunity queue: ${String(ranked.length)} row(s)`,
       `profile: ${profile.id}`,
       `evaluator: ${evaluatorId ?? "latest current evaluation per opportunity"}`,
+      `max age: ${String(selectedMaxAgeHours)}h${selectedMaxAgeHours === 0 ? " (disabled)" : ""}`,
       `actions: ${selectedActions.join(", ")}`,
       ...ranked.map(
         (entry, index) =>
