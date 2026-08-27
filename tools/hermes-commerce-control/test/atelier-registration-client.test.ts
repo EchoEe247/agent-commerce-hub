@@ -18,6 +18,7 @@ test("signed registration payload uses one Solana address and millisecond timest
     });
     assert.equal(payload.owner_wallet, wallet.address);
     assert.equal(payload.wallet, wallet.address);
+    assert.equal(payload.wallet_chain, "solana");
     assert.equal(payload.wallet_sig_ts, timestamp);
     assert.ok(payload.wallet_sig.length > 60);
     assert.equal(payload.name, "SetupPatch");
