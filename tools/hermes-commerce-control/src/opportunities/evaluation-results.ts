@@ -25,10 +25,27 @@ export interface PersistedOpportunityEvaluation {
 export interface OpportunityEvaluationResultStore {
   seenKeys(): Promise<ReadonlySet<string>>;
   append(record: PersistedOpportunityEvaluation): Promise<void>;
+  list(limit?: number): Promise<readonly PersistedOpportunityEvaluation[]>;
 }
 
 export function evaluationResultKey(requestId: string, evaluatorId: string): string {
   return `${requestId}\u0000${evaluatorId}`;
+}
+
+function evaluatedAtMillis(value: string): number {
+  const parsed = Date.parse(value);
+  return Number.isFinite(parsed) ? parsed : Number.NEGATIVE_INFINITY;
+}
+
+function compareEvaluationRows(
+  a: PersistedOpportunityEvaluation,
+  b: PersistedOpportunityEvaluation,
+): number {
+  const time = evaluatedAtMillis(b.evaluatedAt) - evaluatedAtMillis(a.evaluatedAt);
+  if (time !== 0) return time;
+  const byEvaluator = a.evaluatorId.localeCompare(b.evaluatorId);
+  if (byEvaluator !== 0) return byEvaluator;
+  return a.requestId.localeCompare(b.requestId);
 }
 
 export class JsonlOpportunityEvaluationResultStore implements OpportunityEvaluationResultStore {
@@ -48,6 +65,15 @@ export class JsonlOpportunityEvaluationResultStore implements OpportunityEvaluat
     await mkdir(dirname(this.#path), { recursive: true });
     await this.#repairTailBeforeAppend();
     await appendFile(this.#path, `${canonicalJson(parsed)}\n`, { encoding: "utf8", mode: 0o600 });
+  }
+
+  async list(limit = 1_000): Promise<readonly PersistedOpportunityEvaluation[]> {
+    const rows = await this.#readAll();
+    return Object.freeze(
+      rows
+        .sort(compareEvaluationRows)
+        .slice(0, Math.max(0, Math.min(10_000, Math.trunc(limit)))),
+    );
   }
 
   async #repairTailBeforeAppend(): Promise<void> {
