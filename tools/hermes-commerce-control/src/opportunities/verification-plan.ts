@@ -143,15 +143,26 @@ function definitions(dossier: OpportunityPursuitDossier): readonly CheckDefiniti
   );
 }
 
-function latestResolution(
+function resolutionIsNewer(
+  candidate: OpportunityVerificationResolution,
+  current: OpportunityVerificationResolution,
+): boolean {
+  const candidateTime = Date.parse(candidate.recordedAt);
+  const currentTime = Date.parse(current.recordedAt);
+  if (candidateTime !== currentTime) return candidateTime > currentTime;
+  return candidate.resolutionId.localeCompare(current.resolutionId) > 0;
+}
+
+function latestMatchingResolution(
   dossierId: string,
   checkIdValue: string,
   resolutions: readonly OpportunityVerificationResolution[],
+  predicate: (resolution: OpportunityVerificationResolution) => boolean = () => true,
 ): OpportunityVerificationResolution | undefined {
   let latest: OpportunityVerificationResolution | undefined;
   for (const resolution of resolutions) {
-    if (resolution.dossierId !== dossierId || resolution.checkId !== checkIdValue) continue;
-    if (latest === undefined || Date.parse(resolution.recordedAt) > Date.parse(latest.recordedAt)) latest = resolution;
+    if (resolution.dossierId !== dossierId || resolution.checkId !== checkIdValue || !predicate(resolution)) continue;
+    if (latest === undefined || resolutionIsNewer(resolution, latest)) latest = resolution;
   }
   return latest;
 }
@@ -188,9 +199,10 @@ function emptyCounts(): Record<OpportunityVerificationCheckState, number> {
  * Apply append-only verification evidence to one current pursuit dossier.
  *
  * A resolution is scoped to the current dossier/check identity. Old evidence stops
- * applying automatically when upstream evaluation/dossier state changes. This layer
- * never authorizes an external action; even a fully resolved plan ends at an operator
- * review/decision boundary.
+ * applying automatically when upstream evaluation/dossier state changes. Incompatible
+ * later evidence is ignored rather than erasing an earlier applicable resolution.
+ * This layer never authorizes an external action; even a fully resolved plan ends at
+ * an operator review/decision boundary.
  */
 export function buildOpportunityVerificationPlan(
   dossier: OpportunityPursuitDossier,
@@ -205,12 +217,22 @@ export function buildOpportunityVerificationPlan(
   const applied = new Map<string, { resolutionId: string; accepted: boolean }>();
 
   for (const definition of defs) {
-    const resolution = latestResolution(dossier.dossierId, definition.checkId, resolutions);
-    if (resolution === undefined) continue;
-    const accepted = evidenceAllowed(definition, resolution.evidence.kind);
-    applied.set(definition.checkId, { resolutionId: resolution.resolutionId, accepted });
-    if (!accepted) continue;
-    mutableStates.set(definition.checkId, resolution.outcome === "satisfied" ? "resolved" : "failed");
+    const latestAny = latestMatchingResolution(dossier.dossierId, definition.checkId, resolutions);
+    const latestApplicable = latestMatchingResolution(
+      dossier.dossierId,
+      definition.checkId,
+      resolutions,
+      (resolution) => evidenceAllowed(definition, resolution.evidence.kind),
+    );
+    if (latestApplicable !== undefined) {
+      applied.set(definition.checkId, { resolutionId: latestApplicable.resolutionId, accepted: true });
+      mutableStates.set(
+        definition.checkId,
+        latestApplicable.outcome === "satisfied" ? "resolved" : "failed",
+      );
+    } else if (latestAny !== undefined) {
+      applied.set(definition.checkId, { resolutionId: latestAny.resolutionId, accepted: false });
+    }
   }
 
   const checks: OpportunityVerificationCheck[] = [];
