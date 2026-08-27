@@ -30,9 +30,13 @@ It does **not** fetch Reddit, invoke a model, consume provider quota, contact an
 
 ## Selection semantics
 
-For each persisted opportunity, the router selects the latest valid evaluation. An exact evaluator can be pinned with `--evaluator`; this is useful when comparing Hy3, MiMo, or another local evaluator without mixing judgments.
+The router re-runs the selected deterministic triage profile first and rebuilds the exact bounded evaluation packet/request ID for that current triage state.
 
-Current deterministic triage is then run again. This is intentional: if the triage profile later marks a listing as unsuitable, a stale positive model evaluation cannot bypass that current deterministic rejection.
+For any non-rejected opportunity, only a persisted evaluation whose `requestId` matches that **current** packet is eligible for ranking. This prevents a model judgment created under an older profile/triage state from silently being reused after the deterministic inputs changed. If no current evaluation exists, the opportunity simply waits for re-evaluation rather than receiving a potentially stale score.
+
+An exact evaluator can be pinned with `--evaluator`; this is useful when comparing Hy3, MiMo, or another local evaluator without mixing judgments. If several valid evaluations exist for the same current request, the latest valid one is selected deterministically.
+
+A current deterministic `reject` does not require another model call. If an older evaluation exists, it may be shown only as provenance with `evaluationFreshness: "stale_rejected"`; the row is still forced to action `reject`, score 0, and priority band `blocked`. A stale evaluation can therefore never resurrect a current deterministic reject.
 
 ## Operator actions
 
