@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtemp, rm } from "node:fs/promises";
+import { appendFile, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import test from "node:test";
@@ -54,10 +54,14 @@ function okResponse(content: string): Response {
   );
 }
 
-test("local evaluator rejects non-loopback and credential-bearing endpoints", () => {
+test("local evaluator rejects remote, DNS-named, and credential-bearing endpoints", () => {
   assert.throws(
     () => new LocalOpenAiOpportunityEvaluator({ baseUrl: "https://example.com/v1", model: "free" }),
     /loopback|local evaluator/i,
+  );
+  assert.throws(
+    () => new LocalOpenAiOpportunityEvaluator({ baseUrl: "http://localhost:20130/v1", model: "free" }),
+    /literal loopback/i,
   );
   assert.throws(
     () => new LocalOpenAiOpportunityEvaluator({ baseUrl: "http://user:pass@127.0.0.1:20130/v1", model: "free" }),
@@ -128,6 +132,59 @@ test("evaluation runner persists a valid result and skips an identical evaluator
     const second = await runPreparedOpportunityEvaluations([prepared], evaluator, store);
     assert.equal(second[0]?.status, "skipped");
     assert.equal(calls, 1, "dedupe must prevent a second model call");
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("malformed persisted evaluation does not suppress a future valid evaluation", async () => {
+  const root = await mkdtemp(join(tmpdir(), "opportunity-eval-corrupt-"));
+  try {
+    const path = join(root, "evaluations.jsonl");
+    await writeFile(
+      path,
+      `${JSON.stringify({
+        requestId: prepared.requestId,
+        opportunityId: prepared.opportunityId,
+        evaluatorId: "fixture-evaluator",
+        evaluatedAt: "2026-08-27T15:00:00.000Z",
+        evaluation: { invalid: true },
+      })}\n`,
+      "utf8",
+    );
+    const store = new JsonlOpportunityEvaluationResultStore(path);
+    assert.equal((await store.seenKeys()).size, 0);
+
+    let calls = 0;
+    const results = await runPreparedOpportunityEvaluations(
+      [prepared],
+      { id: "fixture-evaluator", async evaluate() { calls += 1; return validEvaluation; } },
+      store,
+    );
+    assert.equal(results[0]?.status, "completed");
+    assert.equal(calls, 1);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("truncated evaluation tail is repaired before the next append", async () => {
+  const root = await mkdtemp(join(tmpdir(), "opportunity-eval-tail-"));
+  try {
+    const path = join(root, "evaluations.jsonl");
+    await appendFile(path, '{"requestId":"broken"', "utf8");
+    const store = new JsonlOpportunityEvaluationResultStore(path);
+    const results = await runPreparedOpportunityEvaluations(
+      [prepared],
+      { id: "tail-evaluator", async evaluate() { return validEvaluation; } },
+      store,
+      { clock: () => "2026-08-27T15:02:00.000Z" },
+    );
+    assert.equal(results[0]?.status, "completed");
+    const text = await readFile(path, "utf8");
+    assert.doesNotMatch(text, /broken/);
+    assert.match(text, /tail-evaluator/);
+    assert.equal(text.endsWith("\n"), true);
   } finally {
     await rm(root, { recursive: true, force: true });
   }
