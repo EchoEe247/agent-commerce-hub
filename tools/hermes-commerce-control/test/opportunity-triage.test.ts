@@ -51,23 +51,56 @@ test("unpaid does not accidentally count as paid and is rejected", () => {
   assert.equal(result.decision, "reject");
 });
 
-test("remote paid preferred work becomes a candidate without a model call", () => {
+test("remote paid preferred buyer work becomes a candidate without a model call", () => {
   const result = triageOpportunity(
     opportunity(
       "[Hiring] Remote automation workflow",
       "Budget $150 per project. Need API integration and CRM automation.",
     ),
     {
+      requireDemand: true,
       requireRemote: true,
       minimumKnownFixedUsd: 50,
       preferredTerms: ["automation", "API integration", "CRM"],
     },
   );
+  assert.equal(result.signals.demandIntent, true);
+  assert.equal(result.signals.supplyIntent, false);
   assert.equal(result.decision, "candidate");
   assert.ok(result.score >= 65);
   assert.deepEqual(result.signals.preferredTermMatches, ["automation", "api integration", "crm"]);
   assert.equal(result.signals.budget?.minUsd, 150);
   assert.equal(result.signals.budget?.basis, "fixed");
+});
+
+test("for-hire seller post is rejected by a demand-only profile even when it matches skills", () => {
+  const result = triageOpportunity(
+    opportunity(
+      "[FOR HIRE] Automation and AI integrations",
+      "Available for projects. Remote. $40/hr. I build CRM automation and APIs.",
+    ),
+    { requireDemand: true, preferredTerms: ["automation", "AI", "CRM"] },
+  );
+  assert.equal(result.signals.supplyIntent, true);
+  assert.equal(result.signals.demandIntent, false);
+  assert.equal(result.decision, "reject");
+  assert.ok(result.reasons.some((reason) => reason.includes("demand-only")));
+});
+
+test("task tags are demand while offer tags are supply", () => {
+  const task = triageOpportunity(
+    opportunity("[TASK] Automate a spreadsheet", "Pay $50 for project."),
+    { requireDemand: true },
+  );
+  const offer = triageOpportunity(
+    opportunity("[OFFER] I automate spreadsheets", "My services start at $50."),
+    { requireDemand: true },
+  );
+  assert.equal(task.signals.demandIntent, true);
+  assert.equal(task.signals.supplyIntent, false);
+  assert.notEqual(task.decision, "reject");
+  assert.equal(offer.signals.supplyIntent, true);
+  assert.equal(offer.decision, "reject");
 });
 
 test("explicit local-only work is rejected by a remote-only profile", () => {
