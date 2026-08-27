@@ -2,14 +2,21 @@ import { appendFile, mkdir, readFile, truncate } from "node:fs/promises";
 import { dirname } from "node:path";
 import { z } from "zod";
 import { canonicalJson } from "../core/ids.js";
-import { opportunityEvaluationSchema, type OpportunityEvaluation } from "./evaluation.js";
+import {
+  opportunityEvaluationSchema,
+  parseOpportunityEvaluation,
+  type OpportunityEvaluation,
+} from "./evaluation.js";
 
 const persistedEvaluationSchema = z
   .object({
     requestId: z.string().min(1),
     opportunityId: z.string().min(1),
     evaluatorId: z.string().min(1),
-    evaluatedAt: z.string().min(1),
+    evaluatedAt: z
+      .string()
+      .min(1)
+      .refine((value) => Number.isFinite(Date.parse(value)), "evaluatedAt must be a valid timestamp"),
     evaluation: opportunityEvaluationSchema,
   })
   .strict();
@@ -25,6 +32,7 @@ export interface PersistedOpportunityEvaluation {
 export interface OpportunityEvaluationResultStore {
   seenKeys(): Promise<ReadonlySet<string>>;
   append(record: PersistedOpportunityEvaluation): Promise<void>;
+  /** Omit limit to read every valid persisted result. */
   list(limit?: number): Promise<readonly PersistedOpportunityEvaluation[]>;
 }
 
@@ -48,6 +56,18 @@ function compareEvaluationRows(
   return a.requestId.localeCompare(b.requestId);
 }
 
+function parsePersistedRecord(value: unknown): PersistedOpportunityEvaluation | undefined {
+  const parsed = persistedEvaluationSchema.safeParse(value);
+  if (!parsed.success) return undefined;
+  try {
+    const evaluation = parseOpportunityEvaluation(parsed.data.evaluation);
+    return Object.freeze({ ...parsed.data, evaluation });
+  } catch {
+    // Shape-valid but semantically impossible evaluations are ignored on replay.
+    return undefined;
+  }
+}
+
 export class JsonlOpportunityEvaluationResultStore implements OpportunityEvaluationResultStore {
   readonly #path: string;
 
@@ -61,19 +81,21 @@ export class JsonlOpportunityEvaluationResultStore implements OpportunityEvaluat
   }
 
   async append(record: PersistedOpportunityEvaluation): Promise<void> {
-    const parsed = persistedEvaluationSchema.parse(record);
+    const shape = persistedEvaluationSchema.parse(record);
+    const parsed: PersistedOpportunityEvaluation = {
+      ...shape,
+      evaluation: parseOpportunityEvaluation(shape.evaluation),
+    };
     await mkdir(dirname(this.#path), { recursive: true });
     await this.#repairTailBeforeAppend();
     await appendFile(this.#path, `${canonicalJson(parsed)}\n`, { encoding: "utf8", mode: 0o600 });
   }
 
-  async list(limit = 1_000): Promise<readonly PersistedOpportunityEvaluation[]> {
-    const rows = await this.#readAll();
-    return Object.freeze(
-      rows
-        .sort(compareEvaluationRows)
-        .slice(0, Math.max(0, Math.min(10_000, Math.trunc(limit)))),
-    );
+  async list(limit?: number): Promise<readonly PersistedOpportunityEvaluation[]> {
+    const rows = (await this.#readAll()).sort(compareEvaluationRows);
+    if (limit === undefined) return Object.freeze(rows);
+    const bounded = Number.isFinite(limit) ? Math.max(0, Math.trunc(limit)) : 0;
+    return Object.freeze(rows.slice(0, bounded));
   }
 
   async #repairTailBeforeAppend(): Promise<void> {
@@ -91,11 +113,13 @@ export class JsonlOpportunityEvaluationResultStore implements OpportunityEvaluat
     const tail = body.subarray(tailStart).toString("utf8").trim();
     if (tail !== "") {
       try {
-        persistedEvaluationSchema.parse(JSON.parse(tail));
-        await appendFile(this.#path, "\n", { encoding: "utf8" });
-        return;
+        const raw = JSON.parse(tail) as unknown;
+        if (parsePersistedRecord(raw) !== undefined) {
+          await appendFile(this.#path, "\n", { encoding: "utf8" });
+          return;
+        }
       } catch {
-        // Incomplete/invalid final record: remove only the broken tail.
+        // Fall through and remove the incomplete/invalid final record.
       }
     }
     await truncate(this.#path, tailStart);
@@ -119,9 +143,8 @@ export class JsonlOpportunityEvaluationResultStore implements OpportunityEvaluat
       } catch {
         continue;
       }
-      const parsed = persistedEvaluationSchema.safeParse(raw);
-      if (!parsed.success) continue;
-      rows.push(parsed.data);
+      const parsed = parsePersistedRecord(raw);
+      if (parsed !== undefined) rows.push(parsed);
     }
     return rows;
   }
