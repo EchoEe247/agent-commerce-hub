@@ -103,7 +103,7 @@ const DEMAND_PATTERNS = [
 ] as const;
 
 const SUPPLY_PATTERNS = [
-  /^\s*\[(?:for\s+hire|offer|offering)\]/i,
+  /^\s*\[(?:for\s*hire|offer|offering|hire\s*me)\]/i,
   /\bavailable\s+for\s+(?:work|projects?|hire)\b/i,
   /\bhire\s+me\b/i,
   /\bmy\s+(?:freelance\s+)?services\b/i,
