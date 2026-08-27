@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
@@ -43,6 +43,18 @@ const FEED = `<?xml version="1.0" encoding="UTF-8"?>
   </entry>
 </feed>`;
 
+const ESCAPED_LITERAL_FEED = `<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <entry>
+    <category term="forhire" label="r/forhire"/>
+    <content type="html">&lt;p&gt;Need parser support for &amp;lt;T&amp;gt; inside HTML.&lt;/p&gt;</content>
+    <id>t3_literal</id>
+    <link href="https://www.reddit.com/r/forhire/comments/literal/parser/" />
+    <published>2026-08-27T11:45:00Z</published>
+    <title>[HIRING] C++ vector&lt;T&gt; parser</title>
+  </entry>
+</feed>`;
+
 test("buildRedditAtomUrl combines selected subreddits on the permanent-free RSS path", () => {
   const url = new URL(buildRedditAtomUrl(["r/forhire", "slavelabour", "forhire"]));
   assert.equal(url.origin, "https://www.reddit.com");
@@ -68,6 +80,14 @@ test("parseRedditAtom produces clean provider-independent opportunities", () => 
   assert.equal(first.observedAt, NOW);
   assert.deepEqual(first.tags, ["reddit", "r/forhire"]);
   assert.equal(first.metadata.feedUrl, feedUrl);
+});
+
+test("Atom plain text preserves escaped angle-bracket literals while HTML markup is stripped", () => {
+  const feedUrl = buildRedditAtomUrl(["forhire"]);
+  const parsed = parseRedditAtom(ESCAPED_LITERAL_FEED, { observedAt: NOW, feedUrl });
+  assert.equal(parsed.length, 1);
+  assert.equal(parsed[0]?.title, "[HIRING] C++ vector<T> parser");
+  assert.equal(parsed[0]?.body, "Need parser support for <T> inside HTML.");
 });
 
 test("canonical opportunity IDs dedupe the same listing across providers", () => {
@@ -192,6 +212,54 @@ test("pipeline persists fresh opportunities and drops them on the next pass", as
 
     const stored = await store.list();
     assert.equal(stored.length, 2);
+    const raw = await readFile(storePath, "utf8");
+    assert.equal(raw.trim().split("\n").length, 2);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("JSONL store repairs an invalid truncated tail before appending a fresh record", async () => {
+  const root = await mkdtemp(join(tmpdir(), "commerce-opportunity-tail-"));
+  try {
+    const storePath = join(root, "opportunities.jsonl");
+    await writeFile(storePath, '{"id":"partial"', "utf8");
+    const store = new JsonlOpportunityStore(storePath);
+    const [candidate] = parseRedditAtom(FEED, {
+      observedAt: NOW,
+      feedUrl: buildRedditAtomUrl(["forhire", "slavelabour"]),
+    });
+    assert.ok(candidate !== undefined);
+
+    assert.equal(await store.saveMany([candidate]), 1);
+    const stored = await store.list();
+    assert.equal(stored.length, 1);
+    assert.equal(stored[0]?.id, candidate.id);
+    const raw = await readFile(storePath, "utf8");
+    assert.equal(raw.trim().split("\n").length, 1);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("JSONL store preserves a complete final record missing only its newline", async () => {
+  const root = await mkdtemp(join(tmpdir(), "commerce-opportunity-tail-complete-"));
+  try {
+    const storePath = join(root, "opportunities.jsonl");
+    const parsed = parseRedditAtom(FEED, {
+      observedAt: NOW,
+      feedUrl: buildRedditAtomUrl(["forhire", "slavelabour"]),
+    });
+    const first = parsed[0];
+    const second = parsed[1];
+    assert.ok(first !== undefined && second !== undefined);
+    await writeFile(storePath, JSON.stringify(first), "utf8");
+    const store = new JsonlOpportunityStore(storePath);
+
+    assert.equal(await store.saveMany([second]), 1);
+    const stored = await store.list();
+    assert.equal(stored.length, 2);
+    assert.deepEqual(new Set(stored.map((row) => row.id)), new Set([first.id, second.id]));
     const raw = await readFile(storePath, "utf8");
     assert.equal(raw.trim().split("\n").length, 2);
   } finally {
