@@ -75,23 +75,47 @@ function decodeEntities(input: string): string {
   });
 }
 
-function stripMarkup(input: string): string {
-  const decoded = decodeEntities(input)
-    .replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1")
-    .replace(/<\s*br\s*\/?>/gi, "\n")
-    .replace(/<\/(p|div|li|tr|h[1-6])\s*>/gi, "\n")
-    .replace(/<[^>]+>/g, " ");
-  return decodeEntities(decoded)
+function unwrapCdata(input: string): string {
+  return input.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1");
+}
+
+function normalizeText(input: string): string {
+  return input
     .replace(/[\t\r ]+/g, " ")
     .replace(/ *\n+ */g, "\n")
     .trim();
 }
 
-function tagValue(xml: string, tag: string): string | undefined {
-  const match = new RegExp(`<${tag}\\b[^>]*>([\\s\\S]*?)<\\/${tag}>`, "i").exec(xml);
-  if (match?.[1] === undefined) return undefined;
-  const value = stripMarkup(match[1]);
-  return value === "" ? undefined : value;
+/** Plain Atom text: decode XML entities but never reinterpret escaped literals as markup. */
+function decodePlainAtomText(input: string): string {
+  return normalizeText(decodeEntities(unwrapCdata(input)));
+}
+
+/**
+ * Atom `type=html` contains an XML-escaped HTML string. Decode one XML layer to
+ * reveal the HTML tags, remove those tags, then decode the remaining text layer.
+ * A displayed literal such as `<T>` is commonly represented as `&amp;lt;T&amp;gt;`;
+ * after one decode it is still `&lt;T&gt;`, so it survives tag removal correctly.
+ */
+function decodeEscapedHtmlAtomText(input: string): string {
+  const html = decodeEntities(unwrapCdata(input))
+    .replace(/<\s*br\s*\/?>/gi, "\n")
+    .replace(/<\/(p|div|li|tr|h[1-6])\s*>/gi, "\n")
+    .replace(/<[^>]+>/g, " ");
+  return normalizeText(decodeEntities(html));
+}
+
+/** Atom `type=xhtml` carries real XML markup, so strip actual tags before entity decoding. */
+function decodeXhtmlAtomText(input: string): string {
+  const text = unwrapCdata(input)
+    .replace(/<\s*br\s*\/?>/gi, "\n")
+    .replace(/<\/(p|div|li|tr|h[1-6])\s*>/gi, "\n")
+    .replace(/<[^>]+>/g, " ");
+  return normalizeText(decodeEntities(text));
+}
+
+function tagInner(xml: string, tag: string): string | undefined {
+  return new RegExp(`<${tag}\\b[^>]*>([\\s\\S]*?)<\\/${tag}>`, "i").exec(xml)?.[1];
 }
 
 function attrValue(xml: string, tag: string, attr: string): string | undefined {
@@ -101,6 +125,20 @@ function attrValue(xml: string, tag: string, attr: string): string | undefined {
   const attrMatch = new RegExp(`${attr}\\s*=\\s*(["'])([\\s\\S]*?)\\1`, "i").exec(attrs);
   const value = attrMatch?.[2];
   return value === undefined ? undefined : decodeEntities(value.trim());
+}
+
+/** Decode an Atom text construct according to its declared `type`. */
+function tagValue(xml: string, tag: string): string | undefined {
+  const raw = tagInner(xml, tag);
+  if (raw === undefined) return undefined;
+  const type = (attrValue(xml, tag, "type") ?? "text").trim().toLowerCase();
+  const value =
+    type === "html"
+      ? decodeEscapedHtmlAtomText(raw)
+      : type === "xhtml"
+        ? decodeXhtmlAtomText(raw)
+        : decodePlainAtomText(raw);
+  return value === "" ? undefined : value;
 }
 
 function normalizeIso(raw: string | undefined): string | undefined {
