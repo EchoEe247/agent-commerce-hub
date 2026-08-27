@@ -20,6 +20,11 @@ import { OpportunityIngestor } from "./ingest.js";
 import { discoverAndPersist } from "./pipeline.js";
 import { JsonlOpportunityStore } from "./store.js";
 import {
+  extendOpportunityProfile,
+  OPPORTUNITY_PROFILE_IDS,
+  resolveOpportunityProfile,
+} from "./profiles.js";
+import {
   triageOpportunities,
   type OpportunityTriageProfile,
   type OpportunityTriageResult,
@@ -37,8 +42,9 @@ Source options:
       --state-file <path>     JSONL store (default: <COMMERCE_STATE_ROOT>/opportunities.jsonl)
 
 Zero-cost triage options:
-      --prefer-term <text>    positive-fit phrase (repeatable)
-      --exclude-term <text>   hard-exclusion phrase (repeatable)
+      --profile <name>        ${OPPORTUNITY_PROFILE_IDS.join(" | ")} (default: demand)
+      --prefer-term <text>    positive-fit phrase (repeatable; adds to profile)
+      --exclude-term <text>   hard-exclusion phrase (repeatable; adds to profile)
       --require-demand        reject explicit [FOR HIRE]/[OFFER]-style seller posts
       --require-remote        reject explicitly local/in-person listings
       --min-fixed-usd <n>     reject known fixed-price listings below this USD amount
@@ -49,11 +55,17 @@ Output:
 
 Environment fallbacks:
   OPPORTUNITY_REDDIT_SUBREDDITS=forhire,slavelabour
+  OPPORTUNITY_PROFILE=demand
   OPPORTUNITY_PREFERRED_TERMS=automation,api integration,crm
   OPPORTUNITY_EXCLUDED_TERMS=survey,physical pickup
   OPPORTUNITY_REQUIRE_DEMAND=true
   OPPORTUNITY_REQUIRE_REMOTE=true
   OPPORTUNITY_MIN_FIXED_USD=25
+
+The default demand profile filters explicit seller/service-offer posts but keeps
+both remote and physical buyer tasks. Use --profile all to disable that default,
+--profile remote-demand for online-only work, or an automation profile to boost
+workflow/API/CRM-style opportunities without hiding other demand-side work.
 
 Triage is deterministic and conservative. Caution signals are not fraud verdicts;
 ambiguous listings remain reviewable for a later model/human evaluator.
@@ -102,6 +114,7 @@ async function main(): Promise<void> {
       query: { type: "string", short: "q" },
       limit: { type: "string" },
       "state-file": { type: "string" },
+      profile: { type: "string" },
       "prefer-term": { type: "string", multiple: true },
       "exclude-term": { type: "string", multiple: true },
       "require-demand": { type: "boolean", default: false },
@@ -141,21 +154,25 @@ async function main(): Promise<void> {
     ...(limit === undefined ? {} : { limit }),
   });
 
+  const namedProfile = resolveOpportunityProfile(values.profile ?? process.env.OPPORTUNITY_PROFILE);
   const preferredTerms = values["prefer-term"] ?? envCsv("OPPORTUNITY_PREFERRED_TERMS");
   const excludedTerms = values["exclude-term"] ?? envCsv("OPPORTUNITY_EXCLUDED_TERMS");
   const minimumKnownFixedUsd = parseNonNegativeMoney(
     values["min-fixed-usd"] ?? process.env.OPPORTUNITY_MIN_FIXED_USD,
     "min-fixed-usd",
   );
-  const requireDemand = values["require-demand"] === true || envBoolean("OPPORTUNITY_REQUIRE_DEMAND");
-  const requireRemote = values["require-remote"] === true || envBoolean("OPPORTUNITY_REQUIRE_REMOTE");
-  const triageProfile: OpportunityTriageProfile = {
+  const explicitProfile: OpportunityTriageProfile = {
     ...(preferredTerms.length === 0 ? {} : { preferredTerms }),
     ...(excludedTerms.length === 0 ? {} : { excludedTerms }),
-    ...(requireDemand ? { requireDemand: true } : {}),
-    ...(requireRemote ? { requireRemote: true } : {}),
+    ...(values["require-demand"] === true || envBoolean("OPPORTUNITY_REQUIRE_DEMAND")
+      ? { requireDemand: true }
+      : {}),
+    ...(values["require-remote"] === true || envBoolean("OPPORTUNITY_REQUIRE_REMOTE")
+      ? { requireRemote: true }
+      : {}),
     ...(minimumKnownFixedUsd === undefined ? {} : { minimumKnownFixedUsd }),
   };
+  const triageProfile = extendOpportunityProfile(namedProfile.triage, explicitProfile);
   const triage = triageOpportunities(result.results, triageProfile);
   const triageCounts = countTriage(triage);
   const triageById = new Map(triage.map((entry) => [entry.opportunityId, entry] as const));
@@ -170,6 +187,7 @@ async function main(): Promise<void> {
     persisted: result.persisted,
     duplicatesDropped: result.duplicatesDropped,
     sources: result.sources,
+    profile: namedProfile.id,
     triageProfile,
     triageCounts,
     triage,
@@ -185,6 +203,7 @@ async function main(): Promise<void> {
     [
       `Reddit RSS opportunity pass: ${String(result.results.length)} new, ` +
         `${String(result.duplicatesDropped)} duplicate(s) dropped`,
+      `profile: ${namedProfile.id}`,
       `triage: ${String(triageCounts.candidate ?? 0)} candidate, ` +
         `${String(triageCounts.review ?? 0)} review, ${String(triageCounts.reject ?? 0)} reject`,
       `watched: ${subreddits.map((value) => `r/${value.replace(/^r\//i, "")}`).join(", ")}`,
