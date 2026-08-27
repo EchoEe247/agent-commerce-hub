@@ -89,6 +89,8 @@ function compact(entry: RankedOpportunity, index: number): Readonly<Record<strin
     priorityBand: entry.priorityBand,
     operatorAction: entry.operatorAction,
     executionRoute: entry.executionRoute,
+    evaluationFreshness: entry.evaluationFreshness,
+    currentRequestId: entry.currentRequestId,
     opportunity: {
       id: entry.opportunity.id,
       title: entry.opportunity.title,
@@ -184,6 +186,7 @@ async function main(): Promise<void> {
       byAction: countBy(ranked.map((entry) => entry.operatorAction)),
       byExecutionRoute: countBy(ranked.map((entry) => entry.executionRoute)),
       byPriorityBand: countBy(ranked.map((entry) => entry.priorityBand)),
+      byEvaluationFreshness: countBy(ranked.map((entry) => entry.evaluationFreshness)),
     },
     ranked: rows,
   };
@@ -197,11 +200,11 @@ async function main(): Promise<void> {
     [
       `Ranked opportunity queue: ${String(ranked.length)} row(s)`,
       `profile: ${profile.id}`,
-      `evaluator: ${evaluatorId ?? "latest per opportunity"}`,
+      `evaluator: ${evaluatorId ?? "latest current evaluation per opportunity"}`,
       `actions: ${selectedActions.join(", ")}`,
       ...ranked.map(
         (entry, index) =>
-          `${String(index + 1)}. [${String(entry.score)} ${entry.priorityBand} ${entry.operatorAction}/${entry.executionRoute}] ${entry.opportunity.title}`,
+          `${String(index + 1)}. [${String(entry.score)} ${entry.priorityBand} ${entry.operatorAction}/${entry.executionRoute} ${entry.evaluationFreshness}] ${entry.opportunity.title}`,
       ),
     ].join("\n") + "\n",
   );
