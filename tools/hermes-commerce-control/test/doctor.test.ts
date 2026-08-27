@@ -281,7 +281,7 @@ test("doctor: a short adapter registry warns instead of failing", async () => {
     const report = await doctorFor(roots.env, 3);
     const check = byId(report).get("adapters_registered");
     assert.equal(check?.status, "warn");
-    assert.match(check?.detail ?? "", /3 of 7/);
+    assert.match(check?.detail ?? "", /3 of 8/);
     assert.equal(report.ok, true);
   } finally {
     roots.cleanup();

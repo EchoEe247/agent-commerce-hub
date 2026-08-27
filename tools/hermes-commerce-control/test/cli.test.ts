@@ -272,7 +272,7 @@ test("CLI: sources lists every platform with capabilities and no network access"
     assert.equal(doc.mode, "A");
     const data = doc.data as Record<string, unknown>;
     const sources = data.sources as Array<Record<string, unknown>>;
-    assert.equal(sources.length, 7, "all seven platforms must be listed");
+    assert.equal(sources.length, 8, "all eight platforms must be listed");
     const ids = sources.map((s) => s.platform);
     assert.deepEqual(
       [...ids].sort(),
@@ -281,6 +281,7 @@ test("CLI: sources lists every platform with capabilities and no network access"
         "agent_bounties",
         "bountybook",
         "cdp_bazaar",
+        "trybounty",
         "paysh",
         "piprail",
         "the402",

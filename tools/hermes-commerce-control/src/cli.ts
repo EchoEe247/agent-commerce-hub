@@ -44,6 +44,7 @@ import { Agent402Adapter } from "./adapters/agent402/index.js";
 import { PipRailAdapter } from "./adapters/piprail/index.js";
 import { AgentBountiesAdapter } from "./adapters/agent-bounties/index.js";
 import { BountyBookAdapter } from "./adapters/bountybook/index.js";
+import { TryBountyAdapter } from "./adapters/trybounty/index.js";
 import { The402Adapter } from "./adapters/the402/index.js";
 import { PayShAdapter } from "./adapters/paysh/index.js";
 import { dedupeServices } from "./aggregate/services.js";
@@ -107,7 +108,7 @@ export interface CliIo {
 export interface CliDeps {
   readonly env?: Env | undefined;
   readonly clock?: (() => string) | undefined;
-  /** Injected adapters. Defaults to the seven production adapters. */
+  /** Injected adapters. Defaults to the eight production/read-only adapters. */
   readonly adapters?: readonly CommerceAdapter[] | undefined;
   readonly registryOptions?: RegistryOptions | undefined;
 }
@@ -255,6 +256,7 @@ function defaultAdapters(config: CommerceConfig): CommerceAdapter[] {
     new PipRailAdapter(),
     new AgentBountiesAdapter(config.adapters.agent_bounties.baseUrl),
     new BountyBookAdapter(),
+    new TryBountyAdapter(config.adapters.trybounty.baseUrl),
     new The402Adapter(config.adapters.the402.baseUrl),
     new PayShAdapter(),
   ];

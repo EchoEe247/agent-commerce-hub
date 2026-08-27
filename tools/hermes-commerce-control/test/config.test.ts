@@ -75,6 +75,7 @@ test("config: every platform has an enable flag defaulting to true", () => {
     "piprail",
     "agent_bounties",
     "bountybook",
+    "trybounty",
     "the402",
     "paysh",
   ] as const) {

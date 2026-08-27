@@ -107,6 +107,7 @@ const VERIFIER_FRACTION: Readonly<Record<VerifierType, number>> = Object.freeze(
 const SOURCE_CONFIDENCE: Readonly<Record<string, number>> = Object.freeze({
   agent_bounties: 0.9,
   bountybook: 0.65,
+  trybounty: 0.6,
   the402: 0.5,
   cdp_bazaar: 0.5,
   agent402: 0.5,

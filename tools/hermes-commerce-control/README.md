@@ -34,7 +34,7 @@ This control plane operates strictly under **Mode A** (Read-Only Planning and Di
 
 ## Platforms & Adapters
 
-The control plane coordinates with seven decentralized machine commerce platforms through lightweight adapters:
+The control plane coordinates with eight machine-commerce and bounty discovery platforms through lightweight adapters:
 
 ### Primary Adapters
 - **CDP Bazaar (x402):** Discover machine-native HTTP service catalogs registered via Coinbase Developer Platform.
@@ -44,6 +44,7 @@ The control plane coordinates with seven decentralized machine commerce platform
 
 ### Secondary Adapters
 - **BountyBook:** Index open jobs, budgets, and criteria.
+- **TryBounty:** Read-only scan of the public Recent Jobs board; payout/onboarding details remain unresolved and no claim path is exposed.
 - **the402:** Discover agent-facing capabilities and catalog postings.
 - **Pay.sh / pay-skills:** Extract Solana payment-prose metadata from service files.
 

@@ -406,7 +406,7 @@ test("MCP: commerce_status reports Mode A with both gates false", async () => {
   }
 });
 
-test("MCP: commerce_sources lists all seven platforms", async () => {
+test("MCP: commerce_sources lists all eight platforms", async () => {
   const roots = tempRoots();
   try {
     await withServer({ env: roots.env, adapters: ALL }, async (client) => {
@@ -415,7 +415,7 @@ test("MCP: commerce_sources lists all seven platforms", async () => {
         arguments: {},
       })) as ToolResult;
       const data = dataOf(result);
-      assert.equal(data.count, 7);
+      assert.equal(data.count, 8);
     });
   } finally {
     roots.cleanup();
