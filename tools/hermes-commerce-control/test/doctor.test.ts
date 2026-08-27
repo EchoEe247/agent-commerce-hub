@@ -69,7 +69,7 @@ function tempRoots(extra: Record<string, string> = {}): Roots {
 
 async function doctorFor(
   env: Record<string, string | undefined>,
-  adapterCount = 7,
+  adapterCount = 8,
   packageRoot?: string,
 ): Promise<DoctorReport> {
   const config = loadConfig(env);
@@ -254,7 +254,7 @@ test("doctor: an unbuilt package warns rather than fails", async () => {
   const roots = tempRoots();
   try {
     // A package root with no dist/ at all.
-    const report = await doctorFor(roots.env, 7, join(roots.root, "empty-package"));
+    const report = await doctorFor(roots.env, 8, join(roots.root, "empty-package"));
     const checks = byId(report);
     assert.equal(checks.get("build_artifact")?.status, "warn");
     assert.equal(checks.get("mcp_entrypoint")?.status, "warn");
@@ -293,7 +293,7 @@ test("doctor: a short adapter registry warns instead of failing", async () => {
 test("doctor: the real package root reports its compiled entrypoints", async () => {
   const roots = tempRoots();
   try {
-    const report = await doctorFor(roots.env, 7, resolvePackageRoot());
+    const report = await doctorFor(roots.env, 8, resolvePackageRoot());
     const checks = byId(report);
     // Never a failure either way: source can run through tsx.
     assert.notEqual(checks.get("build_artifact")?.status, "fail");

@@ -281,10 +281,10 @@ test("CLI: sources lists every platform with capabilities and no network access"
         "agent_bounties",
         "bountybook",
         "cdp_bazaar",
-        "trybounty",
         "paysh",
         "piprail",
         "the402",
+        "trybounty",
       ],
     );
     // Capability surface must never advertise live execution.
