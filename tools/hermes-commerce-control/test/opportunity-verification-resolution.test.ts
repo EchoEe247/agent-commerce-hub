@@ -36,3 +36,24 @@ test("opaque executor quote references remain allowed", () => {
   });
   assert.equal(record.evidence.reference, "quote:executor-123");
 });
+
+test("calculation dependency IDs are canonicalized for stable derived identity", () => {
+  const firstId = `opver_${"1".repeat(32)}`;
+  const secondId = `opver_${"2".repeat(32)}`;
+  const record = buildOpportunityVerificationResolution({
+    ...base,
+    evidence: { kind: "calculation", note: "Derived calculation." },
+    dependsOnResolutionIds: [secondId, firstId, secondId],
+  });
+  assert.deepEqual(record.dependsOnResolutionIds, [firstId, secondId]);
+});
+
+test("dependency bindings are rejected on non-calculation evidence", () => {
+  assert.throws(() =>
+    buildOpportunityVerificationResolution({
+      ...base,
+      evidence: { kind: "operator_attestation", note: "Not a derived calculation." },
+      dependsOnResolutionIds: [`opver_${"3".repeat(32)}`],
+    }),
+  );
+});
