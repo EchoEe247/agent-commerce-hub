@@ -44,8 +44,11 @@ const adapters: CommerceAdapter[] = [
 const revenueOptions: RevenueEvaluationOptions = {
   minRewardUsd: 1,
   minAutomationFraction: 0.5,
-  zeroUpfrontOnly: true,
-  requireKnownZeroUpfront: true,
+  // Small, known execution costs are acceptable when the expected net profit
+  // and downside limits justify them. Unknown costs are still blocked by the
+  // profit layer below.
+  zeroUpfrontOnly: false,
+  requireKnownZeroUpfront: false,
   avoidKycRequired: true,
   excludeIntegrityRisk: true,
   sourceProfiles: STRICT_ZERO_COST_SOURCE_PROFILES,
@@ -95,7 +98,9 @@ const watchlist = evaluated
   .map((entry) => ({
     id: entry.work.id,
     source: entry.work.source,
+    externalId: entry.work.externalId,
     title: entry.work.title,
+    url: entry.work.url ?? null,
     rewardUsd: entry.revenue.rewardUsd,
     expectedRevenueUsd: entry.revenue.expectedRevenueUsd,
     successProbability: entry.profit.successProbability,
@@ -111,7 +116,9 @@ const rejected = evaluated
   .map((entry) => ({
     id: entry.work.id,
     source: entry.work.source,
+    externalId: entry.work.externalId,
     title: entry.work.title,
+    url: entry.work.url ?? null,
     rewardUsd: entry.revenue.rewardUsd,
     blockers: entry.revenue.blockers,
     flags: entry.revenue.flags,
@@ -122,7 +129,8 @@ const payload = {
   schemaVersion: 2,
   mode: "A",
   policy: {
-    zeroUpfrontRequired: true,
+    boundedRiskMode: true,
+    zeroUpfrontRequired: false,
     resolvedCostsRequired: true,
     minimumExpectedNetProfitUsd: 3,
     minimumSuccessProbability: 0.5,
