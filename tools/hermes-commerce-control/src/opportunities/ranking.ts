@@ -1,9 +1,13 @@
-import type { OpportunityCandidate } from "./models.js";
-import type { OpportunityEvaluation } from "./evaluation.js";
+import {
+  buildOpportunityEvaluationPacket,
+  type OpportunityEvaluation,
+} from "./evaluation.js";
+import { buildPreparedOpportunityEvaluation } from "./evaluation-queue.js";
 import type {
   OpportunityEvaluationResultStore,
   PersistedOpportunityEvaluation,
 } from "./evaluation-results.js";
+import type { OpportunityCandidate } from "./models.js";
 import type { OpportunityStore } from "./store.js";
 import {
   triageOpportunity,
@@ -23,6 +27,7 @@ export type OpportunityOperatorAction = (typeof OPPORTUNITY_OPERATOR_ACTIONS)[nu
 
 export const OPPORTUNITY_PRIORITY_BANDS = ["high", "medium", "low", "blocked"] as const;
 export type OpportunityPriorityBand = (typeof OPPORTUNITY_PRIORITY_BANDS)[number];
+export type OpportunityEvaluationFreshness = "current" | "stale_rejected";
 
 export interface OpportunityRankComponents {
   readonly triage: number;
@@ -38,6 +43,8 @@ export interface RankedOpportunity {
   readonly opportunity: OpportunityCandidate;
   readonly triage: OpportunityTriageResult;
   readonly evaluationRecord: PersistedOpportunityEvaluation;
+  readonly evaluationFreshness: OpportunityEvaluationFreshness;
+  readonly currentRequestId: string;
   readonly score: number;
   readonly priorityBand: OpportunityPriorityBand;
   readonly operatorAction: OpportunityOperatorAction;
@@ -189,6 +196,7 @@ export function rankOpportunity(
   opportunity: OpportunityCandidate,
   triage: OpportunityTriageResult,
   evaluationRecord: PersistedOpportunityEvaluation,
+  currentRequestId: string,
 ): RankedOpportunity {
   const evaluation = evaluationRecord.evaluation;
   const components = scoreComponents(triage, evaluation);
@@ -196,10 +204,14 @@ export function rankOpportunity(
   let score = clampScore(sumComponents(components));
   if (routing.action === "reject") score = 0;
   const band = priorityBand(routing.action, score);
+  const freshness: OpportunityEvaluationFreshness =
+    evaluationRecord.requestId === currentRequestId ? "current" : "stale_rejected";
   return Object.freeze({
     opportunity,
     triage,
     evaluationRecord,
+    evaluationFreshness: freshness,
+    currentRequestId,
     score,
     priorityBand: band,
     operatorAction: routing.action,
@@ -226,12 +238,27 @@ function isNewerEvaluation(
   return candidate.requestId.localeCompare(current.requestId) < 0;
 }
 
+function selectNewest(
+  rows: readonly PersistedOpportunityEvaluation[],
+  evaluatorId: string | undefined,
+  requestId?: string,
+): PersistedOpportunityEvaluation | undefined {
+  let selected: PersistedOpportunityEvaluation | undefined;
+  for (const row of rows) {
+    if (evaluatorId !== undefined && evaluatorId !== "" && row.evaluatorId !== evaluatorId) continue;
+    if (requestId !== undefined && row.requestId !== requestId) continue;
+    if (selected === undefined || isNewerEvaluation(row, selected)) selected = row;
+  }
+  return selected;
+}
+
 /**
  * Build a ranked, analysis-only queue from durable opportunity + evaluation state.
  *
- * No model or network call occurs here. The latest valid persisted evaluation is
- * selected for each opportunity (or the latest from an explicitly requested
- * evaluator), then current deterministic triage is re-applied before routing.
+ * No model or network call occurs here. A non-rejected row must have an evaluation
+ * for the exact current packet/request ID, so changing deterministic triage cannot
+ * silently reuse stale model reasoning. Current deterministic rejects may surface
+ * with an older evaluation only for provenance; they remain forced to score 0.
  */
 export async function rankStoredOpportunities(
   opportunityStore: OpportunityStore,
@@ -247,17 +274,11 @@ export async function rankStoredOpportunities(
     opportunityStore.list(scanLimit),
     evaluationStore.list(10_000),
   ]);
-  const opportunityById = new Map(opportunities.map((row) => [row.id, row] as const));
-  const latestByOpportunity = new Map<string, PersistedOpportunityEvaluation>();
-  const evaluatorId = options.evaluatorId?.trim();
-
+  const evaluationsByOpportunity = new Map<string, PersistedOpportunityEvaluation[]>();
   for (const row of evaluations) {
-    if (evaluatorId !== undefined && evaluatorId !== "" && row.evaluatorId !== evaluatorId) continue;
-    if (!opportunityById.has(row.opportunityId)) continue;
-    const current = latestByOpportunity.get(row.opportunityId);
-    if (current === undefined || isNewerEvaluation(row, current)) {
-      latestByOpportunity.set(row.opportunityId, row);
-    }
+    const rows = evaluationsByOpportunity.get(row.opportunityId) ?? [];
+    rows.push(row);
+    evaluationsByOpportunity.set(row.opportunityId, rows);
   }
 
   const minimumScore = boundedScore(options.minimumScore);
@@ -265,13 +286,21 @@ export async function rankStoredOpportunities(
     options.actions === undefined || options.actions.length === 0
       ? undefined
       : new Set(options.actions);
+  const evaluatorId = options.evaluatorId?.trim();
   const ranked: RankedOpportunity[] = [];
 
   for (const opportunity of opportunities) {
-    const evaluation = latestByOpportunity.get(opportunity.id);
-    if (evaluation === undefined) continue;
     const triage = triageOpportunity(opportunity, profile);
-    const entry = rankOpportunity(opportunity, triage, evaluation);
+    const packet = buildOpportunityEvaluationPacket(opportunity, triage);
+    const currentRequestId = buildPreparedOpportunityEvaluation(packet).requestId;
+    const rows = evaluationsByOpportunity.get(opportunity.id) ?? [];
+    const currentEvaluation = selectNewest(rows, evaluatorId, currentRequestId);
+    const evaluation =
+      currentEvaluation ??
+      (triage.decision === "reject" ? selectNewest(rows, evaluatorId) : undefined);
+    if (evaluation === undefined) continue;
+
+    const entry = rankOpportunity(opportunity, triage, evaluation, currentRequestId);
     if (entry.score < minimumScore) continue;
     if (actionFilter !== undefined && !actionFilter.has(entry.operatorAction)) continue;
     ranked.push(entry);
