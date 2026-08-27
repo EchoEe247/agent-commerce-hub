@@ -6,6 +6,7 @@
  * adapters return, so cross-source canonical IDs collapse cleanly.
  */
 import type { SafeFetch } from "../network/safe-fetch.js";
+import { CommerceError } from "../core/errors.js";
 import { dedupeOpportunities } from "./dedupe.js";
 import type { OpportunitySourceAdapter } from "./adapters/interface.js";
 import {
@@ -57,7 +58,16 @@ export class OpportunityIngestor {
           clock: this.clock,
           signal: controller.signal,
         });
-        const results = raw.map((candidate) => parseOpportunityCandidate(candidate));
+        const results = raw.map((candidate) => {
+          const parsed = parseOpportunityCandidate(candidate);
+          if (parsed.source !== adapter.id) {
+            throw new CommerceError(
+              "SCHEMA_VIOLATION",
+              `opportunity adapter ${adapter.id} emitted candidate source ${parsed.source}`,
+            );
+          }
+          return parsed;
+        });
         return {
           id: adapter.id,
           status: {
