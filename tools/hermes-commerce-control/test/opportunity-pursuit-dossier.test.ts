@@ -54,7 +54,13 @@ function operatorPacket(
   return prepareOpportunityOperatorPacket(rankOpportunity(candidate, triage, record, requestId));
 }
 
-test("dossier preserves checks and blocks pursuit while economics are unresolved", () => {
+const completeEconomics = {
+  payout: { minUsd: 200, maxUsd: null, basis: "observed" as const },
+  executionCost: { minUsd: 0, maxUsd: 10, basis: "inferred" as const },
+  margin: { minUsd: 190, maxUsd: 200, basis: "inferred" as const },
+};
+
+test("dossier preserves controlled checks and blocks pursuit while economics are unresolved", () => {
   const dossier = buildOpportunityPursuitDossier(operatorPacket());
   assert.match(dossier.dossierId, /^opdos_[a-f0-9]{32}$/);
   assert.equal(dossier.status, "blocked_on_checks");
@@ -63,12 +69,33 @@ test("dossier preserves checks and blocks pursuit while economics are unresolved
   assert.equal(dossier.economics.executionCostKnown, false);
   assert.equal(dossier.economics.marginKnown, false);
   assert.equal(dossier.verification.blocking, true);
+  assert.ok(dossier.verification.upstreamCheckCount > 0);
+  assert.equal(dossier.verification.upstreamChecksRequireOperatorReview, true);
   assert.match(dossier.verification.requiredChecks.join(" "), /compensation and payment terms/i);
   assert.match(dossier.verification.requiredChecks.join(" "), /execution cost/i);
   assert.equal(dossier.contactBrief.status, "clarification_draft_ready");
   assert.equal(dossier.contactBrief.requiresOperatorReview, true);
   assert.equal(dossier.contactBrief.sendAllowed, false);
   assert.equal(dossier.boundary.externalActionsAllowed, false);
+});
+
+test("manual-review state cannot become draft-ready even with complete economics and no upstream checks", () => {
+  const dossier = buildOpportunityPursuitDossier(
+    operatorPacket({
+      recommendation: "manual_review",
+      executionRoute: "human_remote",
+      economics: completeEconomics,
+      capabilities: { aiCanComplete: false, humanRequired: true, physicalPresence: false },
+      blockers: [],
+      nextChecks: [],
+    }),
+  );
+  assert.equal(dossier.verification.blocking, false);
+  assert.equal(dossier.status, "operator_review_required");
+  assert.equal(dossier.safeNextStep, "review_dossier");
+  assert.equal(dossier.contactBrief.status, "operator_review_blocked");
+  assert.equal(dossier.contactBrief.intent, "hold_for_operator_review");
+  assert.equal(dossier.contactBrief.sendAllowed, false);
 });
 
 test("clean pursue state can become decision-ready but never send-authorized", () => {
@@ -79,11 +106,7 @@ test("clean pursue state can become decision-ready but never send-authorized", (
       risk: "low",
       confidence: 0.9,
       estimatedEffortMinutes: 45,
-      economics: {
-        payout: { minUsd: 200, maxUsd: null, basis: "observed" },
-        executionCost: { minUsd: 0, maxUsd: 10, basis: "inferred" },
-        margin: { minUsd: 190, maxUsd: 200, basis: "inferred" },
-      },
+      economics: completeEconomics,
       capabilities: { aiCanComplete: true, humanRequired: false, physicalPresence: false },
       blockers: [],
       nextChecks: [],
@@ -96,6 +119,26 @@ test("clean pursue state can become decision-ready but never send-authorized", (
   assert.equal(dossier.contactBrief.requiresOperatorReview, true);
   assert.equal(dossier.contactBrief.sendAllowed, false);
   assert.equal(dossier.boundary.externalActionsAllowed, false);
+});
+
+test("contradictory route/capabilities become a blocking check and do not emit an AI execution plan", () => {
+  const dossier = buildOpportunityPursuitDossier(
+    operatorPacket({
+      recommendation: "pursue",
+      executionRoute: "ai_direct",
+      risk: "low",
+      economics: completeEconomics,
+      capabilities: { aiCanComplete: false, humanRequired: true, physicalPresence: false },
+      blockers: [],
+      nextChecks: [],
+    }),
+  );
+  assert.equal(dossier.status, "blocked_on_checks");
+  assert.match(dossier.verification.requiredChecks.join(" "), /ai_direct requires aiCanComplete=true/i);
+  assert.match(dossier.verification.requiredChecks.join(" "), /cannot require a human/i);
+  assert.match(dossier.executionPlan.preparationSteps.join(" "), /resolve execution-route\/capability inconsistencies/i);
+  assert.doesNotMatch(dossier.executionPlan.preparationSteps.join(" "), /Define the AI-deliverable artifact/i);
+  assert.equal(dossier.contactBrief.status, "operator_review_blocked");
 });
 
 test("dossier identity is stable and changes with any material operator-packet change", () => {
@@ -112,10 +155,14 @@ test("dossier identity is stable and changes with any material operator-packet c
   assert.notEqual(first.dossierId, changedReason.dossierId);
 });
 
-test("dossier does not carry the raw listing body", () => {
-  const dossier = buildOpportunityPursuitDossier(operatorPacket());
+test("model-echoed listing body cannot flow into dossier checks or contact brief", () => {
+  const echoed = "Need API integration. Budget $200. Remote.";
+  const dossier = buildOpportunityPursuitDossier(
+    operatorPacket({ reasons: [echoed], nextChecks: [echoed] }),
+  );
   assert.equal("body" in dossier.opportunity, false);
-  assert.doesNotMatch(JSON.stringify(dossier), /Need API integration\. Budget \$200/);
+  assert.doesNotMatch(JSON.stringify(dossier.verification), /Need API integration\. Budget \$200/);
+  assert.doesNotMatch(JSON.stringify(dossier.contactBrief), /Need API integration\. Budget \$200/);
 });
 
 test("batch builder respects zero and positive limits", () => {
