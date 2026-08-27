@@ -7,7 +7,7 @@
  * into the mature WorkCandidate tables. The file can later be migrated into the
  * canonical database behind the same store interface.
  */
-import { mkdir, readFile, appendFile } from "node:fs/promises";
+import { appendFile, mkdir, readFile, truncate } from "node:fs/promises";
 import { dirname } from "node:path";
 import { canonicalJson } from "../core/ids.js";
 import {
@@ -32,6 +32,7 @@ export class JsonlOpportunityStore implements OpportunityStore {
   public async saveMany(candidates: readonly OpportunityCandidate[]): Promise<number> {
     if (candidates.length === 0) return 0;
     await mkdir(dirname(this.path), { recursive: true });
+    await this.repairTailBeforeAppend();
     const existing = await this.seenIds();
     const fresh = candidates
       .map((candidate) => parseOpportunityCandidate(candidate))
@@ -47,6 +48,41 @@ export class JsonlOpportunityStore implements OpportunityStore {
     return rows
       .sort((a, b) => b.observedAt.localeCompare(a.observedAt) || a.id.localeCompare(b.id))
       .slice(0, Math.max(0, limit));
+  }
+
+  /**
+   * JSONL append must start on a record boundary. A crash can leave either a
+   * complete final JSON object without its newline, or a genuinely truncated
+   * object. Preserve the former by adding the delimiter; remove only the latter.
+   * Byte offsets are used so non-ASCII text cannot make a string index unsafe for
+   * `truncate()`.
+   */
+  private async repairTailBeforeAppend(): Promise<void> {
+    let body: Buffer;
+    try {
+      body = await readFile(this.path);
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === "ENOENT") return;
+      throw error;
+    }
+    if (body.length === 0 || body[body.length - 1] === 0x0a) return;
+
+    const lastNewline = body.lastIndexOf(0x0a);
+    const tailStart = lastNewline + 1;
+    const tail = body.subarray(tailStart).toString("utf8").trim();
+
+    if (tail !== "") {
+      try {
+        parseOpportunityCandidate(JSON.parse(tail));
+        await appendFile(this.path, "\n", { encoding: "utf8" });
+        return;
+      } catch {
+        // Invalid final record: remove exactly the incomplete tail. Earlier
+        // newline-delimited records remain untouched.
+      }
+    }
+
+    await truncate(this.path, tailStart);
   }
 
   private async readAll(): Promise<OpportunityCandidate[]> {
