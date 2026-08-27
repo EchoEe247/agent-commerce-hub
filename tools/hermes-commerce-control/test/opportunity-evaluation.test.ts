@@ -5,6 +5,8 @@ import {
   buildOpportunityEvaluationPacket,
   buildOpportunityEvaluationPrompt,
   evaluateOpportunity,
+  MAX_EVALUATION_BODY_CHARS,
+  MAX_EVALUATION_TAGS,
   parseOpportunityEvaluation,
   type OpportunityEvaluator,
 } from "../src/opportunities/evaluation.js";
@@ -18,10 +20,11 @@ const candidate: OpportunityCandidate = {
   title: "[HIRING] Remote API automation",
   body: "Budget $150 per project. Need an API workflow automated.",
   url: "https://www.reddit.com/r/forhire/comments/eval/example/",
+  author: "/u/example",
   community: "forhire",
   observedAt: "2026-08-27T12:00:00.000Z",
   tags: ["reddit"],
-  metadata: {},
+  metadata: { feedUrl: "https://www.reddit.com/r/forhire/new/.rss" },
 };
 
 function triage(decision: "candidate" | "review" | "reject" = "candidate"): OpportunityTriageResult {
@@ -79,12 +82,27 @@ test("evaluation packet rejects mismatched triage identity", () => {
   );
 });
 
+test("evaluation packet is bounded and omits author/source metadata", () => {
+  const huge: OpportunityCandidate = {
+    ...candidate,
+    body: "x".repeat(MAX_EVALUATION_BODY_CHARS + 500),
+    tags: Array.from({ length: MAX_EVALUATION_TAGS + 10 }, (_, index) => `tag-${String(index)}`),
+  };
+  const packet = buildOpportunityEvaluationPacket(huge, triage());
+  assert.equal(packet.opportunity.body?.length, MAX_EVALUATION_BODY_CHARS);
+  assert.equal(packet.opportunity.bodyTruncated, true);
+  assert.equal(packet.opportunity.tags.length, MAX_EVALUATION_TAGS);
+  assert.equal("author" in packet.opportunity, false);
+  assert.equal("metadata" in packet.opportunity, false);
+});
+
 test("prompt is provider-neutral and carries strict no-invention rules", () => {
   const prompt = buildOpportunityEvaluationPrompt(buildOpportunityEvaluationPacket(candidate, triage()));
   assert.match(prompt, /Do not invent a payout/i);
   assert.match(prompt, /analysis only/i);
   assert.match(prompt, /opp_eval/);
   assert.match(prompt, /human_physical/);
+  assert.doesNotMatch(prompt, /example_worker/);
 });
 
 test("valid structured evaluation passes schema validation", () => {
