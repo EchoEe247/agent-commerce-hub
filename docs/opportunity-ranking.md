@@ -17,6 +17,7 @@ npm run opportunities:rank -- \
   --action review_for_pursuit \
   --action manual_review \
   --min-score 50 \
+  --max-age-hours 168 \
   --limit 25 \
   --json
 ```
@@ -32,11 +33,32 @@ It does **not** fetch Reddit, invoke a model, consume provider quota, contact an
 
 The router re-runs the selected deterministic triage profile first and rebuilds the exact bounded evaluation packet/request ID for that current triage state.
 
-For any non-rejected opportunity, only a persisted evaluation whose `requestId` matches that **current** packet is eligible for ranking. This prevents a model judgment created under an older profile/triage state from silently being reused after the deterministic inputs changed. If no current evaluation exists, the opportunity simply waits for re-evaluation rather than receiving a potentially stale score.
+For any non-rejected opportunity, only a persisted evaluation whose `requestId` matches that **current** packet is eligible for ranking. This prevents a model judgment created under an older profile/triage state from silently being reused after the deterministic inputs changed. If no current evaluation exists, the opportunity waits for re-evaluation rather than receiving a potentially stale score.
 
-An exact evaluator can be pinned with `--evaluator`; this is useful when comparing Hy3, MiMo, or another local evaluator without mixing judgments. If several valid evaluations exist for the same current request, the latest valid one is selected deterministically.
+An exact evaluator can be pinned with `--evaluator`; this is useful when comparing Hy3, MiMo, or another local evaluator without mixing judgments. The ranking layer scans the full valid evaluation-result store before applying evaluator/opportunity selection, so a large number of unrelated newer results cannot hide an older but still relevant evaluator result. If several valid evaluations exist for the same current request, the latest valid one is selected deterministically.
+
+Persisted evaluation rows are revalidated on read with the same semantic checks used when a provider response is first accepted. Shape-valid but impossible results—for example `physicalPresence: true` with `executionRoute: "ai_direct"`, or invalid money ranges—are ignored rather than entering ranking or dedupe state.
 
 A current deterministic `reject` does not require another model call. If an older evaluation exists, it may be shown only as provenance with `evaluationFreshness: "stale_rejected"`; the row is still forced to action `reject`, score 0, and priority band `blocked`. A stale evaluation can therefore never resurrect a current deterministic reject.
+
+## Age/freshness gate
+
+Non-rejected rows have a default maximum age of **168 hours (7 days)** for both:
+
+- the opportunity itself, using `postedAt` when valid and otherwise `observedAt`; and
+- the selected evaluation's `evaluatedAt` timestamp.
+
+If either side is older than the configured maximum, the row is omitted until refreshed/re-evaluated. This prevents an old positive evaluation from remaining `review_for_pursuit` indefinitely in the append-only state files.
+
+Use a different window with:
+
+```bash
+npm run opportunities:rank -- --max-age-hours 72 --json
+```
+
+`--max-age-hours 0` explicitly disables the age gate for historical inspection. `--as-of <timestamp>` supplies a deterministic ranking clock for tests/replay rather than using the current time.
+
+Current deterministic rejects are allowed through the age check only when explicitly requested (for example `--action reject`/`--action all`) because they are audit/provenance rows, never pursuit candidates.
 
 ## Operator actions
 
@@ -83,7 +105,7 @@ A routed `reject` is forced to score 0 and priority band `blocked`, regardless o
 - `low`: score < 50 or action `watch`;
 - `blocked`: action `reject`.
 
-Ranking is deterministic for the same persisted state, evaluator selection, triage profile, and options.
+Ranking is deterministic for the same persisted state, evaluator selection, triage profile, age window, ranking clock, and options.
 
 ## Next boundary
 
