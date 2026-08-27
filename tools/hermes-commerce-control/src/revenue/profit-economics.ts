@@ -29,10 +29,11 @@ export const DEFAULT_PROFIT_SOURCE_PROFILES: Readonly<Record<PlatformId, ProfitS
       "claim-specific bond/stake and transaction-cost requirements may vary",
       "do not assume a failed attempt is free",
     ]),
-    bountybook: profile(0.04, null, 0, [
+    bountybook: profile(0.04, 0, 0, [
       "public docs state a 4% fee is taken after successful verification",
-      "Base gas is required for the agent wallet, but its live USD cost is dynamic and therefore unresolved here",
-      "a failed/rejected attempt can still consume gas, so gas must be deducted from expected profit before pursuit",
+      "the documented standard agent path uses off-chain auth plus free HTTP claim/submit endpoints",
+      "live zero-balance testing on the standard inline path confirmed auth, claim, and a failed submission with 0 ETH and 0 USDC spent and no blockchain transaction broadcast",
+      "oracle acceptance and platform reliability remain separate probability risks even though the observed solver-side cash attempt cost is zero",
     ]),
     trybounty: profile(null, null, null, [
       "public pages show escrow-funded work, but solver payout fees and attempt costs are not yet resolved",
