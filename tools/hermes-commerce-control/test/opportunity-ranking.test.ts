@@ -1,9 +1,12 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { buildOpportunityEvaluationPacket } from "../src/opportunities/evaluation.js";
+import { buildPreparedOpportunityEvaluation } from "../src/opportunities/evaluation-queue.js";
 import type { OpportunityEvaluationResultStore, PersistedOpportunityEvaluation } from "../src/opportunities/evaluation-results.js";
 import type { OpportunityCandidate } from "../src/opportunities/models.js";
 import { rankStoredOpportunities } from "../src/opportunities/ranking.js";
 import type { OpportunityStore } from "../src/opportunities/store.js";
+import { triageOpportunity, type OpportunityTriageProfile } from "../src/opportunities/triage.js";
 
 const opportunities: readonly OpportunityCandidate[] = [
   {
@@ -38,6 +41,8 @@ const opportunities: readonly OpportunityCandidate[] = [
   },
 ];
 
+const demandProfile: OpportunityTriageProfile = { requireDemand: true };
+
 const opportunityStore: OpportunityStore = {
   async seenIds() {
     return new Set(opportunities.map((row) => row.id));
@@ -50,14 +55,32 @@ const opportunityStore: OpportunityStore = {
   },
 };
 
+function opportunityById(opportunityId: string): OpportunityCandidate {
+  const row = opportunities.find((candidate) => candidate.id === opportunityId);
+  if (row === undefined) throw new Error(`unknown fixture opportunity ${opportunityId}`);
+  return row;
+}
+
+function requestIdFor(
+  opportunityId: string,
+  profile: OpportunityTriageProfile = demandProfile,
+): string {
+  const opportunity = opportunityById(opportunityId);
+  const triage = triageOpportunity(opportunity, profile);
+  return buildPreparedOpportunityEvaluation(
+    buildOpportunityEvaluationPacket(opportunity, triage),
+  ).requestId;
+}
+
 function evaluation(
   opportunityId: string,
   evaluatorId: string,
   evaluatedAt: string,
   overrides: Partial<PersistedOpportunityEvaluation["evaluation"]> = {},
+  requestProfile: OpportunityTriageProfile = demandProfile,
 ): PersistedOpportunityEvaluation {
   return {
-    requestId: `req_${opportunityId}_${evaluatorId}_${evaluatedAt}`,
+    requestId: requestIdFor(opportunityId, requestProfile),
     opportunityId,
     evaluatorId,
     evaluatedAt,
@@ -109,10 +132,11 @@ test("pursue/low-risk AI opportunity outranks manual-review work", async () => {
     }),
     evaluation("opp_manual", "local-openai:hy3-free", "2026-08-27T15:02:00.000Z"),
   ];
-  const ranked = await rankStoredOpportunities(opportunityStore, evaluationStore(rows), { requireDemand: true });
+  const ranked = await rankStoredOpportunities(opportunityStore, evaluationStore(rows), demandProfile);
   assert.equal(ranked[0]?.opportunity.id, "opp_ai");
   assert.equal(ranked[0]?.operatorAction, "review_for_pursuit");
   assert.equal(ranked[0]?.priorityBand, "high");
+  assert.equal(ranked[0]?.evaluationFreshness, "current");
   assert.ok((ranked[0]?.score ?? 0) > (ranked[1]?.score ?? 0));
 });
 
@@ -125,34 +149,58 @@ test("high-risk pursue and unresolved blockers are routed to manual review", asy
       blockers: ["counterparty identity not verified"],
     }),
   ];
-  const ranked = await rankStoredOpportunities(opportunityStore, evaluationStore(rows), { requireDemand: true });
+  const ranked = await rankStoredOpportunities(opportunityStore, evaluationStore(rows), demandProfile);
   assert.equal(ranked[0]?.operatorAction, "manual_review");
   assert.match(ranked[0]?.routingReasons.join(" ") ?? "", /high-risk|blocker/i);
 });
 
 test("current deterministic reject overrides a stale positive evaluation", async () => {
   const rows = [
-    evaluation("opp_supply", "local-openai:hy3-free", "2026-08-27T15:01:00.000Z", {
-      recommendation: "pursue",
-      executionRoute: "ai_direct",
-      risk: "low",
-      confidence: 0.95,
-      capabilities: { aiCanComplete: true, humanRequired: false, physicalPresence: false },
-    }),
+    evaluation(
+      "opp_supply",
+      "local-openai:hy3-free",
+      "2026-08-27T15:01:00.000Z",
+      {
+        recommendation: "pursue",
+        executionRoute: "ai_direct",
+        risk: "low",
+        confidence: 0.95,
+        capabilities: { aiCanComplete: true, humanRequired: false, physicalPresence: false },
+      },
+      {},
+    ),
   ];
   const ranked = await rankStoredOpportunities(
     opportunityStore,
     evaluationStore(rows),
-    { requireDemand: true },
+    demandProfile,
     { actions: ["reject"] },
   );
   assert.equal(ranked.length, 1);
   assert.equal(ranked[0]?.operatorAction, "reject");
   assert.equal(ranked[0]?.score, 0);
   assert.equal(ranked[0]?.priorityBand, "blocked");
+  assert.equal(ranked[0]?.evaluationFreshness, "stale_rejected");
+  assert.notEqual(ranked[0]?.evaluationRecord.requestId, ranked[0]?.currentRequestId);
 });
 
-test("latest evaluation wins by default and evaluator filter can select an older model result", async () => {
+test("stale non-rejected model evaluation is not reused after triage packet changes", async () => {
+  const old = evaluation("opp_manual", "local-openai:hy3-free", "2026-08-27T15:01:00.000Z");
+  const changedProfile: OpportunityTriageProfile = {
+    requireDemand: true,
+    preferredTerms: ["operations"],
+  };
+  assert.notEqual(old.requestId, requestIdFor("opp_manual", changedProfile));
+
+  const ranked = await rankStoredOpportunities(
+    opportunityStore,
+    evaluationStore([old]),
+    changedProfile,
+  );
+  assert.equal(ranked.length, 0);
+});
+
+test("latest current evaluation wins by default and evaluator filter can select another model result", async () => {
   const older = evaluation("opp_ai", "local-openai:hy3-free", "2026-08-27T15:01:00.000Z", {
     recommendation: "manual_review",
   });
@@ -164,14 +212,14 @@ test("latest evaluation wins by default and evaluator filter can select an older
     capabilities: { aiCanComplete: true, humanRequired: false, physicalPresence: false },
   });
 
-  const latest = await rankStoredOpportunities(opportunityStore, evaluationStore([older, newer]), { requireDemand: true });
+  const latest = await rankStoredOpportunities(opportunityStore, evaluationStore([older, newer]), demandProfile);
   assert.equal(latest[0]?.evaluationRecord.evaluatorId, "local-openai:mimo-v2.5-free");
   assert.equal(latest[0]?.operatorAction, "review_for_pursuit");
 
   const filtered = await rankStoredOpportunities(
     opportunityStore,
     evaluationStore([older, newer]),
-    { requireDemand: true },
+    demandProfile,
     { evaluatorId: "local-openai:hy3-free" },
   );
   assert.equal(filtered[0]?.evaluationRecord.evaluatorId, "local-openai:hy3-free");
@@ -192,7 +240,7 @@ test("minimum score and action filters are applied after ranking", async () => {
   const ranked = await rankStoredOpportunities(
     opportunityStore,
     evaluationStore(rows),
-    { requireDemand: true },
+    demandProfile,
     { actions: ["review_for_pursuit"], minimumScore: 60, limit: 1 },
   );
   assert.equal(ranked.length, 1);
