@@ -33,10 +33,14 @@ export class JsonlOpportunityStore implements OpportunityStore {
     if (candidates.length === 0) return 0;
     await mkdir(dirname(this.path), { recursive: true });
     await this.repairTailBeforeAppend();
-    const existing = await this.seenIds();
-    const fresh = candidates
-      .map((candidate) => parseOpportunityCandidate(candidate))
-      .filter((candidate) => !existing.has(candidate.id));
+    const existing = new Set(await this.seenIds());
+    const fresh: OpportunityCandidate[] = [];
+    for (const raw of candidates) {
+      const candidate = parseOpportunityCandidate(raw);
+      if (existing.has(candidate.id)) continue;
+      existing.add(candidate.id);
+      fresh.push(candidate);
+    }
     if (fresh.length === 0) return 0;
     const payload = `${fresh.map((candidate) => canonicalJson(candidate)).join("\n")}\n`;
     await appendFile(this.path, payload, { encoding: "utf8", mode: 0o600 });
