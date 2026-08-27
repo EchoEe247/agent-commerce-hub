@@ -92,12 +92,16 @@ function hasHeading(readme: string | null, words: readonly string[]): boolean {
 }
 
 function npmScriptFromCommand(command: string): string | null {
-  const match = command.match(/^(?:npm\s+run|pnpm(?:\s+run)?|yarn)\s+([\w:.-]+)(?:\s|$)/i);
-  if (match?.[1]) return match[1];
-  if (/^npm\s+(?:test|start)(?:\s|$)/i.test(command)) {
-    return command.toLowerCase().startsWith("npm test") ? "test" : "start";
-  }
-  return null;
+  const npmRun = command.match(/^npm\s+run\s+([\w:.-]+)(?:\s|$)/i);
+  if (npmRun?.[1]) return npmRun[1];
+  if (/^npm\s+test(?:\s|$)/i.test(command)) return "test";
+  if (/^npm\s+start(?:\s|$)/i.test(command)) return "start";
+
+  const alt = command.match(/^(pnpm|yarn)(?:\s+run)?\s+([\w:.-]+)(?:\s|$)/i);
+  const candidate = alt?.[2]?.toLowerCase();
+  if (!candidate) return null;
+  if (["install", "add", "remove", "update", "upgrade", "exec", "dlx"].includes(candidate)) return null;
+  return alt?.[2] ?? null;
 }
 
 function managerFromCommand(command: string): "npm" | "pnpm" | "yarn" | null {
