@@ -10,27 +10,15 @@
 import { mkdir, readFile, appendFile } from "node:fs/promises";
 import { dirname } from "node:path";
 import { canonicalJson } from "../core/ids.js";
-import type { OpportunityCandidate } from "./models.js";
+import {
+  parseOpportunityCandidate,
+  type OpportunityCandidate,
+} from "./models.js";
 
 export interface OpportunityStore {
   seenIds(): Promise<ReadonlySet<string>>;
   saveMany(candidates: readonly OpportunityCandidate[]): Promise<number>;
   list(limit?: number): Promise<readonly OpportunityCandidate[]>;
-}
-
-function isCandidate(value: unknown): value is OpportunityCandidate {
-  if (value === null || typeof value !== "object") return false;
-  const row = value as Record<string, unknown>;
-  return (
-    typeof row.id === "string" &&
-    typeof row.source === "string" &&
-    typeof row.externalId === "string" &&
-    typeof row.title === "string" &&
-    typeof row.observedAt === "string" &&
-    Array.isArray(row.tags) &&
-    row.metadata !== null &&
-    typeof row.metadata === "object"
-  );
 }
 
 export class JsonlOpportunityStore implements OpportunityStore {
@@ -45,7 +33,9 @@ export class JsonlOpportunityStore implements OpportunityStore {
     if (candidates.length === 0) return 0;
     await mkdir(dirname(this.path), { recursive: true });
     const existing = await this.seenIds();
-    const fresh = candidates.filter((candidate) => !existing.has(candidate.id));
+    const fresh = candidates
+      .map((candidate) => parseOpportunityCandidate(candidate))
+      .filter((candidate) => !existing.has(candidate.id));
     if (fresh.length === 0) return 0;
     const payload = `${fresh.map((candidate) => canonicalJson(candidate)).join("\n")}\n`;
     await appendFile(this.path, payload, { encoding: "utf8", mode: 0o600 });
@@ -78,7 +68,12 @@ export class JsonlOpportunityStore implements OpportunityStore {
       } catch {
         continue;
       }
-      if (isCandidate(parsed)) out.push(parsed);
+      try {
+        out.push(parseOpportunityCandidate(parsed));
+      } catch {
+        // A corrupt/legacy line is ignored rather than poisoning the entire
+        // append-only store. New writes are always schema-validated above.
+      }
     }
     return out;
   }
