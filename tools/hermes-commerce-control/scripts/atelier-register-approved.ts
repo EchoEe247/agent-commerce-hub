@@ -1,7 +1,7 @@
 #!/usr/bin/env node
-import { existsSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { writeAtelierAgentAuthKeystore } from "../src/atelier/agent-auth-store.js";
 import {
   buildSignedAtelierRegistrationPayload,
@@ -22,24 +22,33 @@ async function readPassphrase(): Promise<string> {
   return passphrase;
 }
 
-const secretRoot = join(homedir(), ".hermes", "commerce-control", "secrets");
+const root = join(homedir(), ".hermes", "commerce-control");
+const secretRoot = join(root, "secrets");
 const walletPath = process.env.ATELIER_WALLET_KEYSTORE_PATH?.trim() || join(secretRoot, "atelier-solana-wallet.keystore.json");
 const authPath = process.env.ATELIER_AGENT_AUTH_KEYSTORE_PATH?.trim() || join(secretRoot, "atelier-agent-auth.keystore.json");
+const receiptPath = process.env.ATELIER_REGISTRATION_RECEIPT_PATH?.trim() || join(root, "receipts", "atelier-registration-attempt-1.json");
 
 let registrationAttempted = false;
 try {
   if (existsSync(authPath)) throw new Error("Atelier agent auth keystore already exists; refusing a second registration");
+  if (existsSync(receiptPath)) throw new Error("Atelier registration one-shot receipt already exists; refusing retry");
   const passphrase = await readPassphrase();
   const wallet = loadAtelierWalletKeystore(walletPath, passphrase);
   try {
     const timestamp = Date.now();
-    const payload = buildSignedAtelierRegistrationPayload({
-      privateKeyPkcs8: wallet.privateKeyPkcs8,
-      address: wallet.address,
-      timestamp,
+    const payload = buildSignedAtelierRegistrationPayload({ privateKeyPkcs8: wallet.privateKeyPkcs8, address: wallet.address, timestamp });
+
+    mkdirSync(dirname(receiptPath), { recursive: true, mode: 0o700 });
+    chmodSync(dirname(receiptPath), 0o700);
+    writeFileSync(receiptPath, `${JSON.stringify({ status: "armed", address: wallet.address, timestamp, createdAt: new Date().toISOString() }, null, 2)}\n`, {
+      encoding: "utf8",
+      mode: 0o600,
+      flag: "wx",
     });
 
     console.log("ATELIER_REGISTRATION_AUTHORIZATION_USED=yes");
+    console.log("ONE_SHOT_RECEIPT_ARMED=yes");
+    console.log(`ONE_SHOT_RECEIPT_PATH=${receiptPath}`);
     console.log(`WALLET_ADDRESS=${wallet.address}`);
     console.log(`WALLET_SIG_TIMESTAMP=${timestamp}`);
     console.log("WALLET_AUTH_MESSAGE_TEMPLATE=atelier:${address}:${timestamp}");
