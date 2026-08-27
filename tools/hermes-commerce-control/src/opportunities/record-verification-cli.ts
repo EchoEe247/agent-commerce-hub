@@ -18,26 +18,33 @@ Usage:
   node --import tsx src/opportunities/record-verification-cli.ts [options]
 
 Required:
-      --dossier-id <id>          current opdos_* ID
-      --check-id <id>            current opcheck_* ID
-      --outcome <name>           satisfied | failed
-      --evidence-kind <name>     ${VERIFICATION_EVIDENCE_KINDS.join(" | ")}
-      --note <text>               bounded evidence note
+      --dossier-id <id>                 current opdos_* ID
+      --check-id <id>                   current opcheck_* ID
+      --outcome <name>                  satisfied | failed
+      --evidence-kind <name>            ${VERIFICATION_EVIDENCE_KINDS.join(" | ")}
+      --note <text>                      bounded evidence note
 
 Optional:
-      --reference <text>         source/quote/confirmation reference; required for
-                                 source_reference, executor_quote, counterparty_confirmation
-      --recorded-at <timestamp>  deterministic timestamp override
-      --resolution-file <path>   verification-resolution JSONL store
-      --json                     emit one JSON document
+      --reference <text>                source/quote/confirmation reference; required for
+                                        source_reference, executor_quote, counterparty_confirmation
+      --depends-on-resolution-id <id>   prerequisite opver_* used by a derived calculation
+                                        (repeat once per current dependency)
+      --recorded-at <timestamp>         deterministic timestamp override
+      --resolution-file <path>          verification-resolution JSONL store
+      --json                            emit one JSON document
       --help
 
+Derived calculations must bind to the exact current prerequisite resolution IDs exposed
+by opportunities:verification-plan. The plan rejects a calculation recorded before its
+prerequisites or tied to stale prerequisite resolutions.
+
 This command only appends local evidence. It does not contact anyone, fetch a source,
-call a model, approve pursuit, claim work, submit, hire, or move money. A recorded
-resolution applies only if the current verification plan accepts its evidence kind.
+call a model, approve pursuit, claim work, submit, hire, or move money.
 `;
 
-function required(values: Record<string, string | boolean | undefined>, name: string): string {
+type ParsedValue = string | boolean | string[] | undefined;
+
+function required(values: Record<string, ParsedValue>, name: string): string {
   const value = values[name];
   if (typeof value !== "string" || value.trim() === "") throw new Error(`--${name} is required`);
   return value.trim();
@@ -54,6 +61,7 @@ async function main(): Promise<void> {
       "evidence-kind": { type: "string" },
       note: { type: "string" },
       reference: { type: "string" },
+      "depends-on-resolution-id": { type: "string", multiple: true },
       "recorded-at": { type: "string" },
       "resolution-file": { type: "string" },
       json: { type: "boolean", default: false },
@@ -90,6 +98,9 @@ async function main(): Promise<void> {
   const recordedAt = typeof values["recorded-at"] === "string" && values["recorded-at"].trim() !== ""
     ? values["recorded-at"].trim()
     : undefined;
+  const dependsOnResolutionIds = Array.isArray(values["depends-on-resolution-id"])
+    ? values["depends-on-resolution-id"].map((value) => value.trim()).filter((value) => value !== "")
+    : undefined;
 
   const record = buildOpportunityVerificationResolution({
     dossierId,
@@ -100,6 +111,9 @@ async function main(): Promise<void> {
       ...(reference === undefined ? {} : { reference }),
       note,
     },
+    ...(dependsOnResolutionIds === undefined || dependsOnResolutionIds.length === 0
+      ? {}
+      : { dependsOnResolutionIds }),
     ...(recordedAt === undefined ? {} : { recordedAt }),
   });
   await new JsonlOpportunityVerificationResolutionStore(resolutionFile).append(record);

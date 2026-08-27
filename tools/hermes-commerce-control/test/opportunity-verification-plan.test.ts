@@ -11,10 +11,14 @@ import { prepareOpportunityOperatorPacket } from "../src/opportunities/operator-
 import { buildOpportunityPursuitDossier } from "../src/opportunities/pursuit-dossier.js";
 import { rankOpportunity } from "../src/opportunities/ranking.js";
 import { triageOpportunity } from "../src/opportunities/triage.js";
-import { buildOpportunityVerificationPlan } from "../src/opportunities/verification-plan.js";
+import {
+  buildOpportunityVerificationPlan,
+  OPPORTUNITY_VERIFICATION_POLICY_VERSION,
+} from "../src/opportunities/verification-plan.js";
 import {
   buildOpportunityVerificationResolution,
   JsonlOpportunityVerificationResolutionStore,
+  type OpportunityVerificationResolution,
 } from "../src/opportunities/verification-resolutions.js";
 
 const candidate: OpportunityCandidate = {
@@ -63,8 +67,76 @@ function byKind(plan: ReturnType<typeof buildOpportunityVerificationPlan>, kind:
   return check;
 }
 
+function prerequisiteResolutions(current = dossier()) {
+  const initial = buildOpportunityVerificationPlan(current);
+  const upstream = byKind(initial, "upstream_operator_review");
+  const compensation = byKind(initial, "compensation_terms");
+  const executionCost = byKind(initial, "execution_cost");
+  const margin = byKind(initial, "margin");
+  const upstreamResolution = buildOpportunityVerificationResolution({
+    dossierId: current.dossierId,
+    checkId: upstream.checkId,
+    outcome: "satisfied",
+    evidence: { kind: "operator_attestation", note: "Operator reviewed the upstream checks." },
+    recordedAt: "2026-08-27T16:00:00.000Z",
+  });
+  const compensationResolution = buildOpportunityVerificationResolution({
+    dossierId: current.dossierId,
+    checkId: compensation.checkId,
+    outcome: "satisfied",
+    evidence: {
+      kind: "source_reference",
+      reference: "https://example.test/verified-compensation",
+      note: "Source establishes the compensation terms.",
+    },
+    recordedAt: "2026-08-27T16:01:00.000Z",
+  });
+  const executionCostResolution = buildOpportunityVerificationResolution({
+    dossierId: current.dossierId,
+    checkId: executionCost.checkId,
+    outcome: "satisfied",
+    evidence: {
+      kind: "executor_quote",
+      reference: "quote:remote-executor-1",
+      note: "Executor quote establishes expected execution cost.",
+    },
+    recordedAt: "2026-08-27T16:02:00.000Z",
+  });
+  return {
+    current,
+    initial,
+    upstream,
+    compensation,
+    executionCost,
+    margin,
+    upstreamResolution,
+    compensationResolution,
+    executionCostResolution,
+  };
+}
+
+function marginResolution(input: {
+  current: ReturnType<typeof dossier>;
+  checkId: string;
+  dependencyResolutionIds?: readonly string[] | undefined;
+  recordedAt?: string | undefined;
+}): OpportunityVerificationResolution {
+  return buildOpportunityVerificationResolution({
+    dossierId: input.current.dossierId,
+    checkId: input.checkId,
+    outcome: "satisfied",
+    evidence: { kind: "calculation", note: "Margin calculated from verified payout and execution cost." },
+    ...(input.dependencyResolutionIds === undefined
+      ? {}
+      : { dependsOnResolutionIds: input.dependencyResolutionIds }),
+    recordedAt: input.recordedAt ?? "2026-08-27T16:03:00.000Z",
+  });
+}
+
 test("verification plan classifies controlled dossier checks without external actions", () => {
   const plan = buildOpportunityVerificationPlan(dossier());
+  assert.equal(plan.policyVersion, OPPORTUNITY_VERIFICATION_POLICY_VERSION);
+  assert.equal(OPPORTUNITY_VERIFICATION_POLICY_VERSION, 2);
   assert.match(plan.verificationPlanId, /^opvplan_[a-f0-9]{32}$/);
   assert.equal(plan.state, "needs_resolution");
   assert.equal(plan.nextSafeStep, "resolve_checks");
@@ -72,59 +144,129 @@ test("verification plan classifies controlled dossier checks without external ac
   assert.equal(byKind(plan, "upstream_operator_review").state, "unresolved");
   assert.equal(byKind(plan, "compensation_terms").state, "requires_external_verification");
   assert.equal(byKind(plan, "execution_cost").state, "unresolved");
-  assert.equal(byKind(plan, "margin").state, "blocked_by_dependencies");
+  const margin = byKind(plan, "margin");
+  assert.equal(margin.state, "blocked_by_dependencies");
+  assert.deepEqual(margin.currentDependencyResolutionIds, []);
 });
 
-test("compatible evidence resolves all checks but manual review remains mandatory", () => {
-  const current = dossier();
-  const initial = buildOpportunityVerificationPlan(current);
-  const upstream = byKind(initial, "upstream_operator_review");
-  const compensation = byKind(initial, "compensation_terms");
-  const executionCost = byKind(initial, "execution_cost");
-  const margin = byKind(initial, "margin");
-  const resolutions = [
-    buildOpportunityVerificationResolution({
-      dossierId: current.dossierId,
-      checkId: upstream.checkId,
-      outcome: "satisfied",
-      evidence: { kind: "operator_attestation", note: "Operator reviewed the upstream checks." },
-      recordedAt: "2026-08-27T16:00:00.000Z",
-    }),
-    buildOpportunityVerificationResolution({
-      dossierId: current.dossierId,
-      checkId: compensation.checkId,
-      outcome: "satisfied",
-      evidence: {
-        kind: "source_reference",
-        reference: "https://example.test/verified-compensation",
-        note: "Source establishes the compensation terms.",
-      },
-      recordedAt: "2026-08-27T16:01:00.000Z",
-    }),
-    buildOpportunityVerificationResolution({
-      dossierId: current.dossierId,
-      checkId: executionCost.checkId,
-      outcome: "satisfied",
-      evidence: {
-        kind: "executor_quote",
-        reference: "quote:remote-executor-1",
-        note: "Executor quote establishes expected execution cost.",
-      },
-      recordedAt: "2026-08-27T16:02:00.000Z",
-    }),
-    buildOpportunityVerificationResolution({
-      dossierId: current.dossierId,
-      checkId: margin.checkId,
-      outcome: "satisfied",
-      evidence: { kind: "calculation", note: "Margin calculated from verified payout and execution cost." },
-      recordedAt: "2026-08-27T16:03:00.000Z",
-    }),
-  ];
-  const plan = buildOpportunityVerificationPlan(current, resolutions);
+test("compatible dependency-bound evidence resolves all checks but manual review remains mandatory", () => {
+  const fixture = prerequisiteResolutions();
+  const margin = marginResolution({
+    current: fixture.current,
+    checkId: fixture.margin.checkId,
+    dependencyResolutionIds: [
+      fixture.executionCostResolution.resolutionId,
+      fixture.compensationResolution.resolutionId,
+    ],
+  });
+  const plan = buildOpportunityVerificationPlan(fixture.current, [
+    fixture.upstreamResolution,
+    fixture.compensationResolution,
+    fixture.executionCostResolution,
+    margin,
+  ]);
   assert.equal(plan.counts.resolved, plan.checks.length);
+  assert.deepEqual(byKind(plan, "margin").currentDependencyResolutionIds, [
+    fixture.compensationResolution.resolutionId,
+    fixture.executionCostResolution.resolutionId,
+  ].sort());
   assert.equal(plan.state, "operator_review_required");
   assert.equal(plan.nextSafeStep, "operator_review");
   assert.equal(plan.externalActionsAllowed, false);
+});
+
+test("derived calculation recorded before dependencies remains blocked or unresolved", () => {
+  const fixture = prerequisiteResolutions();
+  const earlyMargin = marginResolution({
+    current: fixture.current,
+    checkId: fixture.margin.checkId,
+    dependencyResolutionIds: [
+      fixture.compensationResolution.resolutionId,
+      fixture.executionCostResolution.resolutionId,
+    ],
+    recordedAt: "2026-08-27T15:59:00.000Z",
+  });
+
+  const beforeDependencies = buildOpportunityVerificationPlan(fixture.current, [earlyMargin]);
+  assert.equal(byKind(beforeDependencies, "margin").state, "blocked_by_dependencies");
+  assert.equal(byKind(beforeDependencies, "margin").evidenceAccepted, false);
+
+  const afterDependencies = buildOpportunityVerificationPlan(fixture.current, [
+    fixture.upstreamResolution,
+    fixture.compensationResolution,
+    fixture.executionCostResolution,
+    earlyMargin,
+  ]);
+  const margin = byKind(afterDependencies, "margin");
+  assert.equal(margin.state, "unresolved");
+  assert.equal(margin.evidenceAccepted, false);
+  assert.deepEqual(margin.currentDependencyResolutionIds, [
+    fixture.compensationResolution.resolutionId,
+    fixture.executionCostResolution.resolutionId,
+  ].sort());
+});
+
+test("derived calculation without exact dependency binding cannot resolve", () => {
+  const fixture = prerequisiteResolutions();
+  const unboundMargin = marginResolution({
+    current: fixture.current,
+    checkId: fixture.margin.checkId,
+  });
+  const plan = buildOpportunityVerificationPlan(fixture.current, [
+    fixture.upstreamResolution,
+    fixture.compensationResolution,
+    fixture.executionCostResolution,
+    unboundMargin,
+  ]);
+  const margin = byKind(plan, "margin");
+  assert.equal(margin.state, "unresolved");
+  assert.equal(margin.evidenceAccepted, false);
+});
+
+test("changing a dependency resolution invalidates an older derived calculation", () => {
+  const fixture = prerequisiteResolutions();
+  const margin = marginResolution({
+    current: fixture.current,
+    checkId: fixture.margin.checkId,
+    dependencyResolutionIds: [
+      fixture.compensationResolution.resolutionId,
+      fixture.executionCostResolution.resolutionId,
+    ],
+  });
+  const initiallyResolved = buildOpportunityVerificationPlan(fixture.current, [
+    fixture.upstreamResolution,
+    fixture.compensationResolution,
+    fixture.executionCostResolution,
+    margin,
+  ]);
+  assert.equal(byKind(initiallyResolved, "margin").state, "resolved");
+
+  const newerCompensation = buildOpportunityVerificationResolution({
+    dossierId: fixture.current.dossierId,
+    checkId: fixture.compensation.checkId,
+    outcome: "satisfied",
+    evidence: {
+      kind: "source_reference",
+      reference: "https://example.test/verified-compensation-v2",
+      note: "Newer source evidence changes the applied compensation record.",
+    },
+    recordedAt: "2026-08-27T16:04:00.000Z",
+  });
+  const changed = buildOpportunityVerificationPlan(fixture.current, [
+    fixture.upstreamResolution,
+    fixture.compensationResolution,
+    fixture.executionCostResolution,
+    margin,
+    newerCompensation,
+  ]);
+  const changedMargin = byKind(changed, "margin");
+  assert.equal(changedMargin.state, "unresolved");
+  assert.equal(changedMargin.evidenceAccepted, false);
+  assert.deepEqual(changedMargin.currentDependencyResolutionIds, [
+    newerCompensation.resolutionId,
+    fixture.executionCostResolution.resolutionId,
+  ].sort());
+  assert.equal(changed.state, "needs_resolution");
 });
 
 test("check-specific evidence cannot satisfy the wrong verification kind", () => {
