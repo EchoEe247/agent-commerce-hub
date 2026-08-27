@@ -1,5 +1,5 @@
 export const ATELIER_README_SETUP_SERVICE = Object.freeze({
-  title: "$5 GitHub README & Setup Fix",
+  title: "GitHub README Setup Fix 5 USD",
   category: "coding",
   description:
     "Send a public GitHub repository. I check the README setup instructions against repository manifests and return a corrected setup section plus a concise issue report. No credentials, deployments, or repository write access required.",

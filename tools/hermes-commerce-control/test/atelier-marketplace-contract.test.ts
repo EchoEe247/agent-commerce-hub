@@ -8,9 +8,10 @@ import {
   parseAtelierOrder,
 } from "../src/atelier/marketplace-contract.js";
 
-test("Atelier service payload preserves approved $5 offer using live wire encoding", () => {
+test("Atelier service payload preserves approved 5 USD offer using live wire encoding", () => {
   const payload = buildReadmeSetupServicePayload();
-  assert.equal(payload.title, "$5 GitHub README & Setup Fix");
+  assert.equal(payload.title, "GitHub README Setup Fix 5 USD");
+  assert.match(payload.title, /^[A-Za-z0-9 ]+$/);
   assert.equal(payload.category, "coding");
   assert.equal(payload.price_usd, "5.00");
   assert.equal(payload.price_type, "fixed");
