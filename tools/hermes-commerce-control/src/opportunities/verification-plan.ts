@@ -156,19 +156,21 @@ function latestResolution(
   return latest;
 }
 
-function evidenceAllowed(
-  mode: OpportunityVerificationResolutionMode,
-  kind: VerificationEvidenceKind,
-): boolean {
-  switch (mode) {
-    case "operator_review":
-      return kind === "operator_attestation";
-    case "external_verification":
-      return kind === "source_reference" || kind === "counterparty_confirmation" || kind === "executor_quote";
-    case "local_estimate":
-      return kind === "calculation" || kind === "executor_quote";
-    case "derived":
-      return kind === "calculation";
+function evidenceAllowed(definition: CheckDefinition, evidenceKind: VerificationEvidenceKind): boolean {
+  switch (definition.kind) {
+    case "upstream_operator_review":
+    case "execution_route":
+    case "route_capability":
+    case "other_controlled":
+      return evidenceKind === "operator_attestation";
+    case "compensation_terms":
+      return evidenceKind === "source_reference" || evidenceKind === "counterparty_confirmation";
+    case "execution_cost":
+      return evidenceKind === "calculation" || evidenceKind === "executor_quote";
+    case "margin":
+      return evidenceKind === "calculation";
+    case "source_listing":
+      return evidenceKind === "source_reference";
   }
 }
 
@@ -205,7 +207,7 @@ export function buildOpportunityVerificationPlan(
   for (const definition of defs) {
     const resolution = latestResolution(dossier.dossierId, definition.checkId, resolutions);
     if (resolution === undefined) continue;
-    const accepted = evidenceAllowed(definition.resolutionMode, resolution.evidence.kind);
+    const accepted = evidenceAllowed(definition, resolution.evidence.kind);
     applied.set(definition.checkId, { resolutionId: resolution.resolutionId, accepted });
     if (!accepted) continue;
     mutableStates.set(definition.checkId, resolution.outcome === "satisfied" ? "resolved" : "failed");
