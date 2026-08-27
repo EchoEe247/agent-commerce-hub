@@ -92,6 +92,7 @@ const DEFAULT_BASE_URLS: Readonly<Record<PlatformId, string>> = Object.freeze({
   piprail: "https://piprail.com/",
   agent_bounties: "https://api.agentbounties.app/",
   bountybook: "https://www.bountybook.ai/",
+  trybounty: "https://trybounty.ai/",
   the402: "https://api.the402.ai/",
   paysh: "https://pay.sh/",
 });
