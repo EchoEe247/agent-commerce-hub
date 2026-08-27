@@ -18,7 +18,9 @@
     "opportunities:watch": "node --import tsx src/opportunities/cli.ts",
     "opportunities:watch:built": "node dist/opportunities/cli.js",
     "opportunities:review": "node --import tsx src/opportunities/review-cli.ts",
-    "opportunities:review:built": "node dist/opportunities/review-cli.js"
+    "opportunities:review:built": "node dist/opportunities/review-cli.js",
+    "opportunities:prepare-evaluation": "node --import tsx src/opportunities/evaluation-queue-cli.ts",
+    "opportunities:prepare-evaluation:built": "node dist/opportunities/evaluation-queue-cli.js"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.30.0",
