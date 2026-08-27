@@ -28,7 +28,7 @@ It does **not** fetch Reddit, invoke a model, consume provider quota, contact a 
 
 Each dossier contains:
 
-- a stable `opdos_*` ID tied to the current operator packet/evaluation state;
+- a stable `opdos_*` ID derived from the complete compact operator packet, so any material packet/evaluation/provenance change produces a new dossier identity;
 - compact source identity/title/community/URL facts, without the raw listing body;
 - current rank score, priority band, operator action, execution route, request/evaluator provenance, and routing reasons;
 - payout, execution-cost, and margin state with explicit known/unknown flags;
@@ -52,10 +52,11 @@ A dossier includes a bounded contact brief with one of two states:
 - `clarification_draft_ready` — unresolved facts should be clarified before commitment;
 - `operator_draft_ready` — the internal state is ready for an operator-reviewed draft.
 
-The brief contains talking points, clarification items, and drafting guidance. It deliberately does not carry the raw Reddit body and always sets:
+The brief contains talking points, clarification items, and drafting guidance. Model-assisted talking points remain internal notes and must be reviewed before being reused in any message. The brief deliberately does not carry the raw Reddit body and always sets:
 
 ```json
 {
+  "requiresOperatorReview": true,
   "sendAllowed": false
 }
 ```
