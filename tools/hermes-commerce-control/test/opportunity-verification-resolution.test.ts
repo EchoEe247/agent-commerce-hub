@@ -57,3 +57,26 @@ test("dependency bindings are rejected on non-calculation evidence", () => {
     }),
   );
 });
+
+test("verification timestamps require canonical UTC millisecond precision", () => {
+  assert.throws(() =>
+    buildOpportunityVerificationResolution({
+      ...base,
+      recordedAt: "2026-08-27T16:00:00.0001Z",
+      evidence: { kind: "calculation", note: "Sub-millisecond precision is unsupported." },
+    }),
+  );
+  assert.throws(() =>
+    buildOpportunityVerificationResolution({
+      ...base,
+      recordedAt: "2026-08-27T11:00:00.000-05:00",
+      evidence: { kind: "calculation", note: "Offset timestamps are not canonical ledger timestamps." },
+    }),
+  );
+  const record = buildOpportunityVerificationResolution({
+    ...base,
+    recordedAt: "2026-08-27T16:00:00.001Z",
+    evidence: { kind: "calculation", note: "Canonical millisecond timestamp." },
+  });
+  assert.equal(record.recordedAt, "2026-08-27T16:00:00.001Z");
+});
