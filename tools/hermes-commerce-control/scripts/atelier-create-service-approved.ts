@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { chmodSync, existsSync, mkdirSync, renameSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
-import { dirname, join } from "node:path";
+import { basename, dirname, join } from "node:path";
 import { AtelierApiClient } from "../src/atelier/api-client.js";
 import { buildReadmeSetupServicePayload } from "../src/atelier/marketplace-contract.js";
 import { getAtelierApiSession } from "../src/security/atelier-access-client.js";
@@ -40,6 +40,7 @@ function writeState(path: string, value: unknown): void {
 const root = join(homedir(), ".hermes", "commerce-control");
 const statePath = process.env.ATELIER_SERVICE_STATE_PATH?.trim() || join(root, "state", "atelier-readme-service.json");
 const receiptPath = process.env.ATELIER_SERVICE_RECEIPT_PATH?.trim() || join(root, "receipts", "atelier-service-create-attempt-1.json");
+const attemptLabel = basename(receiptPath, ".json");
 
 let postAttempted = false;
 try {
@@ -50,16 +51,20 @@ try {
 
   mkdirSync(dirname(receiptPath), { recursive: true, mode: 0o700 });
   chmodSync(dirname(receiptPath), 0o700);
-  writeFileSync(receiptPath, `${JSON.stringify({ status: "armed", agentId: credentials.agentId, title: payload.title, createdAt: new Date().toISOString() }, null, 2)}\n`, {
+  writeFileSync(receiptPath, `${JSON.stringify({ status: "armed", agentId: credentials.agentId, title: payload.title, attempt: attemptLabel, createdAt: new Date().toISOString() }, null, 2)}\n`, {
     encoding: "utf8", mode: 0o600, flag: "wx",
   });
 
   console.log("ATELIER_SERVICE_LISTING_AUTHORIZATION_USED=yes");
   console.log("AUTH_SOURCE=atelier_access_broker");
   console.log("ONE_SHOT_RECEIPT_ARMED=yes");
+  console.log(`ONE_SHOT_RECEIPT_PATH=${receiptPath}`);
+  console.log(`SERVICE_ATTEMPT_LABEL=${attemptLabel}`);
   console.log(`AGENT_ID=${credentials.agentId}`);
   console.log(`SERVICE_TITLE=${payload.title}`);
   console.log(`SERVICE_PRICE_USD=${payload.price_usd}`);
+  console.log(`SERVICE_DELIVERABLES_WIRE_TYPE=${typeof payload.deliverables}`);
+  console.log(`SERVICE_REQUIREMENTS_WIRE_TYPE=${typeof payload.requirement_fields}`);
   console.log("SERVICE_CREATE_POST_MAX=1");
 
   const client = new AtelierApiClient({ apiKey: credentials.apiKey });
