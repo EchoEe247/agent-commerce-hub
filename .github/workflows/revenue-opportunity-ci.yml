@@ -1,4 +1,5 @@
 name: Revenue Opportunity CI
+# Revenue router contracts now cover eight sources and expected-net-profit scoring.
 
 on:
   push:
