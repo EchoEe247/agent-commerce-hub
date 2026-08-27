@@ -3,11 +3,12 @@ import assert from "node:assert/strict";
 import { DEFAULT_REVENUE_SOURCE_PROFILES } from "../src/revenue/work-opportunity.js";
 import { STRICT_ZERO_COST_SOURCE_PROFILES } from "../src/revenue/source-policy.js";
 
-test("revenue source policy: BountyBook is not assumed zero-cost", () => {
+test("revenue source policy: BountyBook standard earn path is zero-spend", () => {
   const profile = STRICT_ZERO_COST_SOURCE_PROFILES.bountybook;
   assert.ok(profile);
-  assert.equal(profile.upfrontCostUsd, null);
+  assert.equal(profile.upfrontCostUsd, 0);
   assert.equal(profile.identityBarrier, "wallet");
+  assert.ok(profile.notes.some((note) => /claim|submit/i.test(note)));
   assert.ok(profile.notes.some((note) => /gas/i.test(note)));
 });
 
