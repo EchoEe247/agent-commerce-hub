@@ -5,7 +5,8 @@ import type {
   VerificationEvidenceKind,
 } from "./verification-resolutions.js";
 
-export const OPPORTUNITY_VERIFICATION_POLICY_VERSION = 1 as const;
+/** Increment when check identity/evidence application semantics change. */
+export const OPPORTUNITY_VERIFICATION_POLICY_VERSION = 2 as const;
 
 export const OPPORTUNITY_VERIFICATION_CHECK_KINDS = [
   "upstream_operator_review",
@@ -50,6 +51,8 @@ export interface OpportunityVerificationCheck {
   readonly summary: string;
   readonly resolutionMode: OpportunityVerificationResolutionMode;
   readonly dependsOn: readonly string[];
+  /** Exact currently-applied prerequisite resolution IDs a derived calculation must bind to. */
+  readonly currentDependencyResolutionIds: readonly string[];
   readonly state: OpportunityVerificationCheckState;
   readonly appliedResolutionId: string | null;
   readonly evidenceAccepted: boolean | null;
@@ -76,6 +79,11 @@ interface CheckDefinition {
   readonly summary: string;
   readonly resolutionMode: OpportunityVerificationResolutionMode;
   readonly dependsOn: readonly string[];
+}
+
+interface AppliedResolution {
+  readonly record: OpportunityVerificationResolution;
+  readonly accepted: boolean;
 }
 
 function classify(summary: string): {
@@ -185,6 +193,26 @@ function evidenceAllowed(definition: CheckDefinition, evidenceKind: Verification
   }
 }
 
+function defaultUnresolvedState(definition: CheckDefinition): OpportunityVerificationCheckState {
+  return definition.resolutionMode === "external_verification"
+    ? "requires_external_verification"
+    : "unresolved";
+}
+
+function sameResolutionIdSet(actual: readonly string[] | undefined, expected: readonly string[]): boolean {
+  const left = [...(actual ?? [])].sort();
+  const right = [...expected].sort();
+  return left.length === right.length && left.every((value, index) => value === right[index]);
+}
+
+function recordedAfterDependencies(
+  resolution: OpportunityVerificationResolution,
+  dependencies: readonly OpportunityVerificationResolution[],
+): boolean {
+  const resolutionTime = Date.parse(resolution.recordedAt);
+  return dependencies.every((dependency) => resolutionTime >= Date.parse(dependency.recordedAt));
+}
+
 function emptyCounts(): Record<OpportunityVerificationCheckState, number> {
   return {
     resolved: 0,
@@ -198,11 +226,14 @@ function emptyCounts(): Record<OpportunityVerificationCheckState, number> {
 /**
  * Apply append-only verification evidence to one current pursuit dossier.
  *
- * A resolution is scoped to the current dossier/check identity. Old evidence stops
- * applying automatically when upstream evaluation/dossier state changes. Incompatible
- * later evidence is ignored rather than erasing an earlier applicable resolution.
- * This layer never authorizes an external action; even a fully resolved plan ends at
- * an operator review/decision boundary.
+ * Non-derived checks are resolved first. Derived evidence is accepted only when all
+ * prerequisites are currently resolved, the calculation is recorded no earlier than
+ * those prerequisite records, and its dependsOnResolutionIds exactly match the current
+ * prerequisite resolution IDs. Changing a prerequisite therefore invalidates an old
+ * derived calculation automatically.
+ *
+ * Evidence remains scoped to current dossier/check identity and this layer never
+ * authorizes external activity; a fully resolved plan still ends at an operator gate.
  */
 export function buildOpportunityVerificationPlan(
   dossier: OpportunityPursuitDossier,
@@ -213,10 +244,13 @@ export function buildOpportunityVerificationPlan(
   }
 
   const defs = definitions(dossier);
-  const mutableStates = new Map<string, OpportunityVerificationCheckState>();
-  const applied = new Map<string, { resolutionId: string; accepted: boolean }>();
+  const states = new Map<string, OpportunityVerificationCheckState>();
+  const applied = new Map<string, AppliedResolution>();
+  const dependencyIds = new Map<string, readonly string[]>();
 
+  // Pass 1: resolve independent/non-derived checks only.
   for (const definition of defs) {
+    if (definition.resolutionMode === "derived") continue;
     const latestAny = latestMatchingResolution(dossier.dossierId, definition.checkId, resolutions);
     const latestApplicable = latestMatchingResolution(
       dossier.dossierId,
@@ -225,39 +259,74 @@ export function buildOpportunityVerificationPlan(
       (resolution) => evidenceAllowed(definition, resolution.evidence.kind),
     );
     if (latestApplicable !== undefined) {
-      applied.set(definition.checkId, { resolutionId: latestApplicable.resolutionId, accepted: true });
-      mutableStates.set(
-        definition.checkId,
-        latestApplicable.outcome === "satisfied" ? "resolved" : "failed",
-      );
-    } else if (latestAny !== undefined) {
-      applied.set(definition.checkId, { resolutionId: latestAny.resolutionId, accepted: false });
+      applied.set(definition.checkId, { record: latestApplicable, accepted: true });
+      states.set(definition.checkId, latestApplicable.outcome === "satisfied" ? "resolved" : "failed");
+    } else {
+      states.set(definition.checkId, defaultUnresolvedState(definition));
+      if (latestAny !== undefined) applied.set(definition.checkId, { record: latestAny, accepted: false });
     }
   }
 
-  const checks: OpportunityVerificationCheck[] = [];
+  // Pass 2: derived checks can only use the exact currently-applied prerequisite evidence.
   for (const definition of defs) {
-    const explicit = mutableStates.get(definition.checkId);
-    let state: OpportunityVerificationCheckState;
-    if (explicit !== undefined) {
-      state = explicit;
-    } else if (definition.dependsOn.some((dependency) => mutableStates.get(dependency) !== "resolved")) {
-      state = "blocked_by_dependencies";
-    } else if (definition.resolutionMode === "external_verification") {
-      state = "requires_external_verification";
-    } else {
-      state = "unresolved";
+    if (definition.resolutionMode !== "derived") continue;
+    const dependencyRecords: OpportunityVerificationResolution[] = [];
+    let dependenciesResolved = true;
+    for (const dependencyId of definition.dependsOn) {
+      const dependencyApplied = applied.get(dependencyId);
+      if (
+        states.get(dependencyId) !== "resolved" ||
+        dependencyApplied === undefined ||
+        !dependencyApplied.accepted
+      ) {
+        dependenciesResolved = false;
+        break;
+      }
+      dependencyRecords.push(dependencyApplied.record);
     }
-    const appliedResolution = applied.get(definition.checkId);
-    checks.push(
-      Object.freeze({
-        ...definition,
-        state,
-        appliedResolutionId: appliedResolution?.resolutionId ?? null,
-        evidenceAccepted: appliedResolution?.accepted ?? null,
-      }),
+
+    const currentDependencyResolutionIds = dependenciesResolved
+      ? Object.freeze(dependencyRecords.map((record) => record.resolutionId).sort())
+      : Object.freeze([] as string[]);
+    dependencyIds.set(definition.checkId, currentDependencyResolutionIds);
+
+    const latestAny = latestMatchingResolution(dossier.dossierId, definition.checkId, resolutions);
+    if (!dependenciesResolved) {
+      states.set(definition.checkId, "blocked_by_dependencies");
+      if (latestAny !== undefined) applied.set(definition.checkId, { record: latestAny, accepted: false });
+      continue;
+    }
+
+    const latestApplicable = latestMatchingResolution(
+      dossier.dossierId,
+      definition.checkId,
+      resolutions,
+      (resolution) =>
+        evidenceAllowed(definition, resolution.evidence.kind) &&
+        sameResolutionIdSet(resolution.dependsOnResolutionIds, currentDependencyResolutionIds) &&
+        recordedAfterDependencies(resolution, dependencyRecords),
     );
+    if (latestApplicable !== undefined) {
+      applied.set(definition.checkId, { record: latestApplicable, accepted: true });
+      states.set(definition.checkId, latestApplicable.outcome === "satisfied" ? "resolved" : "failed");
+    } else {
+      states.set(definition.checkId, "unresolved");
+      if (latestAny !== undefined) applied.set(definition.checkId, { record: latestAny, accepted: false });
+    }
   }
+
+  const checks = Object.freeze(
+    defs.map((definition) => {
+      const appliedResolution = applied.get(definition.checkId);
+      return Object.freeze({
+        ...definition,
+        currentDependencyResolutionIds: dependencyIds.get(definition.checkId) ?? Object.freeze([]),
+        state: states.get(definition.checkId) ?? defaultUnresolvedState(definition),
+        appliedResolutionId: appliedResolution?.record.resolutionId ?? null,
+        evidenceAccepted: appliedResolution?.accepted ?? null,
+      });
+    }),
+  );
 
   const counts = emptyCounts();
   for (const check of checks) counts[check.state] += 1;
@@ -286,6 +355,7 @@ export function buildOpportunityVerificationPlan(
     checks: checks.map((check) => ({
       checkId: check.checkId,
       state: check.state,
+      currentDependencyResolutionIds: check.currentDependencyResolutionIds,
       appliedResolutionId: check.appliedResolutionId,
       evidenceAccepted: check.evidenceAccepted,
     })),
@@ -299,7 +369,7 @@ export function buildOpportunityVerificationPlan(
     opportunityId: dossier.opportunity.id,
     currentRequestId: dossier.ranking.currentRequestId,
     evaluatorId: dossier.ranking.evaluatorId,
-    checks: Object.freeze(checks),
+    checks,
     counts: Object.freeze(counts),
     state,
     nextSafeStep,
