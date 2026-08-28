@@ -14,14 +14,22 @@ import {
   validateAgent402Quote,
 } from '../src/payments/agent402-buyer-policy.mjs';
 
-const MODE = process.env.MODE === 'execute' ? 'execute' : 'dry-run';
-const ENDPOINT_ID = String(process.env.ENDPOINT_ID ?? '');
-const PURCHASE_ID = String(process.env.PURCHASE_ID ?? '');
-const PRIVATE_KEY = process.env.HERMES_COMMERCE_SPEND_PRIVATE_KEY ?? '';
-const USER_AGENT = 'hermes-commerce-control/1.0';
-const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
-const LEDGER_PATH = path.join(ROOT, 'state/commerce-control/budget-ledger.json');
-const RESULT_DIR = path.join(ROOT, 'state/commerce-control/private-results');
+const MODE = process.env.MODE === "execute" ? "execute" : "dry-run";
+const ENDPOINT_ID = String(process.env.ENDPOINT_ID ?? "");
+const PURCHASE_ID = String(process.env.PURCHASE_ID ?? "");
+const PRIVATE_KEY = process.env.HERMES_COMMERCE_SPEND_PRIVATE_KEY ?? "";
+const USER_AGENT = "hermes-commerce-control/1.0";
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..");
+const LEDGER_PATH = path.join(ROOT, "state/commerce-control/budget-ledger.json");
+const RESULT_DIR = path.join(ROOT, "state/commerce-control/private-results");
+
+// New fail-closed guard. Public GitHub Actions must never trigger a production
+// purchase that returns private paid content, even if a hostile input/secret is
+// present. The refusal happens before any payment/wallet secret is required.
+if (process.env.GITHUB_ACTIONS === "true" && MODE === "execute") {
+  console.error("PUBLIC_ACTIONS_PURCHASE_DISABLED: production purchases are refused in GitHub Actions; run the buyer locally instead.");
+  process.exit(1);
+}
 
 if (!/^[A-Za-z0-9._:-]{1,80}$/.test(PURCHASE_ID)) throw new Error('invalid purchaseId');
 const TARGET_URL = buildEndpointUrl(ENDPOINT_ID);

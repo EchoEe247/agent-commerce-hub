@@ -1,15 +1,14 @@
-name: Hermes Agent402 Production Buyer
+name: Hermes Agent402 Buyer (safe preparation only)
 
 on:
   workflow_dispatch:
     inputs:
       mode:
-        description: "dry-run validates the live 402; execute signs and pays"
+        description: "dry-run validates the live 402; production purchases are disabled in public Actions"
         required: true
         type: choice
         options:
           - dry-run
-          - execute
         default: dry-run
       endpointId:
         description: "Allowlisted Agent402 intelligence endpoint"
@@ -25,7 +24,7 @@ on:
         type: string
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: hermes-agent402-production-spend
@@ -45,33 +44,22 @@ jobs:
 
       - name: Install dependencies
         working-directory: products/drafts/data-quality-profiler
-        run: npm ci || npm install
+        run: npm ci
 
-      - name: Run bounded Agent402 buyer
+      - name: Fail closed before any purchase
+        env:
+          MODE: ${{ inputs.mode }}
+        run: |
+          if [ "$MODE" != "dry-run" ]; then
+            echo "PUBLIC_ACTIONS_PURCHASE_DISABLED: production purchases are not permitted from public GitHub Actions."
+            echo "Run the production buyer locally with HERMES_COMMERCE_SPEND_PRIVATE_KEY set and private results written only to the ignored private-results area."
+            exit 1
+          fi
+
+      - name: Run bounded Agent402 buyer (dry-run only)
         working-directory: products/drafts/data-quality-profiler
         env:
           MODE: ${{ inputs.mode }}
           ENDPOINT_ID: ${{ inputs.endpointId }}
           PURCHASE_ID: ${{ inputs.purchaseId }}
-          HERMES_COMMERCE_SPEND_PRIVATE_KEY: ${{ secrets.HERMES_COMMERCE_SPEND_PRIVATE_KEY }}
         run: node scripts/agent402-production-buyer.mjs
-
-      - name: Upload private purchased result
-        if: ${{ success() && inputs.mode == 'execute' }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: agent402-result-${{ inputs.purchaseId }}
-          path: state/commerce-control/private-results/${{ inputs.purchaseId }}.json
-          retention-days: 1
-          if-no-files-found: error
-
-      - name: Persist production budget ledger
-        if: ${{ always() && inputs.mode == 'execute' }}
-        run: |
-          if [ -f state/commerce-control/budget-ledger.json ]; then
-            git config --global user.name "github-actions[bot]"
-            git config --global user.email "github-actions[bot]@users.noreply.github.com"
-            git add state/commerce-control/budget-ledger.json
-            git diff --staged --quiet || git commit -m "chore: update Agent402 budget ledger for ${{ inputs.purchaseId }}"
-            git push origin HEAD:${{ github.ref_name }}
-          fi
