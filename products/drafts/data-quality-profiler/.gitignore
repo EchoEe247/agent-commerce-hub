@@ -1,0 +1,12 @@
+# Seller package-local ignore policy.
+# Installed dependencies are reproducible from package-lock.json.
+node_modules/
+
+# Local env / secrets
+.env
+.env.*
+!.env.example
+
+# Local runtime output
+*.log
+dist/
