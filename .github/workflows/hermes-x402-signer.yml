@@ -23,8 +23,11 @@ on:
         required: true
         default: "eip155:84532"
 
+# The tracked JSON ledger is an audit snapshot. Runtime mutation happens in a
+# temporary SQLite store and only the validated snapshot is committed after the
+# run. Git is no longer the transaction database.
 permissions:
-  contents: write  # Required to commit budget-ledger.json updates
+  contents: write
 
 concurrency:
   group: x402-signing
@@ -44,7 +47,13 @@ jobs:
 
       - name: Install dependencies in profiler
         working-directory: products/drafts/data-quality-profiler
-        run: npm ci || npm install
+        run: npm ci
+
+      - name: Initialize authoritative testnet financial store from audit snapshot
+        working-directory: products/drafts/data-quality-profiler
+        run: |
+          node scripts/financial-store-admin.mjs init-testnet \
+            --db "${{ runner.temp }}/testnet-budget.sqlite"
 
       - name: Execute Signer & Live Testnet Purchase
         working-directory: products/drafts/data-quality-profiler
@@ -55,14 +64,21 @@ jobs:
           EXPECTED_MAXIMUM_AMOUNT: ${{ inputs.expectedMaximumAmount }}
           NETWORK: ${{ inputs.network }}
           HERMES_COMMERCE_SPEND_TEST_PRIVATE_KEY: ${{ secrets.HERMES_COMMERCE_SPEND_TEST_PRIVATE_KEY }}
+          HERMES_FINANCIAL_DB_PATH: ${{ runner.temp }}/testnet-budget.sqlite
           WORKFLOW_DISPATCH_TIME: ${{ github.event.repository.pushed_at }}
         run: |
           node scripts/github-actions-signer.mjs
 
-      - name: Commit & Push Budget Ledger Updates
+      - name: Export validated audit snapshot from authoritative store
+        working-directory: products/drafts/data-quality-profiler
+        run: |
+          node scripts/financial-store-admin.mjs export-testnet \
+            --db "${{ runner.temp }}/testnet-budget.sqlite"
+
+      - name: Commit & Push Testnet Audit Snapshot
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add state/commerce-control/ledgers/testnet-budget-ledger.json
-          git diff --quiet && git diff --staged --quiet || git commit -m "chore: update budget ledger for ${{ inputs.purchaseId }}"
+          git diff --quiet && git diff --staged --quiet || git commit -m "chore: update testnet financial audit snapshot for ${{ inputs.purchaseId }}"
           git push origin HEAD:${{ github.ref_name }}

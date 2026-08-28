@@ -1,11 +1,9 @@
 // Testnet-signer initialization & network-binding helpers.
 //
-// Extracted from github-actions-signer.mjs so the network-binding and wallet-
-// binding logic can be behaviorally tested WITHOUT contacting testnet or
-// performing any signing. The signer is STRICTLY testnet (Base Sepolia,
-// eip155:84532) and must refuse any mainnet input before a private key is used.
+// P1 Batch 3 keeps the strict Batch 2 JSON helpers for migration/tests, while
+// live signer mutations use the authoritative SQLite financial store. The
+// signer remains STRICTLY Base Sepolia (eip155:84532).
 
-import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { privateKeyToAccount } from "viem/accounts";
@@ -17,10 +15,13 @@ import {
   LedgerError,
   createEmptyLedger,
   saveLedger,
-  recalculateBudget,
 } from "../src/payments/ledger.mjs";
+import {
+  initializeFinancialStoreFromLedger,
+  openFinancialStore,
+  exportFinancialStoreToLedger,
+} from "../src/payments/financial-store.mjs";
 
-// The only acceptable network input for this signer.
 export const SIGNER_NETWORK = NETWORK_TESTNET;
 export const SIGNER_EXPECTED_WALLET = TESTNET_WALLET;
 
@@ -29,8 +30,11 @@ export const DEFAULT_LEDGER_PATH = path.join(
   "../../../../state/commerce-control/ledgers/testnet-budget-ledger.json"
 );
 
-// Resolve and validate the requested network input. Anything other than the
-// testnet chain is refused BEFORE any key material is touched.
+export const DEFAULT_FINANCIAL_DB_PATH = path.join(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "../../../../state/commerce-control/financial/testnet-budget.sqlite"
+);
+
 export function resolveSignerNetwork(networkInput) {
   if (networkInput && networkInput !== SIGNER_NETWORK) {
     throw new Error(
@@ -40,8 +44,6 @@ export function resolveSignerNetwork(networkInput) {
   return SIGNER_NETWORK;
 }
 
-// Derive the wallet from the private key and verify it matches the expected
-// testnet wallet BEFORE any signing/payment operation.
 export function verifyTestnetWallet(privateKey, expectedWallet = SIGNER_EXPECTED_WALLET) {
   if (!privateKey) {
     throw new Error("HERMES_COMMERCE_SPEND_TEST_PRIVATE_KEY environment variable is not set");
@@ -57,12 +59,33 @@ export function verifyTestnetWallet(privateKey, expectedWallet = SIGNER_EXPECTED
   return account;
 }
 
-// Load the testnet ledger strictly (bound to TESTNET_WALLET). The canonical
-// testnet ledger is tracked financial history, so the OPERATIONAL loader must
-// NOT silently bootstrap a replacement if it disappears. Therefore the default
-// is allowCreate=false: a missing canonical ledger is LEDGER_MISSING / fatal.
-// Use initializeTestnetLedger() for an explicit first-run / admin bootstrap.
+// ---------------------------------------------------------------------------
+// Legacy JSON snapshot helpers (migration / audit only after Batch 3).
+
+let runtimeFinancialStore = null;
+let runtimeFinancialDbPath = null;
+
+function configuredRuntimeFinancialStore() {
+  const dbPath = process.env.HERMES_FINANCIAL_DB_PATH;
+  if (!dbPath) {
+    runtimeFinancialStore?.close();
+    runtimeFinancialStore = null;
+    runtimeFinancialDbPath = null;
+    return null;
+  }
+  if (runtimeFinancialStore && runtimeFinancialDbPath === dbPath) return runtimeFinancialStore;
+  runtimeFinancialStore?.close();
+  runtimeFinancialStore = openTestnetFinancialStore(dbPath);
+  runtimeFinancialDbPath = dbPath;
+  return runtimeFinancialStore;
+}
+
 export function loadTestnetLedger(ledgerPath = DEFAULT_LEDGER_PATH, allowCreate = false) {
+  // The live Batch 3 workflow sets HERMES_FINANCIAL_DB_PATH. In that mode the
+  // tracked JSON path is an audit snapshot only and all reads come from SQLite.
+  const store = configuredRuntimeFinancialStore();
+  if (store) return store.snapshot();
+
   try {
     const { ledger } = loadLedger(ledgerPath, NETWORK_TESTNET, {
       allowCreate,
@@ -77,38 +100,123 @@ export function loadTestnetLedger(ledgerPath = DEFAULT_LEDGER_PATH, allowCreate 
   }
 }
 
-// Every testnet stage write goes through this wallet-bound helper. The caller
-// never chooses network or wallet parameters for ledger writes — they are
-// pinned here to NETWORK_TESTNET + { expectedWallet: TESTNET_WALLET } so a
-// stage mutation can never land on the wrong network or an unbound ledger.
 export function stageTestnetUpdate(ledgerPath, purchaseId, stage, extra = {}) {
+  const store = configuredRuntimeFinancialStore();
+  if (store) {
+    // Compatibility adapter for the existing live test harness. Normal purchase
+    // flow records PREPARED before signing. Two subordinate validation cases
+    // historically begin at SIGNED; make the budget reservation atomically as
+    // the first durable write, then advance it. Production execution does not
+    // use this compatibility path.
+    let current = store.getPurchase(purchaseId);
+    if (!current && stage === "SIGNED") {
+      current = store.reservePurchase({
+        purchaseId,
+        amount: Number(extra.amount),
+        payTo: extra.payTo ?? "",
+      }, { source: "testnet-signer-compat" });
+    }
+    if (!current) {
+      if (stage !== "PREPARED") {
+        throw new Error(`TESTNET_FINANCIAL_STAGE_INVALID: first stage for ${purchaseId} must reserve budget, got ${stage}`);
+      }
+      store.reservePurchase({ purchaseId, ...extra, amount: Number(extra.amount) }, { source: "testnet-signer" });
+      return store.snapshot();
+    }
+    if (current.stage === "SETTLED" && stage === "REPLAY_REJECTED") {
+      store.recordEvent(purchaseId, "REPLAY_REJECTED", extra, { source: "testnet-signer" });
+      return store.snapshot();
+    }
+    if (stage === "UNKNOWN") {
+      // Unknown is not a releasable financial state. Preserve AMBIGUOUS so its
+      // reservation remains until authoritative reconciliation resolves it.
+      store.recordEvent(purchaseId, "RECONCILIATION_STILL_UNKNOWN", extra, { source: "testnet-signer" });
+      return store.snapshot();
+    }
+    store.transitionPurchase(purchaseId, stage, extra, {
+      expectedRevision: current.revision,
+      source: "testnet-signer",
+    });
+    return store.snapshot();
+  }
+
+  // Batch 2 compatibility / explicit fixture path when no authoritative DB is
+  // configured. This remains for tests and one-time migration tooling only.
   return stageUpdate(ledgerPath, NETWORK_TESTNET, purchaseId, stage, extra, {
     expectedWallet: SIGNER_EXPECTED_WALLET,
   });
 }
 
-// Explicit first-run / admin bootstrap ONLY. Creates a fresh canonical empty
-// ledger bound to the expected testnet wallet: network eip155:84532, asset
-// USDC, wallet = TESTNET_WALLET, correct budget ID / ceiling, zero purchases
-// and zero totals. Used by tests and admin tooling — NEVER by the operational
-// runtime path (which must treat a missing ledger as fatal).
 export function initializeTestnetLedger(ledgerPath) {
   const ledger = createEmptyLedger(NETWORK_TESTNET, { wallet: SIGNER_EXPECTED_WALLET });
   saveLedger(ledgerPath, ledger);
   return ledger;
 }
 
-// Used by tests to create a throwaway ledger file already bound to the expected
-// testnet wallet without touching the canonical path.
 export function makeTestnetLedger(ledgerPath) {
   const ledger = createEmptyLedger(NETWORK_TESTNET, { wallet: SIGNER_EXPECTED_WALLET });
   saveLedger(ledgerPath, ledger);
   return ledger;
 }
 
+// ---------------------------------------------------------------------------
+// Batch 3 authoritative SQLite helpers.
+
+export function initializeTestnetFinancialStore(
+  dbPath = DEFAULT_FINANCIAL_DB_PATH,
+  ledgerPath = DEFAULT_LEDGER_PATH
+) {
+  return initializeFinancialStoreFromLedger(
+    dbPath,
+    ledgerPath,
+    NETWORK_TESTNET,
+    { expectedWallet: SIGNER_EXPECTED_WALLET }
+  );
+}
+
+export function openTestnetFinancialStore(dbPath = DEFAULT_FINANCIAL_DB_PATH) {
+  return openFinancialStore(dbPath, NETWORK_TESTNET, {
+    expectedWallet: SIGNER_EXPECTED_WALLET,
+  });
+}
+
+export function stageTestnetFinancialUpdate(store, purchaseId, stage, extra = {}) {
+  const current = store.getPurchase(purchaseId);
+  if (!current) {
+    if (stage !== "PREPARED") {
+      throw new Error(`TESTNET_FINANCIAL_STAGE_INVALID: first stage for ${purchaseId} must be PREPARED, got ${stage}`);
+    }
+    return store.reservePurchase({
+      purchaseId,
+      ...extra,
+      amount: Number(extra.amount),
+    }, { source: "testnet-signer" });
+  }
+  return store.transitionPurchase(
+    purchaseId,
+    stage,
+    extra,
+    {
+      expectedRevision: current.revision,
+      source: "testnet-signer",
+    }
+  );
+}
+
+export function recordTestnetFinancialEvent(store, purchaseId, eventType, detail = {}) {
+  store.recordEvent(purchaseId, eventType, detail, { source: "testnet-signer" });
+}
+
+export function exportTestnetFinancialLedger(
+  store,
+  ledgerPath = DEFAULT_LEDGER_PATH
+) {
+  return exportFinancialStoreToLedger(store, ledgerPath, {
+    requireCompatibleHistory: true,
+  });
+}
+
 export { recalculateBudget } from "../src/payments/ledger.mjs";
 
-// Canonical aliases so historical testnet validation scripts and the signer do
-// not re-declare divergent TEST_WALLET / BASE_SEPOLIA constants that can drift.
 export const TEST_WALLET = TESTNET_WALLET;
 export const BASE_SEPOLIA = NETWORK_TESTNET;

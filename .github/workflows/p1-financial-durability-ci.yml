@@ -1,0 +1,62 @@
+name: P1 Financial Durability CI
+
+on:
+  push:
+    branches:
+      - fix/p1-financial-durability-batch-3
+    paths:
+      - 'products/drafts/data-quality-profiler/src/payments/**'
+      - 'products/drafts/data-quality-profiler/scripts/agent402-production-buyer.mjs'
+      - 'products/drafts/data-quality-profiler/scripts/signer-init.mjs'
+      - 'products/drafts/data-quality-profiler/scripts/financial-store-admin.mjs'
+      - 'products/drafts/data-quality-profiler/test/p1-financial-*.test.mjs'
+      - 'products/drafts/data-quality-profiler/package.json'
+      - '.github/workflows/hermes-x402-signer.yml'
+      - '.github/workflows/p1-financial-durability-ci.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  full-financial-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Install seller dependencies
+        working-directory: products/drafts/data-quality-profiler
+        run: npm ci
+
+      - name: Syntax check Batch 3 runtime
+        working-directory: products/drafts/data-quality-profiler
+        run: |
+          node --check src/payments/ledger.mjs
+          node --check src/payments/financial-store.mjs
+          node --check src/payments/reconciliation.mjs
+          node --check scripts/signer-init.mjs
+          node --check scripts/financial-store-admin.mjs
+          node --check scripts/agent402-production-buyer.mjs
+          node --check scripts/github-actions-signer.mjs
+
+      - name: Targeted P1 financial safety and durability tests
+        working-directory: products/drafts/data-quality-profiler
+        run: |
+          node --test \
+            test/p1-financial-safety.test.mjs \
+            test/p1-financial-durability.test.mjs \
+            test/p1-financial-runtime-wiring.test.mjs
+
+      - name: Full seller test suite
+        working-directory: products/drafts/data-quality-profiler
+        run: npm test
+
+      - name: Canonical financial audit snapshots remain untouched by tests
+        run: |
+          git diff --exit-code -- \
+            state/commerce-control/ledgers/mainnet-budget-ledger.json \
+            state/commerce-control/ledgers/testnet-budget-ledger.json
