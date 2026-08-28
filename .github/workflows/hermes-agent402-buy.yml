@@ -34,28 +34,27 @@ jobs:
   buy:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: '24'
-
+          cache: npm
+          cache-dependency-path: products/drafts/data-quality-profiler/package-lock.json
       - name: Install dependencies
         working-directory: products/drafts/data-quality-profiler
         run: npm ci
-
       - name: Fail closed before any purchase
         env:
           MODE: ${{ inputs.mode }}
         run: |
           if [ "$MODE" != "dry-run" ]; then
             echo "PUBLIC_ACTIONS_PURCHASE_DISABLED: production purchases are not permitted from public GitHub Actions."
-            echo "Run the production buyer locally with HERMES_COMMERCE_SPEND_PRIVATE_KEY set and private results written only to the ignored private-results area."
             exit 1
           fi
-
       - name: Run bounded Agent402 buyer (dry-run only)
         working-directory: products/drafts/data-quality-profiler
         env:
