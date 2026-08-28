@@ -10,7 +10,6 @@ import {
   BASE_USDC,
   CUMULATIVE_BUDGET_RAW,
   buildEndpointUrl,
-  recalculateBudgetRecord,
   validateAgent402Quote,
 } from '../src/payments/agent402-buyer-policy.mjs';
 import {
@@ -20,6 +19,7 @@ import {
   NETWORK_MAINNET,
   MAINNET_BUDGET_ID,
   LedgerError,
+  MAINNET_WALLET,
 } from '../src/payments/ledger.mjs';
 
 const MODE = process.env.MODE === "execute" ? "execute" : "dry-run";
@@ -41,13 +41,16 @@ if (process.env.GITHUB_ACTIONS === "true" && MODE === "execute") {
 if (!/^[A-Za-z0-9._:-]{1,80}$/.test(PURCHASE_ID)) throw new Error('invalid purchaseId');
 const TARGET_URL = buildEndpointUrl(ENDPOINT_ID);
 
-// Production buyer touches ONLY the mainnet ledger. A missing ledger is allowed
-// to bootstrap on an explicit first-run path, but the ceiling and network are
-// validated strictly; a malformed/existing ledger is FATAL and must never be
-// reset to a default.
+// Production buyer touches ONLY the mainnet ledger.
+// P1 Batch 2 correction: the mainnet ledger MUST already exist and is bound to
+// the known production wallet. A missing ledger is fatal (we must NOT conjure a
+// fresh 2.38M USDC budget). allowCreate is intentionally false.
 function loadMainnetLedger() {
   try {
-    const { ledger } = loadLedger(LEDGER_PATH, NETWORK_MAINNET, { allowCreate: true });
+    const { ledger } = loadLedger(LEDGER_PATH, NETWORK_MAINNET, {
+      allowCreate: false,
+      expectedWallet: MAINNET_WALLET,
+    });
     return ledger;
   } catch (error) {
     if (error instanceof LedgerError) {
@@ -108,10 +111,11 @@ async function run() {
   const PRIVATE_KEY = process.env.HERMES_COMMERCE_SPEND_PRIVATE_KEY ?? '';
   if (!PRIVATE_KEY) throw new Error('HERMES_COMMERCE_SPEND_PRIVATE_KEY is not set');
   const account = privateKeyToAccount(PRIVATE_KEY.startsWith('0x') ? PRIVATE_KEY : `0x${PRIVATE_KEY}`);
-  if (budget.wallet && budget.wallet.toLowerCase() !== account.address.toLowerCase()) {
-    throw new Error('production signer address does not match ledger wallet');
+  // Production execute path: the derived account MUST match the ledger's bound
+  // production wallet. We do not create/repair a wallet binding at execute time.
+  if (budget.wallet.toLowerCase() !== account.address.toLowerCase()) {
+    throw new Error('MAINNET_EXECUTION_WALLET_MISMATCH: production signer address does not match ledger wallet');
   }
-  if (!budget.wallet) budget.wallet = account.address;
 
   stageUpdate(LEDGER_PATH, NETWORK_MAINNET, PURCHASE_ID, 'PREPARED', {
     endpointId: ENDPOINT_ID,
@@ -119,7 +123,7 @@ async function run() {
     payTo: verdict.payTo,
     resource: TARGET_URL,
     idempotencyKey: PURCHASE_ID,
-  });
+  }, { expectedWallet: MAINNET_WALLET });
 
   let unpaidBody;
   try { unpaidBody = unpaidBodyText ? JSON.parse(unpaidBodyText) : undefined; } catch {}
@@ -134,7 +138,7 @@ async function run() {
   const auth = payload?.payload?.authorization ?? {};
   if (String(auth.to ?? '').toLowerCase() !== String(verdict.payTo).toLowerCase()) throw new Error('authorization recipient mismatch');
   if (BigInt(auth.value ?? '0') !== verdict.amountRaw) throw new Error('authorization value mismatch');
-  stageUpdate(LEDGER_PATH, NETWORK_MAINNET, PURCHASE_ID, 'SIGNED', { nonce: auth.nonce, validBefore: auth.validBefore });
+  stageUpdate(LEDGER_PATH, NETWORK_MAINNET, PURCHASE_ID, 'SIGNED', { nonce: auth.nonce, validBefore: auth.validBefore }, { expectedWallet: MAINNET_WALLET });
   console.log(`SIGN_OK wallet=${account.address} signMs=${Date.now() - signStarted}`);
 
   const paymentHeaders = httpClient.encodePaymentSignatureHeader(payload);
@@ -147,7 +151,7 @@ async function run() {
       signal: AbortSignal.timeout(120_000),
     });
   } catch (error) {
-    stageUpdate(LEDGER_PATH, NETWORK_MAINNET, PURCHASE_ID, 'AMBIGUOUS', { errorClass: error?.name ?? 'fetch-error' });
+    stageUpdate(LEDGER_PATH, NETWORK_MAINNET, PURCHASE_ID, 'AMBIGUOUS', { errorClass: error?.name ?? 'fetch-error' }, { expectedWallet: MAINNET_WALLET });
     throw new Error(`paid request transport outcome ambiguous: ${error?.name ?? 'fetch-error'}`);
   }
 
@@ -159,13 +163,13 @@ async function run() {
   }
 
   if (!paid.ok || !settle?.success || !settle?.transaction) {
-    stageUpdate(LEDGER_PATH, NETWORK_MAINNET, PURCHASE_ID, settle?.success === false ? 'FAILED' : 'AMBIGUOUS', { httpStatus: paid.status });
+    stageUpdate(LEDGER_PATH, NETWORK_MAINNET, PURCHASE_ID, settle?.success === false ? 'FAILED' : 'AMBIGUOUS', { httpStatus: paid.status }, { expectedWallet: MAINNET_WALLET });
     throw new Error(`paid request did not produce a confirmed settlement (HTTP ${paid.status})`);
   }
 
   let body;
   try { body = paidText ? JSON.parse(paidText) : null; } catch { body = { raw: paidText.slice(0, 100_000) }; }
-  stageUpdate(LEDGER_PATH, NETWORK_MAINNET, PURCHASE_ID, 'SETTLED', { transaction: settle.transaction, httpStatus: paid.status });
+  stageUpdate(LEDGER_PATH, NETWORK_MAINNET, PURCHASE_ID, 'SETTLED', { transaction: settle.transaction, httpStatus: paid.status }, { expectedWallet: MAINNET_WALLET });
 
   fs.mkdirSync(RESULT_DIR, { recursive: true });
   const resultPath = path.join(RESULT_DIR, `${PURCHASE_ID}.json`);

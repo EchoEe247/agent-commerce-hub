@@ -19,7 +19,7 @@ on:
         required: true
         default: "20000"
       network:
-        description: "Network (eip155:84532 or eip155:8453)"
+        description: "Network (testnet only: eip155:84532)"
         required: true
         default: "eip155:84532"
 

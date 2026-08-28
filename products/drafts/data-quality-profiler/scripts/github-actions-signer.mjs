@@ -106,87 +106,43 @@ function sendAndAbandon(port, pathName, paymentHeaderName, paymentHeaderValue, b
 }
 
 // ── Budget Ledger Management (TESTNET ONLY) ──────────────────────────
-// P1 Batch 2: this signer is STRICTLY testnet. It must never open or write the
-// mainnet ledger. The testnet ledger is a physically separate file. A malformed
-// existing ledger is FATAL — it must NEVER be reset to a default document. Only
-// an explicit first-run path may initialize an empty testnet ledger. The stale
-// embedded production budget default has been removed.
+// P1 Batch 2 correction: this signer is STRICTLY testnet (Base Sepolia,
+// eip155:84532). It must never open or write the mainnet ledger. The testnet
+// ledger is a physically separate file, bound to the known testnet wallet. A
+// malformed existing ledger is FATAL — it must NEVER be reset to a default
+// document. The stale embedded production budget default has been removed.
+// Network/wallet binding logic lives in signer-init.mjs so it can be tested
+// without contacting testnet or signing.
 import {
-  loadLedger,
-  saveLedger,
-  stageUpdate,
-  NETWORK_TESTNET,
-  TESTNET_BUDGET_ID,
-  LedgerError,
-} from "../src/payments/ledger.mjs";
+  loadTestnetLedger,
+  resolveSignerNetwork,
+  verifyTestnetWallet,
+  SIGNER_NETWORK,
+  recalculateBudget,
+} from "./signer-init.mjs";
 
-const ledgerPath = path.join(
-  path.dirname(fileURLToPath(import.meta.url)),
+// Explicitly declared at module scope. The strict loader assigns it before any
+// purchase-stage mutation or signing happens.
+let ledgerData;
+const ledgerPath = (await import("node:path")).join(
+  (await import("node:url")).fileURLToPath(import.meta.url),
   "../../../../state/commerce-control/ledgers/testnet-budget-ledger.json"
 );
 
-// Load the testnet ledger strictly. Missing file -> first-run empty ledger.
-// Malformed/existing file -> fatal (no reset to default).
-function loadLedgerStrict() {
-  try {
-    const { ledger } = loadLedger(ledgerPath, NETWORK_TESTNET, { allowCreate: true });
-    return ledger;
-  } catch (error) {
-    if (error instanceof LedgerError) {
-      throw new Error(`TESTNET_LEDGER_FATAL: ${error.message} (code=${error.code})`);
-    }
-    throw error;
-  }
-}
-
-function recalculateBudget(networkKey) {
-  const b = ledgerData;
-
-  const budgetConsumingStages = new Set([
-    "PREPARED",
-    "SIGNED",
-    "AMBIGUOUS",
-    "SETTLED",
-    "REPLAY_REJECTED",
-  ]);
-
-  let spent = 0;
-
-  for (const pid of Object.keys(b.purchases)) {
-    const p = b.purchases[pid];
-
-    if (budgetConsumingStages.has(p.stage) || p.transaction) {
-      spent += Number(p.amount);
-    }
-  }
-
-  b.spentBudget = spent;
-  b.remainingBudget = b.initialBudget - spent;
-}
-
 function updatePurchaseStage(networkKey, purchaseId, stage, extra = {}) {
-  const b = ledgerData;
-  if (!b.purchases[purchaseId]) {
-    b.purchases[purchaseId] = {
-      purchaseId,
-      stage,
-      amount: 0,
-      payTo: "",
-      updatedAt: new Date().toISOString(),
-      ...extra
-    };
-  } else {
-    b.purchases[purchaseId] = {
-      ...b.purchases[purchaseId],
-      stage,
-      updatedAt: new Date().toISOString(),
-      ...extra
-    };
-  }
-  recalculateBudget(networkKey);
-  saveLedger(ledgerPath, ledgerData);
-  add(`[ledger] ${purchaseId} -> ${stage} updated: spentBudget=${b.spentBudget} remainingBudget=${b.remainingBudget}`);
+  // Single canonical totals path: stageUpdate recalculates spent/remaining from
+  // purchases and atomically persists consistent root totals.
+  ledgerData = stageUpdate(
+    ledgerPath,
+    SIGNER_NETWORK,
+    purchaseId,
+    stage,
+    extra
+  );
+  add(`[ledger] ${purchaseId} -> ${stage} updated: spentBudget=${ledgerData.spentBudget} remainingBudget=${ledgerData.remainingBudget}`);
+  return ledgerData;
 }
+
 
 // ── Quote & Policy Validation ─────────────────────────────────────────
 function validateQuoteAndBudget(quote, expectedPayTo, networkKey) {
@@ -218,7 +174,7 @@ function validateQuoteAndBudget(quote, expectedPayTo, networkKey) {
   if (amount > cap) return { ok: false, reason: `amount ${amount} above per-purchase cap ${cap}` };
 
   // Budget Policy: B2_COMMERCE_OPERATING_BUDGET_V1 cumulative budget ceiling <= 2.00 USDC
-  recalculateBudget(networkKey);
+  // ledgerData.remainingBudget is the canonical, recalc-consistent total.
   if (BigInt(b.remainingBudget) < amount) {
     return { ok: false, reason: `insufficient remaining budget (needs ${amount}, has ${b.remainingBudget})` };
   }
@@ -242,15 +198,16 @@ async function run() {
   const T_START = Date.now();
   add("START GitHub Actions External Signer Validation");
 
-  // Load private key
-  const testPrivateKey = process.env.HERMES_COMMERCE_SPEND_TEST_PRIVATE_KEY;
-  if (!testPrivateKey) {
-    throw new Error("HERMES_COMMERCE_SPEND_TEST_PRIVATE_KEY environment variable is not set");
-  }
-  const account = privateKeyToAccount(testPrivateKey.startsWith("0x") ? testPrivateKey : `0x${testPrivateKey}`);
+  // Refuse mainnet input BEFORE any key material is used.
+  resolveSignerNetwork(process.env.NETWORK);
 
-  // Setup/load budget ledger (testnet-only, strict).
-  ledgerData = loadLedgerStrict();
+  // Load private key and verify it matches the known testnet wallet BEFORE
+  // any signing/payment operation.
+  const testPrivateKey = process.env.HERMES_COMMERCE_SPEND_TEST_PRIVATE_KEY;
+  const account = verifyTestnetWallet(testPrivateKey);
+
+  // Setup/load budget ledger (testnet-only, wallet-bound, strict).
+  ledgerData = loadTestnetLedger(ledgerPath);
 
   const purchaseId = process.env.PURCHASE_ID || `purchase-${Date.now()}`;
   const networkKey = "testnet"; // For Sepolia testnet live validation
@@ -622,7 +579,8 @@ async function run() {
   const budgetNetworkKey = networkKey;
   const budgetForTest = ledgerData;
 
-  recalculateBudget(budgetNetworkKey);
+  // Recompute canonical totals in-place (pure function, no persistence here).
+  Object.assign(budgetForTest, recalculateBudget(budgetForTest, SIGNER_NETWORK));
 
   const savedBudgetTestPurchase =
     budgetForTest.purchases["__budget-test__"];
@@ -652,7 +610,7 @@ async function run() {
     delete budgetForTest.purchases["__budget-test__"];
   }
 
-  recalculateBudget(budgetNetworkKey);
+  Object.assign(budgetForTest, recalculateBudget(budgetForTest, SIGNER_NETWORK));
   add(
     `policy-reject [cumulative budget exceeded]: ${budgetVerdict.ok ? "SIGNED (BUG)" : `REJECTED (${budgetVerdict.reason})`}`
   );
