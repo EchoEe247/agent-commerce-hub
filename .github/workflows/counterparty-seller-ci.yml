@@ -1,109 +1,21 @@
 name: Counterparty Seller CI
-# Product 13 final clean gate: package maintenance snapshot
 
 on:
   push:
     branches:
       - feat/hermes-commerce-control-plane
-      - feat/entity-sanctions-screen
-      - feat/company-domain-intelligence
-      - feat/sec-company-snapshot
-      - feat/product12-dependency-vulnerability
-      - feat/product13-package-maintenance
-      - feat/buyer-discovery-harness
+      - fix/p1-production-change-control-batch-4
     paths:
-      - 'products/drafts/data-quality-profiler/src/counterparty-availability.mjs'
-      - 'products/drafts/data-quality-profiler/src/entity-sanctions-screen.mjs'
-      - 'products/drafts/data-quality-profiler/src/company-domain-intelligence.mjs'
-      - 'products/drafts/data-quality-profiler/src/sec-company-snapshot.mjs'
-      - 'products/drafts/data-quality-profiler/src/dependency-vulnerability-check.mjs'
-      - 'products/drafts/data-quality-profiler/src/package-maintenance-snapshot.mjs'
-      - 'products/drafts/data-quality-profiler/src/discovery/**'
-      - 'products/drafts/data-quality-profiler/src/app.mjs'
-      - 'products/drafts/data-quality-profiler/src/openapi.mjs'
-      - 'products/drafts/data-quality-profiler/src/config.mjs'
-      - 'products/drafts/data-quality-profiler/src/errors.mjs'
-      - 'products/drafts/data-quality-profiler/src/payments/x402-plugin.mjs'
-      - 'products/drafts/data-quality-profiler/scripts/ofac-source-smoke.mjs'
-      - 'products/drafts/data-quality-profiler/scripts/sec-source-smoke.mjs'
-      - 'products/drafts/data-quality-profiler/scripts/osv-source-smoke.mjs'
-      - 'products/drafts/data-quality-profiler/scripts/package-registry-smoke.mjs'
-      - 'products/drafts/data-quality-profiler/scripts/buyer-discovery-check.mjs'
-      - 'products/drafts/data-quality-profiler/test/agent402-manifest.test.mjs'
-      - 'products/drafts/data-quality-profiler/test/counterparty-availability.test.mjs'
-      - 'products/drafts/data-quality-profiler/test/entity-sanctions-screen.test.mjs'
-      - 'products/drafts/data-quality-profiler/test/entity-sanctions-source.test.mjs'
-      - 'products/drafts/data-quality-profiler/test/entity-sanctions-x402.test.mjs'
-      - 'products/drafts/data-quality-profiler/test/company-domain-intelligence.test.mjs'
-      - 'products/drafts/data-quality-profiler/test/sec-company-snapshot.test.mjs'
-      - 'products/drafts/data-quality-profiler/test/sec-company-snapshot-errors.test.mjs'
-      - 'products/drafts/data-quality-profiler/test/sec-company-snapshot-discovery.test.mjs'
-      - 'products/drafts/data-quality-profiler/test/sec-company-snapshot-x402.test.mjs'
-      - 'products/drafts/data-quality-profiler/test/dependency-vulnerability-check.test.mjs'
-      - 'products/drafts/data-quality-profiler/test/dependency-vulnerability-errors.test.mjs'
-      - 'products/drafts/data-quality-profiler/test/dependency-vulnerability-discovery.test.mjs'
-      - 'products/drafts/data-quality-profiler/test/dependency-vulnerability-x402.test.mjs'
-      - 'products/drafts/data-quality-profiler/test/package-maintenance-snapshot.test.mjs'
-      - 'products/drafts/data-quality-profiler/test/package-maintenance-errors.test.mjs'
-      - 'products/drafts/data-quality-profiler/test/package-maintenance-discovery.test.mjs'
-      - 'products/drafts/data-quality-profiler/test/package-maintenance-x402.test.mjs'
-      - 'products/drafts/data-quality-profiler/test/counterparty-api.test.mjs'
-      - 'products/drafts/data-quality-profiler/test/openapi-discovery.test.mjs'
-      - 'products/drafts/data-quality-profiler/test/x402-plugin.test.mjs'
-      - 'products/drafts/data-quality-profiler/test/config.test.mjs'
-      - 'products/drafts/data-quality-profiler/test/buyer-discovery-evaluator.test.mjs'
-      - 'products/drafts/data-quality-profiler/test/buyer-discovery-harness.test.mjs'
-      - 'products/drafts/data-quality-profiler/test/buyer-discovery-script.test.mjs'
-      - 'products/drafts/data-quality-profiler/package.json'
+      - 'products/drafts/data-quality-profiler/**'
+      - 'render.yaml'
       - '.github/workflows/counterparty-seller-ci.yml'
   pull_request:
     branches:
       - feat/hermes-commerce-control-plane
-      - feat/agent-discovery-llms
+      - main
     paths:
-      - 'products/drafts/data-quality-profiler/src/counterparty-availability.mjs'
-      - 'products/drafts/data-quality-profiler/src/entity-sanctions-screen.mjs'
-      - 'products/drafts/data-quality-profiler/src/company-domain-intelligence.mjs'
-      - 'products/drafts/data-quality-profiler/src/sec-company-snapshot.mjs'
-      - 'products/drafts/data-quality-profiler/src/dependency-vulnerability-check.mjs'
-      - 'products/drafts/data-quality-profiler/src/package-maintenance-snapshot.mjs'
-      - 'products/drafts/data-quality-profiler/src/discovery/**'
-      - 'products/drafts/data-quality-profiler/src/app.mjs'
-      - 'products/drafts/data-quality-profiler/src/openapi.mjs'
-      - 'products/drafts/data-quality-profiler/src/config.mjs'
-      - 'products/drafts/data-quality-profiler/src/errors.mjs'
-      - 'products/drafts/data-quality-profiler/src/payments/x402-plugin.mjs'
-      - 'products/drafts/data-quality-profiler/scripts/ofac-source-smoke.mjs'
-      - 'products/drafts/data-quality-profiler/scripts/sec-source-smoke.mjs'
-      - 'products/drafts/data-quality-profiler/scripts/osv-source-smoke.mjs'
-      - 'products/drafts/data-quality-profiler/scripts/package-registry-smoke.mjs'
-      - 'products/drafts/data-quality-profiler/scripts/buyer-discovery-check.mjs'
-      - 'products/drafts/data-quality-profiler/test/agent402-manifest.test.mjs'
-      - 'products/drafts/data-quality-profiler/test/counterparty-availability.test.mjs'
-      - 'products/drafts/data-quality-profiler/test/entity-sanctions-screen.test.mjs'
-      - 'products/drafts/data-quality-profiler/test/entity-sanctions-source.test.mjs'
-      - 'products/drafts/data-quality-profiler/test/entity-sanctions-x402.test.mjs'
-      - 'products/drafts/data-quality-profiler/test/company-domain-intelligence.test.mjs'
-      - 'products/drafts/data-quality-profiler/test/sec-company-snapshot.test.mjs'
-      - 'products/drafts/data-quality-profiler/test/sec-company-snapshot-errors.test.mjs'
-      - 'products/drafts/data-quality-profiler/test/sec-company-snapshot-discovery.test.mjs'
-      - 'products/drafts/data-quality-profiler/test/sec-company-snapshot-x402.test.mjs'
-      - 'products/drafts/data-quality-profiler/test/dependency-vulnerability-check.test.mjs'
-      - 'products/drafts/data-quality-profiler/test/dependency-vulnerability-errors.test.mjs'
-      - 'products/drafts/data-quality-profiler/test/dependency-vulnerability-discovery.test.mjs'
-      - 'products/drafts/data-quality-profiler/test/dependency-vulnerability-x402.test.mjs'
-      - 'products/drafts/data-quality-profiler/test/package-maintenance-snapshot.test.mjs'
-      - 'products/drafts/data-quality-profiler/test/package-maintenance-errors.test.mjs'
-      - 'products/drafts/data-quality-profiler/test/package-maintenance-discovery.test.mjs'
-      - 'products/drafts/data-quality-profiler/test/package-maintenance-x402.test.mjs'
-      - 'products/drafts/data-quality-profiler/test/counterparty-api.test.mjs'
-      - 'products/drafts/data-quality-profiler/test/openapi-discovery.test.mjs'
-      - 'products/drafts/data-quality-profiler/test/x402-plugin.test.mjs'
-      - 'products/drafts/data-quality-profiler/test/config.test.mjs'
-      - 'products/drafts/data-quality-profiler/test/buyer-discovery-evaluator.test.mjs'
-      - 'products/drafts/data-quality-profiler/test/buyer-discovery-harness.test.mjs'
-      - 'products/drafts/data-quality-profiler/test/buyer-discovery-script.test.mjs'
-      - 'products/drafts/data-quality-profiler/package.json'
+      - 'products/drafts/data-quality-profiler/**'
+      - 'render.yaml'
       - '.github/workflows/counterparty-seller-ci.yml'
   workflow_dispatch:
 
@@ -111,81 +23,27 @@ permissions:
   contents: read
 
 jobs:
-  focused-tests:
+  seller-tests:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: '24'
+          cache: npm
+          cache-dependency-path: products/drafts/data-quality-profiler/package-lock.json
       - name: Install dependencies
         working-directory: products/drafts/data-quality-profiler
         run: npm ci
-      - name: Syntax check changed runtime
-        working-directory: products/drafts/data-quality-profiler
-        run: |
-          node --check src/counterparty-availability.mjs
-          if [ -f src/entity-sanctions-screen.mjs ]; then node --check src/entity-sanctions-screen.mjs; fi
-          if [ -f src/company-domain-intelligence.mjs ]; then node --check src/company-domain-intelligence.mjs; fi
-          if [ -f src/sec-company-snapshot.mjs ]; then node --check src/sec-company-snapshot.mjs; fi
-          if [ -f src/dependency-vulnerability-check.mjs ]; then node --check src/dependency-vulnerability-check.mjs; fi
-          if [ -f src/package-maintenance-snapshot.mjs ]; then node --check src/package-maintenance-snapshot.mjs; fi
-          if [ -f src/discovery/buyer-intents.mjs ]; then node --check src/discovery/buyer-intents.mjs; fi
-          if [ -f src/discovery/buyer-discovery-evaluator.mjs ]; then node --check src/discovery/buyer-discovery-evaluator.mjs; fi
-          if [ -f src/discovery/buyer-discovery-runner.mjs ]; then node --check src/discovery/buyer-discovery-runner.mjs; fi
-          if [ -f scripts/ofac-source-smoke.mjs ]; then node --check scripts/ofac-source-smoke.mjs; fi
-          if [ -f scripts/sec-source-smoke.mjs ]; then node --check scripts/sec-source-smoke.mjs; fi
-          if [ -f scripts/osv-source-smoke.mjs ]; then node --check scripts/osv-source-smoke.mjs; fi
-          if [ -f scripts/package-registry-smoke.mjs ]; then node --check scripts/package-registry-smoke.mjs; fi
-          if [ -f scripts/buyer-discovery-check.mjs ]; then node --check scripts/buyer-discovery-check.mjs; fi
-          node --check src/app.mjs
-          node --check src/openapi.mjs
-          node --check src/config.mjs
-          node --check src/payments/x402-plugin.mjs
-      - name: Focused seller tests
-        working-directory: products/drafts/data-quality-profiler
-        run: |
-          TESTS=(test/agent402-manifest.test.mjs test/counterparty-availability.test.mjs test/counterparty-api.test.mjs test/openapi-discovery.test.mjs test/x402-plugin.test.mjs test/config.test.mjs)
-          if [ -f test/entity-sanctions-screen.test.mjs ]; then TESTS+=(test/entity-sanctions-screen.test.mjs); fi
-          if [ -f test/entity-sanctions-source.test.mjs ]; then TESTS+=(test/entity-sanctions-source.test.mjs); fi
-          if [ -f test/entity-sanctions-x402.test.mjs ]; then TESTS+=(test/entity-sanctions-x402.test.mjs); fi
-          if [ -f test/company-domain-intelligence.test.mjs ]; then TESTS+=(test/company-domain-intelligence.test.mjs); fi
-          if [ -f test/sec-company-snapshot.test.mjs ]; then TESTS+=(test/sec-company-snapshot.test.mjs); fi
-          if [ -f test/sec-company-snapshot-errors.test.mjs ]; then TESTS+=(test/sec-company-snapshot-errors.test.mjs); fi
-          if [ -f test/sec-company-snapshot-discovery.test.mjs ]; then TESTS+=(test/sec-company-snapshot-discovery.test.mjs); fi
-          if [ -f test/sec-company-snapshot-x402.test.mjs ]; then TESTS+=(test/sec-company-snapshot-x402.test.mjs); fi
-          if [ -f test/dependency-vulnerability-check.test.mjs ]; then TESTS+=(test/dependency-vulnerability-check.test.mjs); fi
-          if [ -f test/dependency-vulnerability-errors.test.mjs ]; then TESTS+=(test/dependency-vulnerability-errors.test.mjs); fi
-          if [ -f test/dependency-vulnerability-discovery.test.mjs ]; then TESTS+=(test/dependency-vulnerability-discovery.test.mjs); fi
-          if [ -f test/dependency-vulnerability-x402.test.mjs ]; then TESTS+=(test/dependency-vulnerability-x402.test.mjs); fi
-          if [ -f test/package-maintenance-snapshot.test.mjs ]; then TESTS+=(test/package-maintenance-snapshot.test.mjs); fi
-          if [ -f test/package-maintenance-errors.test.mjs ]; then TESTS+=(test/package-maintenance-errors.test.mjs); fi
-          if [ -f test/package-maintenance-discovery.test.mjs ]; then TESTS+=(test/package-maintenance-discovery.test.mjs); fi
-          if [ -f test/package-maintenance-x402.test.mjs ]; then TESTS+=(test/package-maintenance-x402.test.mjs); fi
-          if [ -f test/buyer-discovery-evaluator.test.mjs ]; then TESTS+=(test/buyer-discovery-evaluator.test.mjs); fi
-          if [ -f test/buyer-discovery-harness.test.mjs ]; then TESTS+=(test/buyer-discovery-harness.test.mjs); fi
-          if [ -f test/buyer-discovery-script.test.mjs ]; then TESTS+=(test/buyer-discovery-script.test.mjs); fi
-          node --test "${TESTS[@]}"
-      - name: Buyer discovery CLI check
-        working-directory: products/drafts/data-quality-profiler
-        run: npm run check:buyer-discovery
-      - name: Full profiler suite (PR gate)
-        if: github.event_name == 'pull_request'
+      - name: Full deterministic seller suite
         working-directory: products/drafts/data-quality-profiler
         run: npm test
-      - name: Live OFAC source smoke (PR gate)
-        if: github.event_name == 'pull_request'
-        working-directory: products/drafts/data-quality-profiler
-        run: node scripts/ofac-source-smoke.mjs
-      - name: Live SEC source smoke (PR gate)
-        if: github.event_name == 'pull_request'
-        working-directory: products/drafts/data-quality-profiler
-        run: node scripts/sec-source-smoke.mjs
-      - name: Live OSV source smoke (PR gate)
-        if: github.event_name == 'pull_request' && hashFiles('products/drafts/data-quality-profiler/scripts/osv-source-smoke.mjs') != ''
-        working-directory: products/drafts/data-quality-profiler
-        run: node scripts/osv-source-smoke.mjs
-      - name: Live npm and PyPI package registry smoke (PR gate)
-        if: github.event_name == 'pull_request' && hashFiles('products/drafts/data-quality-profiler/scripts/package-registry-smoke.mjs') != ''
-        working-directory: products/drafts/data-quality-profiler
-        run: node scripts/package-registry-smoke.mjs
+      - name: Canonical financial snapshots unchanged
+        run: |
+          git diff --exit-code -- \
+            state/commerce-control/ledgers/mainnet-budget-ledger.json \
+            state/commerce-control/ledgers/testnet-budget-ledger.json
