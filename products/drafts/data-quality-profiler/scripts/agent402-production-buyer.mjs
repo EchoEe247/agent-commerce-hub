@@ -10,6 +10,7 @@ import {
   BASE_USDC,
   buildEndpointUrl,
   validateAgent402Quote,
+  classifyPostSendSettlement,
 } from "../src/payments/agent402-buyer-policy.mjs";
 import {
   loadLedger,
@@ -226,9 +227,14 @@ async function run() {
         signal: AbortSignal.timeout(120_000),
       });
     } catch (error) {
+      // Transport outcome after sending a signed authorization is ambiguous: the
+      // signed intent has been transmitted but we cannot confirm the result. Keep
+      // the SIGNED record reserved; never sign again or auto-retry here.
+      const classification = classifyPostSendSettlement({ originalTransaction: null });
       markAmbiguousBestEffort(store, PURCHASE_ID, {
         errorClass: error?.name ?? "fetch-error",
         errorMessage: String(error?.message ?? "").slice(0, 500),
+        transaction: classification.transaction,
       });
       throw new Error(`paid request transport outcome ambiguous: ${error?.name ?? "fetch-error"}`);
     }
@@ -240,10 +246,20 @@ async function run() {
       try { settle = JSON.parse(Buffer.from(settleHeader, "base64").toString("utf8")); } catch {}
     }
 
-    if (!paid.ok || !settle?.success || !settle?.transaction) {
-      const stage = settle?.success === false ? "FAILED" : "AMBIGUOUS";
+    // Once the signed authorization has been transmitted, only a positive
+    // confirmed settlement response may advance SIGNED -> SETTLED. Every
+    // non-positive result (HTTP non-success, missing/malformed settlement
+    // header, settle.success === false, missing transaction hash, transport
+    // ambiguity) remains AMBIGUOUS and keeps the budget reserved. The reconciler
+    // is the only path that may later release the reservation to FAILED.
+    const classification = classifyPostSendSettlement({
+      httpOk: paid.ok,
+      settle,
+      originalTransaction: null,
+    });
+    if (!classification.settled) {
       try {
-        transition(store, PURCHASE_ID, stage, { httpStatus: paid.status });
+        transition(store, PURCHASE_ID, classification.stage, { httpStatus: paid.status, transaction: classification.transaction });
       } catch (persistError) {
         console.error(
           `FINANCIAL_PERSISTENCE_AFTER_PAYMENT_FAILED purchase=${PURCHASE_ID} ` +
@@ -262,13 +278,13 @@ async function run() {
     // recover it; no duplicate signature is created.
     try {
       transition(store, PURCHASE_ID, "SETTLED", {
-        transaction: settle.transaction,
+        transaction: classification.transaction,
         httpStatus: paid.status,
       });
     } catch (persistError) {
       console.error(
         `FINANCIAL_PERSISTENCE_AFTER_PAYMENT_FAILED purchase=${PURCHASE_ID} ` +
-        `settlementTx=${settle.transaction} code=${persistError?.code ?? "ERROR"} ` +
+        `settlementTx=${classification.transaction} code=${persistError?.code ?? "ERROR"} ` +
         `${persistError?.message ?? String(persistError)}`
       );
       throw new Error("payment settled but authoritative persistence failed; reconciliation required before any retry");

@@ -94,3 +94,22 @@ export function validateAgent402Quote(quote, endpointId, remainingBudgetRaw) {
 
   return { ok: true, amountRaw, payTo: quote.payTo, endpoint };
 }
+
+// After the signed paid request has been transmitted, the HTTP/server/
+// facilitator response is NOT authoritative proof that settlement did not occur.
+// Only a positive confirmed settlement response may advance SIGNED -> SETTLED.
+// Every non-positive result (HTTP non-success, missing/malformed settlement
+// header, settle.success === false, missing transaction hash, transport
+// ambiguity) remains AMBIGUOUS and keeps the budget reserved. If a response
+// nonetheless carries a transaction hash, preserve it as reconciliation evidence
+// while remaining AMBIGUOUS. Only the reconciler may later release the
+// reservation to FAILED.
+export function classifyPostSendSettlement({ httpOk = false, settle = null, originalTransaction = null } = {}) {
+  const ok = httpOk === true;
+  const success = settle?.success === true;
+  const transaction = settle?.transaction || originalTransaction || null;
+  if (ok && success && transaction) {
+    return { stage: "SETTLED", transaction, settled: true };
+  }
+  return { stage: "AMBIGUOUS", transaction, settled: false };
+}

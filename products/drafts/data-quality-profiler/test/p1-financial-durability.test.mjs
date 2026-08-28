@@ -30,6 +30,8 @@ import {
   decideReconciliation,
   reconcilePurchase,
   BASE_USDC_BY_NETWORK,
+  EXPECTED_RPC_CHAIN_ID_BY_NETWORK,
+  AUTHORIZATION_USED_TOPIC,
 } from "../src/payments/reconciliation.mjs";
 
 function tmpDir() {
@@ -270,26 +272,32 @@ test("chain receipt reconciliation verifies the exact USDC Transfer", async () =
   const payTo = "0x0000000000000000000000000000000000000001";
   const pad = (a) => a.slice(2).toLowerCase().padStart(64, "0");
   const amount = 5000;
-  const fetchImpl = async () => ({
-    ok: true,
-    json: async () => ({
-      jsonrpc: "2.0",
-      id: 1,
-      result: {
-        status: "0x1",
-        blockNumber: "0x123",
-        logs: [{
-          address: BASE_USDC_BY_NETWORK[NETWORK_TESTNET],
-          topics: [
-            "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
-            `0x${pad(wallet)}`,
-            `0x${pad(payTo)}`,
-          ],
-          data: `0x${amount.toString(16)}`,
-        }],
-      },
-    }),
-  });
+  const fetchImpl = async (url, init) => {
+    const body = JSON.parse(init.body);
+    if (body.method === "eth_chainId") {
+      return { ok: true, json: async () => ({ jsonrpc: "2.0", id: 1, result: EXPECTED_RPC_CHAIN_ID_BY_NETWORK[NETWORK_TESTNET] }) };
+    }
+    if (body.method === "eth_getTransactionReceipt") {
+      return { ok: true, json: async () => ({
+        jsonrpc: "2.0",
+        id: 1,
+        result: {
+          status: "0x1",
+          blockNumber: "0x123",
+          logs: [{
+            address: BASE_USDC_BY_NETWORK[NETWORK_TESTNET],
+            topics: [
+              "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+              `0x${pad(wallet)}`,
+              `0x${pad(payTo)}`,
+            ],
+            data: `0x${amount.toString(16)}`,
+          }],
+        },
+      }) };
+    }
+    throw new Error(`unexpected RPC method ${body.method}`);
+  };
   const evidence = await collectChainEvidence({
     stage: "AMBIGUOUS",
     amount,

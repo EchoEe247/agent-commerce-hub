@@ -277,6 +277,20 @@ function stripInternalPurchaseFields(purchase) {
   return rest;
 }
 
+// Audit-safe projection of a purchase for PUBLIC JSON export (tracked ledger
+// snapshot). Signed authorization material must NEVER leave the local SQLite
+// store. At minimum the full `paymentPayload` is removed; any other raw
+// signature-bearing field is defensively stripped as well. Non-secret audit
+// metadata (purchaseId, stage, amount, payTo, nonce, validBefore, transaction
+// hash, reconciliation status, revertedTransaction) is retained.
+function sanitizeAuditPurchase(purchase) {
+  const { revision, paymentPayload, ...rest } = purchase;
+  for (const key of Object.keys(rest)) {
+    if (/signature/i.test(key)) delete rest[key];
+  }
+  return rest;
+}
+
 function immutableHistoryCompatible(oldPurchase, currentPurchase) {
   const mutableKeys = new Set(["stage", "updatedAt", "revision", "reservationExpiresAt"]);
   for (const [key, oldValue] of Object.entries(oldPurchase)) {
@@ -365,7 +379,7 @@ export class FinancialStore {
     const budget = this.budget();
     const purchases = {};
     for (const purchase of this.listPurchases()) {
-      purchases[purchase.purchaseId] = stripInternalPurchaseFields(purchase);
+      purchases[purchase.purchaseId] = sanitizeAuditPurchase(purchase);
     }
     return {
       schemaVersion: meta.schemaVersion,
