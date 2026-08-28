@@ -11,21 +11,23 @@ included.
   - LOCAL_ONLY items: 511
   - LOCAL_ONLY or LOCAL_NEWER copied: 516
   - unpreserved blockers: 0
-- **Manifest SHA-256 (repository archive):**
-  `sha256:Unknown/Archived/2026-08-27-reconciliation-preservation/preservation-manifest.json`
-  (recorded in the freeze verification artifact, not duplicated here to avoid
-  drift).
+- **Manifest SHA-256 (repository and Hermes-local manifests):**
+  `7812d3f7e414069730f2d4eb0a7aad5fb350274a8f2199c25a80886e831c0fc7`
 - **External Hermes mirror:** a 126 MB tar mirror of the repository archive was
   written to the mode-0700 Hermes-local preservation area
   (`~/.hermes/commerce-control/Unknown/Archived/2026-08-27-reconciliation-preservation/`).
-  Its checksum is recorded in `repository-archive-mirror-receipt.json` inside
-  that restricted area and is intentionally NOT reproduced here.
+  Mirror SHA-256:
+  `5e8ad035df28799cb4d87d61ba2a44fb6c2839461eb6da8ca6c76bb85a7b936b`
 - **Raw local/private preservation:** exists outside Git. Originals were copied,
   not moved or deleted. No raw secret values are contained in this repository
   receipt.
 - **Ledger copies:** two `budget-ledger.json` copies (dirty-main and
-  remote-ref) were preserved and confirmed byte-identical in public fields;
-  they remain in the external preservation area, not in this Git tree.
+  runtime-proof/current-ref) were preserved independently. They are **not**
+  byte-identical and they differ semantically:
+  - `LEDGER_COPIES_IDENTICAL=NO`
+  - `LEDGER_SEMANTIC_DIVERGENCE=YES`
+  No ledger reconciliation, payment, signature, or external transaction was
+  performed during the freeze.
 
-This receipt is metadata only and asserts the existence and integrity of
-preservation evidence; it is not a source of truth for runtime state.
+This receipt is metadata only. It records preservation integrity and must not be
+used as the current source of truth for runtime or financial state.

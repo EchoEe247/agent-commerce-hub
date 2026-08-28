@@ -11,32 +11,32 @@ must not be executed, deployed, or read by any active runtime as authoritative.
 
 ## Historical evidence vs current source
 
-Current source is the candidate branch `reconcile/2026-08-27-canonical-candidate`
-(and the remote feature branch it is based on). Material under `Unknown/Archived`
-describes points in time and divergent local states; it does not override the
-candidate.
+Current operational source lives outside this directory and is determined by
+the repository's canonical branch plus its current-state documentation.
+Material under `Unknown/Archived` describes points in time, superseded designs,
+or divergent local states; it never overrides current source.
 
 ## Unknown / superseded material
 
-Items classified `unknown` or `superseded` during reconciliation are retained
-here for the later "Unknown/Archived" organization phase. They are not imported
-into the canonical source tree.
+Items classified `unknown` or `superseded` during reconciliation may be retained
+here for later review. Archived material is not imported into the active source
+tree merely because it was preserved.
 
 ## Preservation requirements
 
-The full 126 MB local preservation mirror and the complete local preservation
-directory live **outside Git** (in the Hermes-local area and the original
-checkout's `Unknown/Archived/2026-08-27-reconciliation-preservation`). They are
-evidence only. Originals were copied, never moved or deleted.
+The full local preservation mirror and complete local preservation directory
+live **outside Git** in the restricted Hermes-local area and original checkout.
+They are evidence only. Originals were copied, never moved or deleted during
+the preservation freeze.
 
 ## No active runtime should read archived material as authoritative
 
-No service, workflow, or test may treat `Unknown/Archived` contents as current
-configuration, ledgers, or source.
+No service, workflow, test, installer, or scheduler may treat
+`Unknown/Archived` contents as current configuration, ledgers, state, or source.
 
 ## Raw secrets must never be placed here in Git
 
 Raw credential material (private keys, plaintext tokens, encrypted/quarantined
-identity) is excluded from this repository-local archive. Only sanitized
-receipts and metadata pointing to the restrictive Hermes-local preservation area
-may be committed.
+identity, or raw secret-bearing configuration) is excluded from this
+repository-local archive. Only sanitized receipts and metadata pointing to the
+restricted local preservation area may be committed.

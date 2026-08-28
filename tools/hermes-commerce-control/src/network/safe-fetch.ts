@@ -56,22 +56,6 @@ export interface SafeResponse {
 export interface SafeFetch {
   json<T = unknown>(url: string, init?: RequestInit2): Promise<T>;
   text(url: string, init?: RequestInit2): Promise<SafeResponse>;
-  postText(url: string, body: string, headers?: Readonly<Record<string, string>>): Promise<SafeResponse>;
-  /**
-   * Internal-only. Sends a POST with a bearer token attached for a single
-   * authenticated operation. The token is never sourced from caller headers:
-   * it is passed here by the scoped B1 executor, which reads it from protected
-   * storage, and it is only ever attached when `requireOrigin` exactly matches
-   * the target origin (each redirect hop re-checked). Every other network
-   * protection (SSRF, connection-time lookup, redirect revalidation, size cap)
-   * applies unchanged.
-   */
-  postAuthed(
-    url: string,
-    body: string,
-    token: string,
-    options?: { readonly requireOrigin?: string | undefined },
-  ): Promise<SafeResponse>;
 }
 
 export interface RequestInit2 {
@@ -222,9 +206,7 @@ export function createSafeFetch(config: CommerceConfig, options: SafeFetchOption
   async function once(
     target: string,
     init: RequestInit2,
-    body: string | undefined,
     deadline: number,
-    bearer?: string | undefined,
   ): Promise<{ status: number; headers: Record<string, string>; text: string; bytes: number; location: string | null; finalUrl: string }> {
     const { url, isAllowlistedLocal } = validate(target);
 
@@ -245,33 +227,23 @@ export function createSafeFetch(config: CommerceConfig, options: SafeFetchOption
     init.signal?.addEventListener("abort", onOuterAbort, { once: true });
 
     try {
-      type UndiciRequestOptions = Parameters<typeof undiciRequest>[1];
-      // Standard safe headers first; the bearer token is attached afterwards
-      // only when supplied internally by postAuthed (never from caller headers,
-      // which buildHeaders still refuses to carry).
-      const headers = buildHeaders(init.headers);
-      if (bearer !== undefined && bearer !== "") {
-        headers.authorization = `Bearer ${bearer}`;
-      }
-      const requestOptions: UndiciRequestOptions = {
+      const response = await undiciRequest(url, {
         method: (init.method ?? "GET") as never,
-        headers,
+        headers: buildHeaders(init.headers),
         dispatcher: isAllowlistedLocal ? localAgent : publicAgent,
         signal: controller.signal,
         // No maxRedirections is passed: undici does not follow redirects unless
         // a redirect interceptor is configured, and none is. Redirects are
         // handled manually in text() so that every hop is revalidated against
         // the SSRF rules. Automatic following would bypass that check.
-      };
-      if (body !== undefined) (requestOptions as { body?: string }).body = body;
-      const response = await undiciRequest(url, requestOptions);
+      });
 
-      const responseHeaders: Record<string, string> = {};
+      const headers: Record<string, string> = {};
       for (const [k, v] of Object.entries(response.headers)) {
-        responseHeaders[k.toLowerCase()] = Array.isArray(v) ? v.join(", ") : String(v ?? "");
+        headers[k.toLowerCase()] = Array.isArray(v) ? v.join(", ") : String(v ?? "");
       }
 
-      const declared = responseHeaders["content-length"];
+      const declared = headers["content-length"];
       if (declared !== undefined && Number.parseInt(declared, 10) > maxResponseBytes) {
         response.body.destroy();
         throw new CommerceError(
@@ -300,10 +272,10 @@ export function createSafeFetch(config: CommerceConfig, options: SafeFetchOption
 
       return {
         status: response.statusCode,
-        headers: responseHeaders,
+        headers,
         text: Buffer.concat(chunks).toString("utf8"),
         bytes,
-        location: responseHeaders.location ?? null,
+        location: headers.location ?? null,
         finalUrl: url.toString(),
       };
     } catch (error) {
@@ -335,7 +307,7 @@ export function createSafeFetch(config: CommerceConfig, options: SafeFetchOption
     for (;;) {
       let result: Awaited<ReturnType<typeof once>>;
       try {
-        result = await once(current, init, undefined, deadline);
+        result = await once(current, init, deadline);
       } catch (error) {
         // SSRF and size failures are terminal, never retried.
         if (
@@ -418,77 +390,6 @@ export function createSafeFetch(config: CommerceConfig, options: SafeFetchOption
     }
   }
 
-  async function postText(rawUrl: string, body: string, headers: Readonly<Record<string, string>> = {}): Promise<SafeResponse> {
-    const started = Date.now();
-    const deadline = started + budgetMs;
-    const init: RequestInit2 = {
-      method: "POST",
-      headers: { "content-type": "application/json", ...headers },
-    };
-
-    let current = rawUrl;
-    let attempt = 0;
-    let hops = 0;
-
-    for (;;) {
-      let result: Awaited<ReturnType<typeof once>>;
-      try {
-        result = await once(current, init, body, deadline);
-      } catch (error) {
-        if (
-          error instanceof CommerceError &&
-          (error.code === "SSRF_BLOCKED" ||
-            error.code === "RESPONSE_TOO_LARGE" ||
-            error.code === "INVALID_URL" ||
-            error.code === "SECRET_ACCESS_FORBIDDEN" ||
-            error.code === "TOO_MANY_REDIRECTS")
-        ) {
-          throw error;
-        }
-        const verdict = verdictForNetworkError(attempt, { maxRetries, budgetMs }, Date.now() - started);
-        if (!verdict.retry) throw error;
-        attempt += 1;
-        await sleep(verdict.delayMs, init.signal);
-        continue;
-      }
-
-      if (result.status >= 300 && result.status < 400 && result.location !== null) {
-        hops += 1;
-        if (hops > maxRedirects) {
-          throw new CommerceError(
-            "TOO_MANY_REDIRECTS",
-            `exceeded ${String(maxRedirects)} redirects starting at ${rawUrl}`,
-          );
-        }
-        const next = new URL(result.location, result.finalUrl).toString();
-        validate(next);
-        current = next;
-        continue;
-      }
-
-      if (result.status >= 200 && result.status < 300) {
-        return Object.freeze({
-          status: result.status,
-          url: result.finalUrl,
-          headers: Object.freeze(result.headers),
-          bytes: result.bytes,
-          text: result.text,
-        });
-      }
-
-      if (result.status === 429) {
-        throw new CommerceError("UPSTREAM_RATE_LIMITED", `rate limited by ${result.finalUrl}`, {
-          status: result.status,
-        });
-      }
-      throw new CommerceError(
-        "UPSTREAM_UNAVAILABLE",
-        `HTTP ${String(result.status)} from ${result.finalUrl}`,
-        { status: result.status },
-      );
-    }
-  }
-
   async function json<T = unknown>(rawUrl: string, init: RequestInit2 = {}): Promise<T> {
     const response = await text(rawUrl, init);
     try {
@@ -502,103 +403,5 @@ export function createSafeFetch(config: CommerceConfig, options: SafeFetchOption
     }
   }
 
-  /**
-   * Internal-only authenticated POST for a single scoped B1 operation.
-   *
-   * The bearer token is attached only when the target origin exactly matches
-   * `requireOrigin`, enforced before the request and again on every redirect
-   * hop, so a token can never leak to a different origin. All other network
-   * protections (SSRF validate, connection-time lookup, redirect revalidation,
-   * response size cap, typed retries) are identical to postText.
-   */
-  async function postAuthed(
-    rawUrl: string,
-    body: string,
-    token: string,
-    options: { readonly requireOrigin?: string | undefined } = {},
-  ): Promise<SafeResponse> {
-    const requireOrigin = options.requireOrigin ?? "";
-    if (requireOrigin === "") {
-      throw new CommerceError(
-        "SECRET_ACCESS_FORBIDDEN",
-        "postAuthed requires an explicit origin before any token may be attached",
-      );
-    }
-    if (typeof token !== "string" || token.length === 0) {
-      throw new CommerceError(
-        "SECRET_ACCESS_FORBIDDEN",
-        "refusing to attach an empty bearer token",
-      );
-    }
-
-    const started = Date.now();
-    const deadline = started + budgetMs;
-    const init: RequestInit2 = { method: "POST", headers: { "content-type": "application/json" } };
-
-    let current = rawUrl;
-    let hops = 0;
-
-    for (;;) {
-      const { url } = validate(current);
-      if (url.origin !== requireOrigin) {
-        throw new CommerceError(
-          "SECRET_ACCESS_FORBIDDEN",
-          `refusing to send the bearer token to origin ${url.origin}; only ${requireOrigin} is allowed`,
-          { origin: url.origin },
-        );
-      }
-
-      let result: Awaited<ReturnType<typeof once>>;
-      try {
-        result = await once(current, init, body, deadline, token);
-      } catch (error) {
-        // No retries on the authenticated mutation path: a transport failure
-        // after the marketplace processed the request must not be re-sent.
-        throw error;
-      }
-
-      if (result.status >= 300 && result.status < 400 && result.location !== null) {
-        hops += 1;
-        if (hops > maxRedirects) {
-          throw new CommerceError(
-            "TOO_MANY_REDIRECTS",
-            `exceeded ${String(maxRedirects)} redirects starting at ${rawUrl}`,
-          );
-        }
-        const next = new URL(result.location, result.finalUrl).toString();
-        if (new URL(next).origin !== requireOrigin) {
-          throw new CommerceError(
-            "SECRET_ACCESS_FORBIDDEN",
-            `refusing to follow a redirect leaving the allowed origin ${requireOrigin}`,
-          );
-        }
-        current = next;
-        continue;
-      }
-
-      if (result.status >= 200 && result.status < 300) {
-        return Object.freeze({
-          status: result.status,
-          url: result.finalUrl,
-          headers: Object.freeze(result.headers),
-          bytes: result.bytes,
-          text: result.text,
-        });
-      }
-      // Every non-2xx status is returned (not thrown) so the scoped executor
-      // can classify terminal marketplace rejections and STOP, rather than
-      // swallowing them into a generic upstream error. A mutation path must
-      // never auto-retry blindly: a retried claim could double-apply if the
-      // first attempt reached the marketplace.
-      return Object.freeze({
-        status: result.status,
-        url: result.finalUrl,
-        headers: Object.freeze(result.headers),
-        bytes: result.bytes,
-        text: result.text,
-      });
-    }
-  }
-
-  return { json, text, postText, postAuthed };
+  return { json, text };
 }
