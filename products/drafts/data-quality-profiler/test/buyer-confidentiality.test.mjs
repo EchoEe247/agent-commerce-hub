@@ -93,3 +93,19 @@ test("running the buyer writes private results only to the gitignored local area
   // The local-private result dir must exist or be creatable under the ignored path.
   assert.ok(true);
 });
+
+test("public Actions refusal happens BEFORE the payment credential is read", async () => {
+  // The guard must fire even when HERMES_COMMERCE_SPEND_PRIVATE_KEY is entirely
+  // absent, proving the credential is not read before the refusal. If the key
+  // were read first, the process would instead fail with a missing-key error.
+  const result = await runBuyer({
+    GITHUB_ACTIONS: "true",
+    MODE: "execute",
+    ENDPOINT_ID: "demand-radar",
+    PURCHASE_ID: "ordering-check",
+    HERMES_COMMERCE_SPEND_PRIVATE_KEY: "",
+  });
+  assert.notEqual(result.code, 0, "buyer must exit non-zero when refusing");
+  assert.match(result.stderr, /PUBLIC_ACTIONS_PURCHASE_DISABLED/);
+  assert.doesNotMatch(result.stdout + result.stderr, /HERMES_COMMERCE_SPEND_PRIVATE_KEY is not set/);
+});

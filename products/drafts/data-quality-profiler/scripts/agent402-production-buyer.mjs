@@ -17,7 +17,6 @@ import {
 const MODE = process.env.MODE === "execute" ? "execute" : "dry-run";
 const ENDPOINT_ID = String(process.env.ENDPOINT_ID ?? "");
 const PURCHASE_ID = String(process.env.PURCHASE_ID ?? "");
-const PRIVATE_KEY = process.env.HERMES_COMMERCE_SPEND_PRIVATE_KEY ?? "";
 const USER_AGENT = "hermes-commerce-control/1.0";
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..");
 const LEDGER_PATH = path.join(ROOT, "state/commerce-control/budget-ledger.json");
@@ -25,7 +24,7 @@ const RESULT_DIR = path.join(ROOT, "state/commerce-control/private-results");
 
 // New fail-closed guard. Public GitHub Actions must never trigger a production
 // purchase that returns private paid content, even if a hostile input/secret is
-// present. The refusal happens before any payment/wallet secret is required.
+// present. The refusal happens BEFORE any payment/wallet secret is read.
 if (process.env.GITHUB_ACTIONS === "true" && MODE === "execute") {
   console.error("PUBLIC_ACTIONS_PURCHASE_DISABLED: production purchases are refused in GitHub Actions; run the buyer locally instead.");
   process.exit(1);
@@ -129,6 +128,7 @@ async function run() {
     return;
   }
 
+  const PRIVATE_KEY = process.env.HERMES_COMMERCE_SPEND_PRIVATE_KEY ?? '';
   if (!PRIVATE_KEY) throw new Error('HERMES_COMMERCE_SPEND_PRIVATE_KEY is not set');
   const account = privateKeyToAccount(PRIVATE_KEY.startsWith('0x') ? PRIVATE_KEY : `0x${PRIVATE_KEY}`);
   if (budget.wallet && budget.wallet.toLowerCase() !== account.address.toLowerCase()) {
