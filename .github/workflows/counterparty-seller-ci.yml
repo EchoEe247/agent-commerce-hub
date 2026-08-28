@@ -1,29 +1,38 @@
-name: Counterparty Seller CI
+name: Production Change Control
 
 on:
-  push:
-    branches:
-      - feat/hermes-commerce-control-plane
-      - fix/p1-production-change-control-batch-4
-    paths:
-      - 'products/drafts/data-quality-profiler/**'
-      - 'render.yaml'
-      - '.github/workflows/counterparty-seller-ci.yml'
   pull_request:
     branches:
       - feat/hermes-commerce-control-plane
       - main
-    paths:
-      - 'products/drafts/data-quality-profiler/**'
-      - 'render.yaml'
-      - '.github/workflows/counterparty-seller-ci.yml'
+  push:
+    branches:
+      - feat/hermes-commerce-control-plane
+      - main
+      - fix/p1-production-change-control-batch-4
   workflow_dispatch:
 
 permissions:
   contents: read
 
+concurrency:
+  group: production-change-control-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  seller-tests:
+  workflow-policy:
+    name: workflow-policy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Enforce workflow security policy
+        run: node .github/scripts/workflow-policy-check.mjs
+
+  seller:
+    name: seller
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -36,14 +45,46 @@ jobs:
           node-version: '24'
           cache: npm
           cache-dependency-path: products/drafts/data-quality-profiler/package-lock.json
-      - name: Install dependencies
+      - name: Install seller dependencies
         working-directory: products/drafts/data-quality-profiler
         run: npm ci
-      - name: Full deterministic seller suite
+      - name: Full seller gate
         working-directory: products/drafts/data-quality-profiler
         run: npm test
-      - name: Canonical financial snapshots unchanged
+      - name: Financial audit snapshots unchanged by tests
         run: |
           git diff --exit-code -- \
             state/commerce-control/ledgers/mainnet-budget-ledger.json \
             state/commerce-control/ledgers/testnet-budget-ledger.json
+      - name: No tracked local runtime state
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git ls-files | grep -E '(^|/)(node_modules/|private-results/)|\.(sqlite|sqlite-wal|sqlite-shm|db|db-wal|db-shm)$'; then
+            echo "tracked generated/private/runtime state detected"
+            exit 1
+          fi
+
+  commerce-control:
+    name: commerce-control
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: tools/hermes-commerce-control/package-lock.json
+      - name: Install Commerce Control dependencies
+        working-directory: tools/hermes-commerce-control
+        run: npm ci
+      - name: Typecheck Commerce Control
+        working-directory: tools/hermes-commerce-control
+        run: npm run typecheck
+      - name: Test Commerce Control
+        working-directory: tools/hermes-commerce-control
+        run: npm test
