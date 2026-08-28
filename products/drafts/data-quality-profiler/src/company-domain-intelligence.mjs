@@ -4,6 +4,8 @@ import { domainToASCII } from "node:url";
 import { isPublicIp } from "./ssrf-address.mjs";
 import { createSafeWebsiteFetch, createHttpsTransport } from "./safe-website-fetch.mjs";
 
+export { createSafeWebsiteFetch, createHttpsTransport };
+
 const RDAP_BASE = "https://rdap.org/domain/";
 const BLOCKED_SUFFIXES = [".local", ".internal", ".test", ".invalid", ".example", ".onion", ".localhost", ".home", ".lan"];
 const MAX_WEBSITE_REDIRECTS = 4;
@@ -21,7 +23,6 @@ export {
 export function createCompanyDomainIntelligence({
   resolver = dns,
   pageRequester,
-  websiteFetch = globalThis.fetch,
   websiteTransport,
   dnsLookup,
   rdapFetch = globalThis.fetch,
@@ -29,23 +30,14 @@ export function createCompanyDomainIntelligence({
 } = {}) {
   // The production website inspection path uses a hardened connection-time
   // SSRF boundary (validating lookup + manual revalidated redirects + bounded
-  // body). An explicit pageRequester override is still honoured for tests and
-  // custom callers. A caller may supply a raw `websiteFetch` (e.g. global
-  // fetch) which is wrapped as the transport; otherwise the default transport
-  // is the hardened Node HTTPS client with a connection-time validating lookup.
+  // body). The hardened Node transport is the production default inside
+  // createSafeWebsiteFetch; global fetch is intentionally NOT a production
+  // fallback so the connection-time DNS-rebinding defence is always active.
+  // `websiteTransport` and `pageRequester` remain only as explicit test
+  // injection hooks and are never supplied by the production app construction.
   const requestPage = pageRequester ?? (() => {
-    const transport = websiteTransport ?? (
-      typeof websiteFetch === "function"
-        ? (url, opts) => websiteFetch(url, {
-          method: opts.method,
-          redirect: opts.redirect,
-          headers: opts.headers,
-          signal: opts.signal,
-        })
-        : createHttpsTransport({ maxBytes: MAX_WEBSITE_BYTES, timeoutMs: WEBSITE_TIMEOUT_MS })
-    );
     const safe = createSafeWebsiteFetch({
-      transport,
+      transport: websiteTransport,
       dnsLookup,
       maxRedirects: MAX_WEBSITE_REDIRECTS,
       maxBytes: MAX_WEBSITE_BYTES,

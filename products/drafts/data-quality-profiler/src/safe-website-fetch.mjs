@@ -14,15 +14,17 @@
 //   3. Redirects are followed MANUALLY and every hop is revalidated at the URL
 //      and connection-time layers. Automatic redirect following would bypass
 //      the per-hop check.
-//   4. Response size is bounded both by declared Content-Length and by
-//      counting bytes while streaming, so a lying header cannot exhaust memory.
+//   4. Response size is bounded both by declared Content-Length (rejected
+//      before the body is read) and by counting bytes while streaming, so a
+//      lying header cannot exhaust memory.
 //   5. A request timeout is enforced.
 //
-// The transport is injectable so the behaviour can be tested deterministically
-// without malicious public DNS. The default transport is a focused HTTPS client
-// that honours the connection-time validating lookup.
+// The transport is injectable so behaviour can be tested deterministically
+// without malicious public DNS. When no transport is supplied, the hardened
+// Node transport (createHttpsTransport) is used as the production default.
 
 import net from "node:net";
+import http from "node:http";
 import https from "node:https";
 import * as dns from "node:dns/promises";
 import { isPublicIp } from "./ssrf-address.mjs";
@@ -41,6 +43,21 @@ function headerValue(headers, name) {
 
 function isRedirectStatus(status) {
   return [301, 302, 303, 307, 308].includes(Number(status));
+}
+
+/**
+ * Convert a Node IncomingMessage rawHeaders flat array
+ * ["Header-Name", "value", "Other", "value", ...] into a Headers object.
+ * The built-in Headers constructor expects a sequence of [name, value] pairs,
+ * not a flat alternating array, so it must be consumed two elements at a time.
+ */
+export function headersFromRaw(rawHeaders) {
+  const headers = new Headers();
+  if (!Array.isArray(rawHeaders)) return headers;
+  for (let index = 0; index + 1 < rawHeaders.length; index += 2) {
+    headers.append(rawHeaders[index], rawHeaders[index + 1]);
+  }
+  return headers;
 }
 
 /**
@@ -106,13 +123,19 @@ function readBoundedNodeBody(res, maxBytes) {
   });
 }
 
+function pickProtocolModule(protocol) {
+  return protocol === "http:" ? http : https;
+}
+
 /**
- * Real production transport: a focused HTTPS client that honours the
+ * Real production transport: a focused http/https client that honours the
  * connection-time validating lookup. Manual redirects are handled by the
- * caller so every hop is revalidated.
+ * caller so every hop is revalidated. Both http: and https: are supported and
+ * both use the same validating lookup; a redirect that changes scheme cannot
+ * bypass the connection-time check because the lookup is supplied on every hop.
  */
 export function createHttpsTransport({ maxBytes = 512 * 1024, timeoutMs = 6000 } = {}) {
-  return function httpsTransport(url, { lookup, signal, headers, method = "GET" } = {}) {
+  return function nodeTransport(url, { lookup, signal, headers, method = "GET" } = {}) {
     return new Promise((resolve, reject) => {
       let target;
       try {
@@ -121,17 +144,30 @@ export function createHttpsTransport({ maxBytes = 512 * 1024, timeoutMs = 6000 }
         reject(error);
         return;
       }
-      const req = https.request(
+      const module = pickProtocolModule(target.protocol);
+
+      const req = module.request(
         target,
         { method, headers, signal, lookup, timeout: timeoutMs },
         (res) => {
+          const converted = headersFromRaw(res.rawHeaders);
+
+          // Declared Content-Length greater than the cap: reject and destroy
+          // before unnecessarily streaming/reading the body.
+          const declaredLength = Number(headerValue(converted, "content-length"));
+          if (Number.isFinite(declaredLength) && declaredLength > maxBytes) {
+            res.destroy();
+            resolve({ status: Number(res.statusCode ?? 0), headers: converted, body: null, tooLarge: true });
+            return;
+          }
+
           readBoundedNodeBody(res, maxBytes)
             .then(({ tooLarge, text }) => {
               if (tooLarge) {
-                resolve({ status: 0, headers: new Headers(), body: null, tooLarge: true });
+                resolve({ status: Number(res.statusCode ?? 0), headers: converted, body: null, tooLarge: true });
                 return;
               }
-              resolve({ status: Number(res.statusCode), headers: new Headers(res.rawHeaders), body: text });
+              resolve({ status: Number(res.statusCode), headers: converted, body: text });
             })
             .catch(reject);
         },
@@ -147,8 +183,9 @@ export function createHttpsTransport({ maxBytes = 512 * 1024, timeoutMs = 6000 }
  * Create a hardened website fetcher.
  *
  * @param {object} options
- * @param {(url: string, opts: object) => Promise<{status:number,headers:object,body?:string,text?:Function,tooLarge?:boolean}>} options.transport
- *        The actual transport. The default is createHttpsTransport; tests may
+ * @param {(url: string, opts: object) => Promise<{status:number,headers:object,body?:string,text?:Function,tooLarge?:boolean}>} [options.transport]
+ *        The actual transport. When omitted, the hardened Node transport
+ *        (createHttpsTransport) is used as the production default. Tests may
  *        inject a fake that still exercises the connection-time lookup.
  * @param {(hostname: string, opts: object) => Promise<Array<{address:string,family:number}>>} [options.dnsLookup]
  *        Connection-time resolver. Defaults to the system Node DNS lookup.
@@ -161,9 +198,7 @@ export function createSafeWebsiteFetch({
   timeoutMs = 6000,
   userAgent = "HermesCommerce/0.1",
 } = {}) {
-  if (typeof transport !== "function") {
-    throw new Error("createSafeWebsiteFetch requires a transport function");
-  }
+  const effectiveTransport = transport ?? createHttpsTransport({ maxBytes, timeoutMs });
   const effectiveDnsLookup = dnsLookup ?? dns.lookup;
   const validatingLookup = createValidatingLookup(effectiveDnsLookup);
 
@@ -173,7 +208,7 @@ export function createSafeWebsiteFetch({
     const redirectChain = [];
 
     for (let hop = 0; hop <= maxRedirects; hop += 1) {
-      const result = await transport(current.href, {
+      const result = await effectiveTransport(current.href, {
         method: "GET",
         redirect: "manual",
         lookup: validatingLookup,

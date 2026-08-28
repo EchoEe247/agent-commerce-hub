@@ -16,7 +16,7 @@ function publicResolver(overrides = {}) {
 
 test("default website requester enriches a public domain when no requester override is injected", async () => {
   let fetchCalls = 0;
-  const websiteFetch = async (url, options) => {
+  const websiteTransport = async (url, options) => {
     fetchCalls += 1;
     assert.equal(url, "https://example.com/");
     assert.equal(options.redirect, "manual");
@@ -38,7 +38,7 @@ test("default website requester enriches a public domain when no requester overr
   const inspect = createCompanyDomainIntelligence({
     resolver: publicResolver(),
     rdapFetch: async () => ({ ok: false, status: 404 }),
-    websiteFetch,
+    websiteTransport,
     clock: { now: () => FIXED_NOW },
   });
   const result = await inspect({ domain: "example.com" });
@@ -56,7 +56,7 @@ test("default website requester enriches a public domain when no requester overr
 
 test("default website requester does not follow a redirect to a private or special-use target", async () => {
   let fetchCalls = 0;
-  const websiteFetch = async () => {
+  const websiteTransport = async () => {
     fetchCalls += 1;
     return {
       status: 302,
@@ -69,7 +69,7 @@ test("default website requester does not follow a redirect to a private or speci
   const inspect = createCompanyDomainIntelligence({
     resolver: publicResolver(),
     rdapFetch: async () => ({ ok: false, status: 404 }),
-    websiteFetch,
+    websiteTransport,
     clock: { now: () => FIXED_NOW },
   });
   const result = await inspect({ domain: "example.com" });
@@ -82,7 +82,7 @@ test("default website requester does not follow a redirect to a private or speci
 
 test("default website requester refuses oversized HTML before reading the body", async () => {
   let textCalls = 0;
-  const websiteFetch = async () => ({
+  const websiteTransport = async () => ({
     status: 200,
     headers: new Headers({
       "content-type": "text/html",
@@ -98,7 +98,7 @@ test("default website requester refuses oversized HTML before reading the body",
   const inspect = createCompanyDomainIntelligence({
     resolver: publicResolver(),
     rdapFetch: async () => ({ ok: false, status: 404 }),
-    websiteFetch,
+    websiteTransport,
     clock: { now: () => FIXED_NOW },
   });
   const result = await inspect({ domain: "example.com" });
