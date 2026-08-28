@@ -63,6 +63,6 @@ jobs:
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add state/commerce-control/budget-ledger.json
+          git add state/commerce-control/ledgers/testnet-budget-ledger.json
           git diff --quiet && git diff --staged --quiet || git commit -m "chore: update budget ledger for ${{ inputs.purchaseId }}"
           git push origin HEAD:${{ github.ref_name }}

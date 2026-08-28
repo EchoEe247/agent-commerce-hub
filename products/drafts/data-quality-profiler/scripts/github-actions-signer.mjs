@@ -105,55 +105,42 @@ function sendAndAbandon(port, pathName, paymentHeaderName, paymentHeaderValue, b
   });
 }
 
-// ── Budget Ledger Management ──────────────────────────────────────────
+// ── Budget Ledger Management (TESTNET ONLY) ──────────────────────────
+// P1 Batch 2: this signer is STRICTLY testnet. It must never open or write the
+// mainnet ledger. The testnet ledger is a physically separate file. A malformed
+// existing ledger is FATAL — it must NEVER be reset to a default document. Only
+// an explicit first-run path may initialize an empty testnet ledger. The stale
+// embedded production budget default has been removed.
+import {
+  loadLedger,
+  saveLedger,
+  stageUpdate,
+  NETWORK_TESTNET,
+  TESTNET_BUDGET_ID,
+  LedgerError,
+} from "../src/payments/ledger.mjs";
+
 const ledgerPath = path.join(
   path.dirname(fileURLToPath(import.meta.url)),
-  "../../../../state/commerce-control/budget-ledger.json"
+  "../../../../state/commerce-control/ledgers/testnet-budget-ledger.json"
 );
 
-let ledgerData = {
-  budgets: {
-    testnet: {
-      budgetId: "B2_COMMERCE_OPERATING_BUDGET_V1_TESTNET",
-      wallet: "0xc6139957cf09F97718cA6b3c88fB3931aDC04ead",
-      initialBudget: 2000000,
-      spentBudget: 0,
-      remainingBudget: 2000000,
-      purchases: {}
-    },
-    mainnet: {
-      budgetId: "B2_COMMERCE_OPERATING_BUDGET_V1",
-      wallet: "",
-      initialBudget: 2000000,
-      spentBudget: 0,
-      remainingBudget: 2000000,
-      purchases: {}
+// Load the testnet ledger strictly. Missing file -> first-run empty ledger.
+// Malformed/existing file -> fatal (no reset to default).
+function loadLedgerStrict() {
+  try {
+    const { ledger } = loadLedger(ledgerPath, NETWORK_TESTNET, { allowCreate: true });
+    return ledger;
+  } catch (error) {
+    if (error instanceof LedgerError) {
+      throw new Error(`TESTNET_LEDGER_FATAL: ${error.message} (code=${error.code})`);
     }
+    throw error;
   }
-};
-
-function loadLedger() {
-  if (fs.existsSync(ledgerPath)) {
-    try {
-      ledgerData = JSON.parse(fs.readFileSync(ledgerPath, "utf8"));
-      add("Loaded existing budget ledger successfully");
-    } catch (e) {
-      add(`Warning: Failed to parse existing budget ledger, using default structure: ${e.message}`);
-    }
-  } else {
-    // Create directory if missing
-    fs.mkdirSync(path.dirname(ledgerPath), { recursive: true });
-    saveLedger();
-    add("Initialized new budget ledger file");
-  }
-}
-
-function saveLedger() {
-  fs.writeFileSync(ledgerPath, JSON.stringify(ledgerData, null, 2), "utf8");
 }
 
 function recalculateBudget(networkKey) {
-  const b = ledgerData.budgets[networkKey];
+  const b = ledgerData;
 
   const budgetConsumingStages = new Set([
     "PREPARED",
@@ -178,7 +165,7 @@ function recalculateBudget(networkKey) {
 }
 
 function updatePurchaseStage(networkKey, purchaseId, stage, extra = {}) {
-  const b = ledgerData.budgets[networkKey];
+  const b = ledgerData;
   if (!b.purchases[purchaseId]) {
     b.purchases[purchaseId] = {
       purchaseId,
@@ -197,19 +184,22 @@ function updatePurchaseStage(networkKey, purchaseId, stage, extra = {}) {
     };
   }
   recalculateBudget(networkKey);
-  saveLedger();
+  saveLedger(ledgerPath, ledgerData);
   add(`[ledger] ${purchaseId} -> ${stage} updated: spentBudget=${b.spentBudget} remainingBudget=${b.remainingBudget}`);
 }
 
 // ── Quote & Policy Validation ─────────────────────────────────────────
 function validateQuoteAndBudget(quote, expectedPayTo, networkKey) {
-  const b = ledgerData.budgets[networkKey];
-  if (!quote || typeof quote !== "object") return { ok: false, reason: "missing quote" };
-  if (quote.scheme !== "exact") return { ok: false, reason: "unsupported scheme (only exact/EIP-3009)" };
-  
-  const isMainnet = networkKey === "mainnet";
-  const expectedChain = isMainnet ? "eip155:8453" : BASE_SEPOLIA;
-  const expectedToken = isMainnet ? "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913" : TEST_USDC;
+  // This signer is STRICTLY testnet. Any attempt to pass a mainnet key is a
+  // programming error and is refused rather than silently touching a different
+  // network's financial state.
+  if (networkKey !== "testnet") {
+    return { ok: false, reason: `signer is testnet-only; refused network key ${networkKey}` };
+  }
+  const b = ledgerData;
+  // Signer is strictly testnet: expected chain and token are the testnet ones.
+  const expectedChain = BASE_SEPOLIA;
+  const expectedToken = TEST_USDC;
 
   if (quote.network !== expectedChain) return { ok: false, reason: `wrong chain, expected ${expectedChain}, got ${quote.network}` };
   if ((quote.asset ?? "").toLowerCase() !== expectedToken.toLowerCase())
@@ -259,12 +249,12 @@ async function run() {
   }
   const account = privateKeyToAccount(testPrivateKey.startsWith("0x") ? testPrivateKey : `0x${testPrivateKey}`);
 
-  // Setup/load budget ledger
-  loadLedger();
+  // Setup/load budget ledger (testnet-only, strict).
+  ledgerData = loadLedgerStrict();
 
   const purchaseId = process.env.PURCHASE_ID || `purchase-${Date.now()}`;
   const networkKey = "testnet"; // For Sepolia testnet live validation
-  const budget = ledgerData.budgets[networkKey];
+  const budget = ledgerData;
 
   // Replay check
   if (budget.purchases[purchaseId] && budget.purchases[purchaseId].stage === "SETTLED") {
@@ -630,7 +620,7 @@ async function run() {
   }
   // cumulative budget limit test
   const budgetNetworkKey = networkKey;
-  const budgetForTest = ledgerData.budgets[budgetNetworkKey];
+  const budgetForTest = ledgerData;
 
   recalculateBudget(budgetNetworkKey);
 

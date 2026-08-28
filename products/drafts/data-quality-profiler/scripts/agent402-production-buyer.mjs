@@ -13,13 +13,21 @@ import {
   recalculateBudgetRecord,
   validateAgent402Quote,
 } from '../src/payments/agent402-buyer-policy.mjs';
+import {
+  loadLedger,
+  saveLedger,
+  stageUpdate,
+  NETWORK_MAINNET,
+  MAINNET_BUDGET_ID,
+  LedgerError,
+} from '../src/payments/ledger.mjs';
 
 const MODE = process.env.MODE === "execute" ? "execute" : "dry-run";
 const ENDPOINT_ID = String(process.env.ENDPOINT_ID ?? "");
 const PURCHASE_ID = String(process.env.PURCHASE_ID ?? "");
 const USER_AGENT = "hermes-commerce-control/1.0";
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..");
-const LEDGER_PATH = path.join(ROOT, "state/commerce-control/budget-ledger.json");
+const LEDGER_PATH = path.join(ROOT, "state/commerce-control/ledgers/mainnet-budget-ledger.json");
 const RESULT_DIR = path.join(ROOT, "state/commerce-control/private-results");
 
 // New fail-closed guard. Public GitHub Actions must never trigger a production
@@ -33,51 +41,20 @@ if (process.env.GITHUB_ACTIONS === "true" && MODE === "execute") {
 if (!/^[A-Za-z0-9._:-]{1,80}$/.test(PURCHASE_ID)) throw new Error('invalid purchaseId');
 const TARGET_URL = buildEndpointUrl(ENDPOINT_ID);
 
-function defaultLedger() {
-  return {
-    budgets: {
-      testnet: {
-        budgetId: 'B2_COMMERCE_OPERATING_BUDGET_V1_TESTNET',
-        wallet: '', initialBudget: 2_000_000, spentBudget: 0, remainingBudget: 2_000_000, purchases: {},
-      },
-      mainnet: {
-        budgetId: 'B2_COMMERCE_OPERATING_BUDGET_V1',
-        wallet: '', initialBudget: CUMULATIVE_BUDGET_RAW, spentBudget: 0, remainingBudget: CUMULATIVE_BUDGET_RAW, purchases: {},
-      },
-    },
-  };
-}
-
-function loadLedger() {
-  const data = fs.existsSync(LEDGER_PATH) ? JSON.parse(fs.readFileSync(LEDGER_PATH, 'utf8')) : defaultLedger();
-  data.budgets ??= {};
-  data.budgets.mainnet ??= defaultLedger().budgets.mainnet;
-  const budget = data.budgets.mainnet;
-  if (Number(budget.initialBudget) !== CUMULATIVE_BUDGET_RAW) {
-    throw new Error(`unexpected mainnet budget ceiling ${budget.initialBudget}; expected ${CUMULATIVE_BUDGET_RAW}`);
+// Production buyer touches ONLY the mainnet ledger. A missing ledger is allowed
+// to bootstrap on an explicit first-run path, but the ceiling and network are
+// validated strictly; a malformed/existing ledger is FATAL and must never be
+// reset to a default.
+function loadMainnetLedger() {
+  try {
+    const { ledger } = loadLedger(LEDGER_PATH, NETWORK_MAINNET, { allowCreate: true });
+    return ledger;
+  } catch (error) {
+    if (error instanceof LedgerError) {
+      throw new Error(`MAINNET_LEDGER_FATAL: ${error.message} (code=${error.code})`);
+    }
+    throw error;
   }
-  budget.purchases ??= {};
-  recalculateBudgetRecord(budget);
-  return data;
-}
-
-function saveLedger(data) {
-  fs.mkdirSync(path.dirname(LEDGER_PATH), { recursive: true });
-  fs.writeFileSync(LEDGER_PATH, `${JSON.stringify(data, null, 2)}\n`, 'utf8');
-}
-
-function setStage(data, stage, extra = {}) {
-  const b = data.budgets.mainnet;
-  const previous = b.purchases[PURCHASE_ID] ?? { purchaseId: PURCHASE_ID };
-  b.purchases[PURCHASE_ID] = {
-    ...previous,
-    stage,
-    updatedAt: new Date().toISOString(),
-    ...extra,
-  };
-  recalculateBudgetRecord(b);
-  saveLedger(data);
-  console.log(`LEDGER stage=${stage} spentRaw=${b.spentBudget} remainingRaw=${b.remainingBudget}`);
 }
 
 function decodePaymentRequired(response) {
@@ -97,8 +74,8 @@ function assertResourceBound(paymentRequired) {
 }
 
 async function run() {
-  const ledger = loadLedger();
-  const budget = ledger.budgets.mainnet;
+  const ledger = loadMainnetLedger();
+  const budget = ledger;
   if (budget.purchases[PURCHASE_ID]) throw new Error(`duplicate purchaseId: ${PURCHASE_ID}`);
 
   const headers = {
@@ -136,7 +113,7 @@ async function run() {
   }
   if (!budget.wallet) budget.wallet = account.address;
 
-  setStage(ledger, 'PREPARED', {
+  stageUpdate(LEDGER_PATH, NETWORK_MAINNET, PURCHASE_ID, 'PREPARED', {
     endpointId: ENDPOINT_ID,
     amount: Number(verdict.amountRaw),
     payTo: verdict.payTo,
@@ -157,7 +134,7 @@ async function run() {
   const auth = payload?.payload?.authorization ?? {};
   if (String(auth.to ?? '').toLowerCase() !== String(verdict.payTo).toLowerCase()) throw new Error('authorization recipient mismatch');
   if (BigInt(auth.value ?? '0') !== verdict.amountRaw) throw new Error('authorization value mismatch');
-  setStage(ledger, 'SIGNED', { nonce: auth.nonce, validBefore: auth.validBefore });
+  stageUpdate(LEDGER_PATH, NETWORK_MAINNET, PURCHASE_ID, 'SIGNED', { nonce: auth.nonce, validBefore: auth.validBefore });
   console.log(`SIGN_OK wallet=${account.address} signMs=${Date.now() - signStarted}`);
 
   const paymentHeaders = httpClient.encodePaymentSignatureHeader(payload);
@@ -170,7 +147,7 @@ async function run() {
       signal: AbortSignal.timeout(120_000),
     });
   } catch (error) {
-    setStage(ledger, 'AMBIGUOUS', { errorClass: error?.name ?? 'fetch-error' });
+    stageUpdate(LEDGER_PATH, NETWORK_MAINNET, PURCHASE_ID, 'AMBIGUOUS', { errorClass: error?.name ?? 'fetch-error' });
     throw new Error(`paid request transport outcome ambiguous: ${error?.name ?? 'fetch-error'}`);
   }
 
@@ -182,13 +159,13 @@ async function run() {
   }
 
   if (!paid.ok || !settle?.success || !settle?.transaction) {
-    setStage(ledger, settle?.success === false ? 'FAILED' : 'AMBIGUOUS', { httpStatus: paid.status });
+    stageUpdate(LEDGER_PATH, NETWORK_MAINNET, PURCHASE_ID, settle?.success === false ? 'FAILED' : 'AMBIGUOUS', { httpStatus: paid.status });
     throw new Error(`paid request did not produce a confirmed settlement (HTTP ${paid.status})`);
   }
 
   let body;
   try { body = paidText ? JSON.parse(paidText) : null; } catch { body = { raw: paidText.slice(0, 100_000) }; }
-  setStage(ledger, 'SETTLED', { transaction: settle.transaction, httpStatus: paid.status });
+  stageUpdate(LEDGER_PATH, NETWORK_MAINNET, PURCHASE_ID, 'SETTLED', { transaction: settle.transaction, httpStatus: paid.status });
 
   fs.mkdirSync(RESULT_DIR, { recursive: true });
   const resultPath = path.join(RESULT_DIR, `${PURCHASE_ID}.json`);
