@@ -307,3 +307,203 @@ test("committed ledgers load with correct network binding and preserve history",
   assert.equal(test.ledger.budgetId, TESTNET_BUDGET_ID);
   assert.ok(Object.keys(test.ledger.purchases).length >= 1, "testnet history preserved");
 });
+
+// ---------------------------------------------------------------- Payment A (correction)
+
+test("MALFORMED_PRODUCTION_PAYTO: non-EVM payTo is fatal in production", () => {
+  assert.throws(
+    () => loadConfig({
+      X402_PAYMENT_MODE: "production",
+      X402_ENABLED: "true",
+      X402_PAY_TO: "not-an-address",
+      X402_NETWORK: "eip155:84532",
+    }),
+    /PRODUCTION_PAYMENT_CONFIG_INVALID/
+  );
+  assert.throws(
+    () => loadConfig({
+      X402_PAYMENT_MODE: "production",
+      X402_ENABLED: "true",
+      X402_PAY_TO: "0x" + "a".repeat(39),
+      X402_NETWORK: "eip155:84532",
+    }),
+    /PRODUCTION_PAYMENT_CONFIG_INVALID/
+  );
+});
+
+test("valid production config with EVM payTo works", () => {
+  const cfg = loadConfig({
+    X402_PAYMENT_MODE: "production",
+    X402_ENABLED: "true",
+    X402_PAY_TO: "0x0000000000000000000000000000000000000001",
+    X402_NETWORK: "eip155:84532",
+  });
+  assert.equal(cfg.isProduction, true);
+  assert.equal(cfg.paymentMode, "production");
+});
+
+// ---------------------------------------------------------------- Ledger B (correction)
+
+test("fresh testnet ledger: SETTLED amount 5000 persists spent=5000 remaining=correct", () => {
+  const dir = tmpDir();
+  const p = path.join(dir, "testnet.json");
+  saveLedger(p, createEmptyLedger(NETWORK_TESTNET));
+  const updated = stageUpdate(p, NETWORK_TESTNET, "t1", "SETTLED", { amount: 5000, transaction: "0xabc" });
+  assert.equal(updated.spentBudget, 5000);
+  assert.equal(updated.remainingBudget, TESTNET_DEFAULT_CEILING_RAW - 5000);
+  const reloaded = JSON.parse(fs.readFileSync(p, "utf8"));
+  assert.equal(reloaded.spentBudget, 5000);
+  assert.equal(reloaded.remainingBudget, TESTNET_DEFAULT_CEILING_RAW - 5000);
+});
+
+test("FAILED stage does not consume budget", () => {
+  const dir = tmpDir();
+  const p = path.join(dir, "testnet.json");
+  saveLedger(p, createEmptyLedger(NETWORK_TESTNET));
+  stageUpdate(p, NETWORK_TESTNET, "f1", "FAILED", { amount: 5000 });
+  const reloaded = JSON.parse(fs.readFileSync(p, "utf8"));
+  assert.equal(reloaded.spentBudget, 0, "FAILED must not consume budget");
+  assert.equal(reloaded.remainingBudget, TESTNET_DEFAULT_CEILING_RAW);
+});
+
+test("PREPARED stage consumes budget", () => {
+  const dir = tmpDir();
+  const p = path.join(dir, "testnet.json");
+  saveLedger(p, createEmptyLedger(NETWORK_TESTNET));
+  stageUpdate(p, NETWORK_TESTNET, "p1", "PREPARED", { amount: 7000 });
+  const reloaded = JSON.parse(fs.readFileSync(p, "utf8"));
+  assert.equal(reloaded.spentBudget, 7000, "PREPARED consumes budget");
+});
+
+test("existing stale spentBudget triggers TOTALS_MISMATCH (no silent rewrite)", () => {
+  const dir = tmpDir();
+  const p = path.join(dir, "testnet.json");
+  const l = createEmptyLedger(NETWORK_TESTNET);
+  l.purchases.p1 = { purchaseId: "p1", stage: "SETTLED", amount: 5000, transaction: "0x1" };
+  l.spentBudget = 999999;
+  l.remainingBudget = TESTNET_DEFAULT_CEILING_RAW - 999999;
+  saveLedger(p, l);
+  assert.throws(
+    () => loadLedger(p, NETWORK_TESTNET, { allowCreate: false }),
+    (e) => e instanceof LedgerError && e.code === "TOTALS_MISMATCH"
+  );
+  const raw = JSON.parse(fs.readFileSync(p, "utf8"));
+  assert.equal(raw.spentBudget, 999999);
+});
+
+test("existing stale remainingBudget triggers TOTALS_MISMATCH", () => {
+  const dir = tmpDir();
+  const p = path.join(dir, "testnet.json");
+  const l = createEmptyLedger(NETWORK_TESTNET);
+  l.purchases.p1 = { purchaseId: "p1", stage: "SETTLED", amount: 5000, transaction: "0x1" };
+  l.spentBudget = 5000;
+  l.remainingBudget = 12345;
+  saveLedger(p, l);
+  assert.throws(
+    () => loadLedger(p, NETWORK_TESTNET, { allowCreate: false }),
+    (e) => e instanceof LedgerError && e.code === "TOTALS_MISMATCH"
+  );
+});
+
+test("overspent ledger is fatal", () => {
+  const dir = tmpDir();
+  const p = path.join(dir, "testnet.json");
+  const l = createEmptyLedger(NETWORK_TESTNET);
+  l.purchases.p1 = { purchaseId: "p1", stage: "SETTLED", amount: TESTNET_DEFAULT_CEILING_RAW + 100, transaction: "0x1" };
+  l.spentBudget = TESTNET_DEFAULT_CEILING_RAW + 100;
+  l.remainingBudget = -100;
+  saveLedger(p, l);
+  assert.throws(
+    () => loadLedger(p, NETWORK_TESTNET, { allowCreate: false }),
+    (e) => e instanceof LedgerError && e.code === "OVERSPEND"
+  );
+});
+
+test("asset ETH instead of USDC is fatal", () => {
+  const dir = tmpDir();
+  const p = path.join(dir, "testnet.json");
+  const l = createEmptyLedger(NETWORK_TESTNET);
+  l.asset = "ETH";
+  saveLedger(p, l);
+  assert.throws(
+    () => loadLedger(p, NETWORK_TESTNET, { allowCreate: false }),
+    (e) => e instanceof LedgerError && e.code === "ASSET_MISMATCH"
+  );
+});
+
+test("wrong wallet with expectedWallet is fatal", () => {
+  const dir = tmpDir();
+  const p = path.join(dir, "testnet.json");
+  const l = createEmptyLedger(NETWORK_TESTNET);
+  l.wallet = "0x1111111111111111111111111111111111111111";
+  saveLedger(p, l);
+  assert.throws(
+    () => loadLedger(p, NETWORK_TESTNET, { allowCreate: false, expectedWallet: "0xc6139957cf09F97718cA6b3c88fB3931aDC04ead" }),
+    (e) => e instanceof LedgerError && e.code === "WALLET_MISMATCH"
+  );
+});
+
+test("empty wallet with expectedWallet is fatal", () => {
+  const dir = tmpDir();
+  const p = path.join(dir, "testnet.json");
+  const l = createEmptyLedger(NETWORK_TESTNET);
+  saveLedger(p, l);
+  assert.throws(
+    () => loadLedger(p, NETWORK_TESTNET, { allowCreate: false, expectedWallet: "0xc6139957cf09F97718cA6b3c88fB3931aDC04ead" }),
+    (e) => e instanceof LedgerError && e.code === "WALLET_MISMATCH"
+  );
+});
+
+test("allowCreate=true actually creates the ledger file on disk", () => {
+  const dir = tmpDir();
+  const p = path.join(dir, "created.json");
+  assert.equal(fs.existsSync(p), false);
+  const { ledger } = loadLedger(p, NETWORK_TESTNET, { allowCreate: true });
+  assert.equal(ledger.network, NETWORK_TESTNET);
+  assert.equal(fs.existsSync(p), true, "allowCreate must persist the empty ledger");
+});
+
+test("allowCreate=false missing mainnet ledger remains fatal", () => {
+  const dir = tmpDir();
+  const p = path.join(dir, "missing-mainnet.json");
+  assert.throws(
+    () => loadLedger(p, NETWORK_MAINNET, { allowCreate: false }),
+    (e) => e instanceof LedgerError && e.code === "LEDGER_MISSING"
+  );
+});
+
+// ---------------------------------------------------------------- Signer init (pure, no-spend)
+
+import { resolveSignerNetwork, verifyTestnetWallet, loadTestnetLedger, makeTestnetLedger, SIGNER_NETWORK } from "../scripts/signer-init.mjs";
+
+test("signer-init: mainnet input is refused before key use", () => {
+  assert.throws(() => resolveSignerNetwork("eip155:8453"), /TESTNET_SIGNER_MAINNET_REFUSED/);
+  assert.equal(resolveSignerNetwork(undefined), SIGNER_NETWORK);
+  assert.equal(resolveSignerNetwork("eip155:84532"), SIGNER_NETWORK);
+});
+
+test("signer-init: missing private key is refused", () => {
+  assert.throws(() => verifyTestnetWallet(""), /environment variable is not set/i);
+});
+
+test("signer-init: wrong-key derived address is rejected against test wallet", () => {
+  const wrongKey = "0x" + "11".repeat(32);
+  assert.throws(() => verifyTestnetWallet(wrongKey), /TESTNET_WALLET_BINDING_FAILED/);
+});
+
+test("signer-init: loadTestnetLedger enforces wallet binding", () => {
+  const dir = tmpDir();
+  const p = path.join(dir, "testnet.json");
+  makeTestnetLedger(p);
+  const l = loadTestnetLedger(p);
+  assert.equal(l.wallet.toLowerCase(), "0xc6139957cf09f97718ca6b3c88fb3931adc04ead");
+});
+
+test("signer source declares ledgerData at module scope", () => {
+  const src = fs.readFileSync(
+    path.join(__dirname, "../scripts/github-actions-signer.mjs"),
+    "utf8"
+  );
+  assert.ok(/let\s+ledgerData\s*;/.test(src), "signer must declare `let ledgerData;`");
+  assert.ok(!/loadLedgerStrict\(/.test(src), "obsolete loadLedgerStrict must be removed");
+});
