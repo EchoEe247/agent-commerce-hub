@@ -74,7 +74,10 @@ export function assertSafeUrl(url) {
     throw new Error("UNSAFE_DOMAIN_TARGET: URLs carrying embedded credentials are refused");
   }
   const host = target.hostname;
-  if (net.isIP(host)) {
+  // IPv6 literals appear in .hostname WITH surrounding brackets (e.g. "[::1]");
+  // strip them before classification so net.isIP recognises the literal.
+  const bareHost = host.startsWith("[") && host.endsWith("]") ? host.slice(1, -1) : host;
+  if (net.isIP(bareHost)) {
     throw new Error("UNSAFE_DOMAIN_TARGET: IP literals are not permitted");
   }
   if (host === "localhost" || BLOCKED_HOST_SUFFIXES.some((suffix) => host.endsWith(suffix))) {
@@ -90,6 +93,7 @@ export function assertSafeUrl(url) {
  */
 function createValidatingLookup(dnsLookup) {
   return function validatingLookup(hostname, opts, callback) {
+    const wantAll = Boolean(opts && opts.all);
     dnsLookup(hostname, { all: true })
       .then((records) => {
         const publicRecords = (Array.isArray(records) ? records : [])
@@ -98,7 +102,15 @@ function createValidatingLookup(dnsLookup) {
           callback(new Error(`UNSAFE_DOMAIN_TARGET: ${hostname} resolved to no publicly routable address`));
           return;
         }
-        callback(null, publicRecords, undefined);
+        if (wantAll) {
+          callback(null, publicRecords, undefined);
+          return;
+        }
+        // Node family auto-selection (all:false) expects (address, family).
+        const chosen = publicRecords[0];
+        const address = typeof chosen === "string" ? chosen : String(chosen?.address ?? "");
+        const family = net.isIP(address) === 6 ? 6 : 4;
+        callback(null, address, family);
       })
       .catch((error) => callback(error));
   };

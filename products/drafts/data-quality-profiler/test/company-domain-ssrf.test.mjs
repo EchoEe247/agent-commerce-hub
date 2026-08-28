@@ -253,3 +253,129 @@ test("createHttpsTransport is protocol-correct (supports http and https via the 
     assert.equal(typeof fn, "function");
   });
 });
+
+// ---- IPv6 literal preflight + connection-time classification ----
+
+test("assertSafeUrl rejects bracketed IPv6 literals directly", () => {
+  for (const bad of [
+    "http://[::1]/",
+    "https://[fc00::1]/",
+    "http://[fe80::1]/",
+    "http://[::ffff:127.0.0.1]/",
+    "https://[2001:db8::1]/",
+  ]) {
+    assert.throws(() => assertSafeUrl(bad), /UNSAFE_DOMAIN_TARGET/);
+  }
+  // ordinary hostnames still pass preflight
+  assert.doesNotThrow(() => assertSafeUrl("https://example.com/"));
+});
+
+test("IPv6 public-routability predicate is conservative and deterministic", () => {
+  const reject = ["::", "::1", "::ffff:127.0.0.1", "fc00::1", "fe80::1",
+    "2001:db8::1", "2001:2::1", "2002::1", "3fff::1", "4000::1",
+    "64:ff9b::7f00:1", "64:ff9b:1::a00:1"];
+  const allow = ["2001:4860:4860::8888", "2606:4700:4700::1111"];
+  for (const addr of reject) {
+    assert.equal(isPublicIp(addr), false, `expected ${addr} to be rejected`);
+  }
+  for (const addr of allow) {
+    assert.equal(isPublicIp(addr), true, `expected ${addr} to be allowed`);
+  }
+});
+
+test("IPv6 literal redirect is rejected before a second transport call", async () => {
+  const targets = [
+    "http://[::1]/admin",
+    "https://[fc00::1234]/secret",
+    "http://[fe80::1]/",
+    "http://[::ffff:127.0.0.1]/",
+  ];
+  for (const unsafe of targets) {
+    let calls = [];
+    const transport = makeTransport((records, opts, url) => {
+      calls.push(String(url));
+      void records;
+      if (calls.length === 1) {
+        return { status: 302, headers: okHeaders({ location: unsafe }), body: "" };
+      }
+      return { status: 200, headers: okHeaders(), body: htmlBody("should never be reached") };
+    });
+    const inspect = createCompanyDomainIntelligence({
+      resolver: publicResolver(),
+      websiteTransport: transport,
+      dnsLookup: async () => [{ address: PUBLIC_V4, family: 4 }],
+      rdapFetch: async () => ({ ok: false, status: 404 }),
+    });
+    const result = await inspect({ domain: "example.com" });
+    assert.equal(result.website.reachable, false, `literal redirect ${unsafe} must be refused`);
+    assert.equal(calls.length, 1, `unsafe target ${unsafe} must never receive a transport call`);
+  }
+});
+
+test("IPv6 connection-time DNS result is blocked before connection", async () => {
+  let connected = false;
+  const transport = makeTransport(() => {
+    connected = true;
+    return { status: 200, headers: okHeaders(), body: htmlBody("Should not happen") };
+  });
+  const inspect = createCompanyDomainIntelligence({
+    resolver: publicResolver(),
+    websiteTransport: transport,
+    dnsLookup: async () => [{ address: "fc00::1234", family: 6 }],
+    rdapFetch: async () => ({ ok: false, status: 404 }),
+  });
+  const result = await inspect({ domain: "example.com" });
+  assert.equal(connected, false, "no connection to a blocked IPv6 address");
+  assert.equal(result.website.reachable, false);
+});
+
+test("ordinary public IPv6 connection-time DNS result is accepted", async () => {
+  let connected = false;
+  const transport = makeTransport(() => {
+    connected = true;
+    return { status: 200, headers: okHeaders(), body: htmlBody("Public IPv6 Site") };
+  });
+  const inspect = createCompanyDomainIntelligence({
+    resolver: publicResolver(),
+    websiteTransport: transport,
+    dnsLookup: async () => [{ address: "2001:4860:4860::8888", family: 6 }],
+    rdapFetch: async () => ({ ok: false, status: 404 }),
+  });
+  const result = await inspect({ domain: "example.com" });
+  assert.equal(connected, true);
+  assert.equal(result.website.reachable, true);
+  assert.equal(result.website.title, "Public IPv6 Site");
+});
+
+test("validating lookup honours both all:true and all:false caller shapes", async () => {
+  const safe = await import("../src/safe-website-fetch.mjs");
+  const dnsLookup = async (hostname, opts) => [{ address: PUBLIC_V4, family: 4 }];
+
+  // all:true path: Node expects the callback's second arg to be the records array.
+  let gotArray = false;
+  await safe.createSafeWebsiteFetch({
+    transport: async (url, opts) => {
+      await new Promise((resolve) => opts.lookup("example.com", { all: true }, (err, records) => {
+        if (!err && Array.isArray(records)) gotArray = true;
+        resolve();
+      }));
+      return { status: 200, headers: okHeaders(), body: htmlBody("x") };
+    },
+    dnsLookup,
+  }).fetchUrl("https://example.com/");
+  assert.equal(gotArray, true);
+
+  // all:false path: Node family auto-selection expects (address, family).
+  let gotAddrFam = false;
+  await safe.createSafeWebsiteFetch({
+    transport: async (url, opts) => {
+      await new Promise((resolve) => opts.lookup("example.com", { all: false }, (err, addr, fam) => {
+        if (!err && typeof addr === "string" && (fam === 4 || fam === 6)) gotAddrFam = true;
+        resolve();
+      }));
+      return { status: 200, headers: okHeaders(), body: htmlBody("y") };
+    },
+    dnsLookup,
+  }).fetchUrl("https://example.com/");
+  assert.equal(gotAddrFam, true);
+});
