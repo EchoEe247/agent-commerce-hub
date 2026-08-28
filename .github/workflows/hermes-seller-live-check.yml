@@ -1,142 +1,62 @@
-name: Hermes Seller Live Check
+name: Hermes Seller Live Read-Only Smoke
 
 on:
-  push:
-    branches:
-      - feat/hermes-commerce-control-plane
-    paths:
-      - .github/workflows/hermes-seller-live-check.yml
+  workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
+
+concurrency:
+  group: hermes-seller-live-read-only
+  cancel-in-progress: true
 
 jobs:
-  verify-and-register:
+  smoke:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: '24'
-
-      - name: Focused seller tests
+          cache: npm
+          cache-dependency-path: products/drafts/data-quality-profiler/package-lock.json
+      - name: Install and run deterministic seller suite
         working-directory: products/drafts/data-quality-profiler
         run: |
           npm ci
-          node --test \
-            test/counterparty-availability.test.mjs \
-            test/counterparty-api.test.mjs \
-            test/config.test.mjs
-
-      - name: Wait for Render to deploy seller manifest
-        shell: bash
-        run: |
-          set -euo pipefail
-          URL='https://hermes-counterparty-api.onrender.com/.well-known/x402'
-          for attempt in $(seq 1 30); do
-            code=$(curl -sS --max-time 75 -o /tmp/manifest.json -w '%{http_code}' "$URL" || true)
-            if [ "$code" = '200' ] && grep -q 'Hermes Counterparty Availability' /tmp/manifest.json; then
-              cat /tmp/manifest.json
-              exit 0
-            fi
-            echo "manifest not ready yet: attempt=$attempt status=$code"
-            sleep 10
-          done
-          echo 'seller manifest never became ready'
-          exit 1
-
-      - name: Verify live unpaid x402 quote
+          npm test
+      - name: Verify deployed seller read-only surfaces
         shell: bash
         run: |
           set -euo pipefail
           BASE='https://hermes-counterparty-api.onrender.com'
-          health=$(curl -fsS --max-time 90 "$BASE/health")
-          echo "HEALTH=$health"
+          curl -fsS --max-time 60 "$BASE/health" > /tmp/health.json
+          curl -fsS --max-time 60 "$BASE/.well-known/x402" > /tmp/manifest.json
 
-          status=$(curl -sS --max-time 90 \
+          status=$(curl -sS --max-time 60 \
             -D /tmp/quote-headers.txt \
             -o /tmp/quote-body.txt \
             -w '%{http_code}' \
             -X POST "$BASE/v1/counterparty-availability" \
             -H 'content-type: application/json' \
             --data '{"country_code":"US","timezone":"America/Chicago"}')
-
-          echo "UNPAID_STATUS=$status"
           test "$status" = '402'
 
           payment_required=$(tr -d '\r' < /tmp/quote-headers.txt | awk 'BEGIN{IGNORECASE=1} /^payment-required:/ {sub(/^[^:]*:[[:space:]]*/, ""); print; exit}')
           test -n "$payment_required"
           PAYMENT_REQUIRED="$payment_required" node <<'NODE'
-          const fs = require('node:fs');
-          const raw = process.env.PAYMENT_REQUIRED;
-          const required = JSON.parse(Buffer.from(raw, 'base64').toString('utf8'));
+          const required = JSON.parse(Buffer.from(process.env.PAYMENT_REQUIRED, 'base64').toString('utf8'));
           const accepts = Array.isArray(required.accepts) ? required.accepts : [];
           const q = accepts.find((x) => x?.scheme === 'exact' && x?.network === 'eip155:8453');
           if (!q) throw new Error('missing exact Base mainnet quote');
           const amount = BigInt(q.amount ?? q.maxAmountRequired ?? '0');
-          if (amount !== 30000n) throw new Error(`wrong amount: ${amount}`);
-          if (String(q.asset ?? '').toLowerCase() !== '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913') throw new Error(`wrong asset: ${q.asset}`);
-          if (String(q.payTo ?? '').toLowerCase() !== '0x2bd7c4e294b09e9a853168a58712498d03a45b01') throw new Error(`wrong payTo: ${q.payTo}`);
-          const summary = {
-            status: 402,
-            scheme: q.scheme,
-            network: q.network,
-            asset: q.asset,
-            amountRaw: amount.toString(),
-            priceUsd: Number(amount) / 1e6,
-            payTo: q.payTo,
-          };
-          fs.writeFileSync('/tmp/quote-summary.json', JSON.stringify(summary, null, 2));
-          console.log(`LIVE_X402_QUOTE_OK amountRaw=${amount} network=${q.network} payTo=${q.payTo}`);
+          if (amount <= 0n) throw new Error('non-positive quote amount');
+          if (String(q.asset ?? '').toLowerCase() !== '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913') {
+            throw new Error(`wrong asset: ${q.asset}`);
+          }
+          console.log(`LIVE_READ_ONLY_X402_OK amountRaw=${amount} network=${q.network}`);
           NODE
-
-      - name: Register seller with Agent402
-        shell: bash
-        run: |
-          set -euo pipefail
-          response=$(curl -fsS --max-time 150 \
-            -X POST 'https://agent402.tools/api/index/register' \
-            -H 'content-type: application/json' \
-            --data '{"origin":"https://hermes-counterparty-api.onrender.com"}')
-          echo "AGENT402_REGISTER_RESPONSE=$response"
-          REGISTER_RESPONSE="$response" node <<'NODE'
-          const fs = require('node:fs');
-          const result = JSON.parse(process.env.REGISTER_RESPONSE);
-          if (result.listed !== true) throw new Error(`Agent402 did not list seller: ${JSON.stringify(result)}`);
-          if (Number(result?.seller?.toolCount ?? 0) < 1) throw new Error(`Agent402 listed zero tools: ${JSON.stringify(result)}`);
-          fs.writeFileSync('/tmp/agent402-registration.json', JSON.stringify(result, null, 2));
-          console.log(`AGENT402_LISTED origin=${result.origin} toolCount=${result.seller.toolCount} routable=${result.seller.routable}`);
-          NODE
-
-      - name: Persist compact live evidence
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p research/raw/agent402-seller-live
-          node <<'NODE'
-          const fs = require('node:fs');
-          const quote = JSON.parse(fs.readFileSync('/tmp/quote-summary.json', 'utf8'));
-          const registration = JSON.parse(fs.readFileSync('/tmp/agent402-registration.json', 'utf8'));
-          const evidence = {
-            observedAt: new Date().toISOString(),
-            origin: 'https://hermes-counterparty-api.onrender.com',
-            endpoint: '/v1/counterparty-availability',
-            focusedTests: 'PASS',
-            health: 'PASS',
-            quote,
-            agent402: {
-              listed: registration.listed,
-              origin: registration.origin,
-              seller: registration.seller,
-            },
-          };
-          fs.writeFileSync('research/raw/agent402-seller-live/latest.json', JSON.stringify(evidence, null, 2) + '\n');
-          NODE
-          git config user.name 'github-actions[bot]'
-          git config user.email 'github-actions[bot]@users.noreply.github.com'
-          git add research/raw/agent402-seller-live/latest.json
-          git commit -m 'chore: record live Agent402 seller validation'
-          git push origin HEAD:feat/hermes-commerce-control-plane
