@@ -45,6 +45,7 @@ import {
   TESTNET_BUDGET_ID,
   MAINNET_DEFAULT_CEILING_RAW,
   TESTNET_DEFAULT_CEILING_RAW,
+  TESTNET_WALLET,
 } from "../src/payments/ledger.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -474,7 +475,19 @@ test("allowCreate=false missing mainnet ledger remains fatal", () => {
 
 // ---------------------------------------------------------------- Signer init (pure, no-spend)
 
-import { resolveSignerNetwork, verifyTestnetWallet, loadTestnetLedger, makeTestnetLedger, SIGNER_NETWORK } from "../scripts/signer-init.mjs";
+import {
+  resolveSignerNetwork,
+  verifyTestnetWallet,
+  loadTestnetLedger,
+  initializeTestnetLedger,
+  stageTestnetUpdate,
+  makeTestnetLedger,
+  SIGNER_NETWORK,
+  SIGNER_EXPECTED_WALLET,
+  DEFAULT_LEDGER_PATH,
+  TEST_WALLET,
+  BASE_SEPOLIA,
+} from "../scripts/signer-init.mjs";
 
 test("signer-init: mainnet input is refused before key use", () => {
   assert.throws(() => resolveSignerNetwork("eip155:8453"), /TESTNET_SIGNER_MAINNET_REFUSED/);
@@ -506,4 +519,108 @@ test("signer source declares ledgerData at module scope", () => {
   );
   assert.ok(/let\s+ledgerData\s*;/.test(src), "signer must declare `let ledgerData;`");
   assert.ok(!/loadLedgerStrict\(/.test(src), "obsolete loadLedgerStrict must be removed");
+});
+
+// ---------------------------------------------------------------- P1 Batch 2 final live-signer wiring
+
+test("signer-init: DEFAULT_LEDGER_PATH resolves to canonical testnet ledger, not products/state", () => {
+  const expected = path.join(REPO_ROOT, "state/commerce-control/ledgers/testnet-budget-ledger.json");
+  assert.equal(DEFAULT_LEDGER_PATH, expected);
+  assert.ok(!DEFAULT_LEDGER_PATH.includes("products/state"), "must not resolve under products/state");
+});
+
+test("signer source imports DEFAULT_LEDGER_PATH and the bounded stage helper (no handcrafted path, no unbound stageUpdate)", () => {
+  const src = fs.readFileSync(
+    path.join(__dirname, "../scripts/github-actions-signer.mjs"),
+    "utf8"
+  );
+  // Imports the canonical constant instead of building its own path.
+  assert.ok(/import\s*\{[^}]*DEFAULT_LEDGER_PATH[^}]*\}\s*from\s*"\.\/signer-init\.mjs"/.test(src),
+    "signer must import DEFAULT_LEDGER_PATH from signer-init.mjs");
+  assert.ok(/const\s+ledgerPath\s*=\s*DEFAULT_LEDGER_PATH\s*;/.test(src),
+    "signer must bind ledgerPath to the imported DEFAULT_LEDGER_PATH");
+  // Uses the wallet-bound testnet stage helper.
+  assert.ok(/stageTestnetUpdate\(/.test(src), "signer must use stageTestnetUpdate(...)");
+  // No handcrafted import.meta.url ledger path remains.
+  assert.ok(!/fileURLToPath\(import\.meta\.url\)[^]*?\.\.\/\.\.\/\.\.\/\.\.\/state/.test(src),
+    "signer must not contain a github-actions-signer.mjs/../../../state ledger path");
+  // No unbound raw stageUpdate(...) call remains in the signer.
+  assert.ok(!/stageUpdate\(ledgerPath/.test(src), "signer must not call raw stageUpdate(ledgerPath,...)");
+});
+
+test("signer-init: canonical constants alias without drift", () => {
+  assert.equal(TEST_WALLET, TESTNET_WALLET);
+  assert.equal(BASE_SEPOLIA, NETWORK_TESTNET);
+  assert.equal(TEST_WALLET, SIGNER_EXPECTED_WALLET);
+});
+
+test("signer-init: operational loadTestnetLedger treats a missing ledger as fatal (no auto-reset)", () => {
+  const dir = tmpDir();
+  const p = path.join(dir, "missing-testnet.json");
+  let created = false;
+  try {
+    loadTestnetLedger(p); // default allowCreate=false
+  } catch (e) {
+    // fatal is expected
+    assert.ok(/TESTNET_LEDGER_FATAL/.test(e.message) || e instanceof Error);
+    created = fs.existsSync(p);
+  }
+  assert.equal(fs.existsSync(p), false, "no replacement ledger file may be written on missing canonical path");
+});
+
+test("signer-init: explicit initializeTestnetLedger creates wallet/network/asset-bound ledger", () => {
+  const dir = tmpDir();
+  const p = path.join(dir, "init-testnet.json");
+  const ledger = initializeTestnetLedger(p);
+  assert.equal(fs.existsSync(p), true, "initializer must create the file");
+  assert.equal(ledger.wallet.toLowerCase(), TESTNET_WALLET.toLowerCase());
+  assert.equal(ledger.network, NETWORK_TESTNET);
+  assert.equal(ledger.asset, "USDC");
+  assert.equal(ledger.spentBudget, 0);
+  assert.equal(ledger.remainingBudget, ledger.initialBudget);
+  assert.deepEqual(ledger.purchases, {});
+  // Re-load without allowCreate (operational mode) must now succeed.
+  const reloaded = loadTestnetLedger(p, false);
+  assert.equal(reloaded.wallet.toLowerCase(), TESTNET_WALLET.toLowerCase());
+});
+
+test("signer-init: stageTestnetUpdate PREPARED amount 5000 persists correct totals and keeps wallet", () => {
+  const dir = tmpDir();
+  const p = path.join(dir, "stage-testnet.json");
+  makeTestnetLedger(p);
+  const updated = stageTestnetUpdate(p, "purchase-1", "PREPARED", { amount: 5000, payTo: "0x0000000000000000000000000000000000000001" });
+  assert.equal(updated.spentBudget, 5000);
+  assert.equal(updated.remainingBudget, 1995000);
+  assert.equal(updated.wallet.toLowerCase(), TESTNET_WALLET.toLowerCase());
+  // The persisted file must agree (canonical totals written atomically).
+  const persisted = JSON.parse(fs.readFileSync(p, "utf8"));
+  assert.equal(persisted.spentBudget, 5000);
+  assert.equal(persisted.remainingBudget, 1995000);
+  assert.equal(persisted.wallet.toLowerCase(), TESTNET_WALLET.toLowerCase());
+});
+
+test("signer-init: stageTestnetUpdate refuses a wrong-wallet fixture", () => {
+  const dir = tmpDir();
+  const p = path.join(dir, "wrong-wallet.json");
+  const bad = createEmptyLedger(NETWORK_TESTNET, { wallet: "0x0000000000000000000000000000000000000bad" });
+  saveLedger(p, bad);
+  assert.throws(
+    () => stageTestnetUpdate(p, "purchase-2", "PREPARED", { amount: 1000 }),
+    (e) => e && e.code === "WALLET_MISMATCH"
+  );
+});
+
+test("ledger: allowCreate=true + expectedWallet=TESTNET_WALLET creates bound ledger and loads", () => {
+  const dir = tmpDir();
+  const p = path.join(dir, "create-bound.json");
+  const { ledger } = loadLedger(p, NETWORK_TESTNET, {
+    allowCreate: true,
+    expectedWallet: TESTNET_WALLET,
+  });
+  assert.equal(fs.existsSync(p), true, "allowCreate must persist the new ledger");
+  assert.equal(ledger.wallet.toLowerCase(), TESTNET_WALLET.toLowerCase(),
+    "created ledger must contain the exact expected wallet");
+  // Validate the binding by re-loading (operational mode, no create).
+  const reloaded = loadLedger(p, NETWORK_TESTNET, { allowCreate: false, expectedWallet: TESTNET_WALLET });
+  assert.equal(reloaded.ledger.wallet.toLowerCase(), TESTNET_WALLET.toLowerCase());
 });
