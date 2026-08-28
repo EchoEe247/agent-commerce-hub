@@ -15,6 +15,8 @@ export const OPERATION_CLASSES = [
   "PREPARE_EXTERNAL_ACTION",
   /** Non-value testnet or fake-facilitator exercise. */
   "TESTNET_ACTION",
+  /** Scoped B1-ID authentication with BountyBook only. */
+  "B1_ID_BOUNTYBOOK_AUTH",
   /** Any external mutation: registration, publication, claim, submission. */
   "EXTERNAL_WRITE",
   /** Any movement of an asset, on any network, of any size. */

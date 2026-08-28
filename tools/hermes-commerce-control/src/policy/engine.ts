@@ -49,6 +49,54 @@ export function evaluatePolicy(
   }
   const cls = declared as OperationClass;
 
+  // B1-ID BountyBook authentication is a scoped external write that requires
+  // a signer. It is authorized only for the dedicated BountyBook identity on
+  // Base, and does not imply claim, submission, purchase or value movement.
+  if (cls === "B1_ID_BOUNTYBOOK_AUTH") {
+    if (request.movesValue === true) {
+      return blockDecision({
+        operation,
+        class: cls,
+        rule: "B1_ID_AUTH_VALUE_MOVEMENT_FORBIDDEN",
+        reason: "LIVE_VALUE_MOVEMENT_DISABLED",
+        requiredActivation: "B2",
+        detail: "B1-ID auth never moves value; B2 remains unimplemented",
+        evaluatedAt,
+      });
+    }
+    if ((request.platform ?? "").trim().toLowerCase() !== "bountybook") {
+      return blockDecision({
+        operation,
+        class: cls,
+        rule: "B1_ID_AUTH_PLATFORM_REJECTED",
+        reason: "POLICY_BLOCKED",
+        requiredActivation: "B1",
+        detail: `B1-ID auth is only authorized for bountybook; got ${JSON.stringify(request.platform)}`,
+        evaluatedAt,
+      });
+    }
+    const network = (request.network ?? "").trim();
+    if (!network.startsWith("eip155:")) {
+      return blockDecision({
+        operation,
+        class: cls,
+        rule: "B1_ID_AUTH_NETWORK_REJECTED",
+        reason: "POLICY_BLOCKED",
+        requiredActivation: "B1",
+        detail: `B1-ID auth is only authorized on eip155; got ${JSON.stringify(request.network)}`,
+        evaluatedAt,
+      });
+    }
+    return allowDecision({
+      operation,
+      class: cls,
+      rule: "B1_ID_BOUNTYBOOK_AUTH_ALLOWED",
+      detail:
+        "scoped B1-ID BountyBook authentication is authorized; this does not authorize claim, submission, purchase or value movement",
+      evaluatedAt,
+    });
+  }
+
   // Dangerous attributes override the declared class. Order matters: secret
   // access is the most severe because it is never unlocked by any stage.
   if (request.requiresSigner === true || cls === "SECRET_ACCESS") {
