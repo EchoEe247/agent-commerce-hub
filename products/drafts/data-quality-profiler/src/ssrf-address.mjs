@@ -1,9 +1,10 @@
 // Shared public-routability checks for the company-domain SSRF boundary.
 //
-// These helpers decide whether a resolved IP address is publicly routable.
-// They are the single source of truth used both by the DNS preflight
-// (company-domain-intelligence.mjs) and by the connection-time lookup in
-// safe-website-fetch.mjs, so the two halves of the defence cannot drift.
+// These helpers decide whether a resolved IP address is suitable for arbitrary
+// outbound website inspection. This is deliberately more conservative than a
+// general-purpose routing classifier: special-purpose/protocol-assignment space
+// is rejected even when a more-specific address may be globally reachable.
+// The same gate is used by DNS preflight and the connection-time lookup.
 
 import net from "node:net";
 
@@ -35,24 +36,30 @@ export function isPublicIpv4(address) {
 export function isPublicIpv6(address) {
   const bytes = ipv6Bytes(address);
   if (!bytes) return false;
-  // Conservative SSRF classification: only addresses inside the currently
-  // assigned global-unicast space 2000::/3 are even candidates for ordinary
-  // public Internet endpoints. Everything else (unspecified, loopback,
-  // unique-local fc00::/7, link-local fe80::/10, multicast ff00::/8,
-  // IPv4-mapped outside public space, translation/transition ranges, reserved
-  // and special-purpose prefixes) is rejected.
-  if ((bytes[0] & 0xe0) !== 0x20) return false; // must be inside 2000::/3
-  // 2001:db8::/32 documentation
+
+  // Conservative SSRF classification: ordinary outbound website inspection is
+  // limited to the currently assigned global-unicast space 2000::/3.
+  if ((bytes[0] & 0xe0) !== 0x20) return false;
+
+  // IANA IPv6 Special-Purpose Address Registry: 2001::/23 is the IETF Protocol
+  // Assignments block and is not globally reachable by default except for
+  // explicitly assigned more-specific protocol addresses. For this SSRF
+  // boundary we reject the entire /23, including Teredo/ORCHID/AMT/anycast
+  // protocol assignments: a company website has no need to target those
+  // special-purpose endpoints, and fail-closed behavior is safer than trying to
+  // maintain an allowlist of protocol exceptions.
+  // 2001::/23 => first hextet 0x2001 and the top 7 bits of the second hextet 0.
+  if (bytes[0] === 0x20 && bytes[1] === 0x01 && (bytes[2] & 0xfe) === 0x00) return false;
+
+  // 2001:db8::/32 documentation.
   if (bytes[0] === 0x20 && bytes[1] === 0x01 && bytes[2] === 0x0d && bytes[3] === 0xb8) return false;
-  // 2001:2::/48 benchmarking
-  if (bytes[0] === 0x20 && bytes[1] === 0x01 && bytes[2] === 0x00 && bytes[3] === 0x02) return false;
-  // 2002::/16 6to4 transition
+
+  // 2002::/16 6to4 transition.
   if (bytes[0] === 0x20 && bytes[1] === 0x02) return false;
-  // 3fff::/20 benchmarking/experiment reserved range
+
+  // 3fff::/20 documentation/special-purpose.
   if (bytes[0] === 0x3f && bytes[1] === 0xff && (bytes[2] & 0xf0) === 0x00) return false;
-  // IPv4-mapped (::ffff:a.b.c.d): defer to the IPv4 public classification.
-  const mapped = bytes.slice(0, 10).every((value) => value === 0) && bytes[10] === 0xff && bytes[11] === 0xff;
-  if (mapped) return isPublicIpv4(bytes.slice(12).join("."));
+
   return true;
 }
 
