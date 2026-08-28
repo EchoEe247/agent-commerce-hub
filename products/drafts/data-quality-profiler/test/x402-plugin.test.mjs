@@ -168,7 +168,7 @@ test("all six portfolio routes are x402 protected at exact route-specific prices
 
 test("disabled plugin leaves /v1/profile reachable without payment", async () => {
   const { app: fac, url: facUrl } = await createFakeFacilitator();
-  const plugin = buildPaymentPlugin({ ...makePluginConfig(facUrl), x402Enabled: false });
+  const plugin = buildPaymentPlugin({ ...makePluginConfig(facUrl), x402Enabled: false, paymentMode: "local-unpaid" });
   const app = buildApp({ config: { serviceVersion: "0.1.0" }, paymentPlugin: plugin });
   const response = await app.inject({ method: "POST", url: "/v1/profile", payload: { format: "json", records: [{ id: 1 }] } });
   assert.equal(response.statusCode, 200);

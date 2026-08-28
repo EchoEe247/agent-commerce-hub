@@ -2,8 +2,15 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { loadConfig } from "../src/config.mjs";
 
-test("defaults to local unpaid development mode", () => {
-  const cfg = loadConfig({});
+test("missing payment mode fails closed (production default)", () => {
+  // No X402_PAYMENT_MODE and no production signal => production fail-closed.
+  assert.throws(() => loadConfig({}), /PRODUCTION_PAYMENT_CONFIG_INVALID/);
+});
+
+test("explicit local-unpaid mode is the only unpaid path", () => {
+  const cfg = loadConfig({ X402_PAYMENT_MODE: "local-unpaid" });
+  assert.equal(cfg.paymentMode, "local-unpaid");
+  assert.equal(cfg.isProduction, false);
   assert.equal(cfg.x402Enabled, false);
   assert.equal(cfg.x402Network, "eip155:84532");
   assert.equal(cfg.x402Price, "$0.02");
@@ -24,8 +31,34 @@ test("defaults to local unpaid development mode", () => {
   assert.equal(cfg.allowMainnet, false);
 });
 
+test("unknown explicit payment mode is fatal", () => {
+  assert.throws(() => loadConfig({ X402_PAYMENT_MODE: "staging" }), /INVALID_PAYMENT_MODE/);
+});
+
+test("local-unpaid + mainnet network is fatal", () => {
+  assert.throws(
+    () => loadConfig({ X402_PAYMENT_MODE: "local-unpaid", X402_NETWORK: "eip155:8453" }),
+    /LOCAL_UNPAID_FORBIDDEN/
+  );
+});
+
+test("local-unpaid + ALLOW_MAINNET=true is fatal", () => {
+  assert.throws(
+    () => loadConfig({ X402_PAYMENT_MODE: "local-unpaid", ALLOW_MAINNET: "true" }),
+    /LOCAL_UNPAID_FORBIDDEN/
+  );
+});
+
+test("local-unpaid + X402_ENABLED=true is fatal", () => {
+  assert.throws(
+    () => loadConfig({ X402_PAYMENT_MODE: "local-unpaid", X402_ENABLED: "true" }),
+    /LOCAL_UNPAID_FORBIDDEN/
+  );
+});
+
 test("allows route-specific price overrides", () => {
   const cfg = loadConfig({
+    X402_PAYMENT_MODE: "local-unpaid",
     X402_SANCTIONS_SCREEN_PRICE: "$0.025",
     X402_COMPANY_DOMAIN_PRICE: "$0.026",
     X402_SEC_COMPANY_PRICE: "$0.027",
@@ -80,7 +113,7 @@ test("allows Base Sepolia (eip155:84532)", () => {
 });
 
 test("rejects unknown facilitator modes", () => {
-  assert.throws(() => loadConfig({ X402_FACILITATOR_MODE: "mystery" }), /X402_FACILITATOR_MODE/);
+  assert.throws(() => loadConfig({ X402_PAYMENT_MODE: "local-unpaid", X402_FACILITATOR_MODE: "mystery" }), /X402_FACILITATOR_MODE/);
 });
 
 test("CDP facilitator mode requires both CDP credentials when x402 is enabled", () => {
