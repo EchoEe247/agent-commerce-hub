@@ -125,7 +125,7 @@ test("purchase revision is a CAS guard against stale writers", () => {
     const reserved = a.reservePurchase({ purchaseId: "cas", amount: 1000 });
     const staleRevision = reserved.revision;
     const fresh = b.getPurchase("cas");
-    b.transitionPurchase("cas", "SIGNED", { nonce: "0x01", validBefore: "9999999999" }, {
+    b.transitionPurchase("cas", "SIGNED", { nonce: "0x0101010101010101010101010101010101010101010101010101010101010101", validBefore: "9999999999" }, {
       expectedRevision: fresh.revision,
     });
     assert.throws(
@@ -159,9 +159,9 @@ test("SIGNED intent survives close/reopen for post-crash reconciliation", () => 
     assetContract: BASE_USDC_BY_NETWORK[NETWORK_TESTNET],
   });
   store.transitionPurchase("crash-safe", "SIGNED", {
-    nonce: "0xdead",
+    nonce: "0xdeaddeaddeaddeaddeaddeaddeaddeaddeaddeaddeaddeaddeaddeaddeaddead",
     validBefore: "9999999999",
-    paymentPayload: { x402Version: 2, payload: { authorization: { nonce: "0xdead" } } },
+    paymentPayload: { x402Version: 2, payload: { authorization: { nonce: "0xdeaddeaddeaddeaddeaddeaddeaddeaddeaddeaddeaddeaddeaddeaddeaddead" } } },
     paymentRequirements: { network: NETWORK_TESTNET, amount: "4000" },
   }, { expectedRevision: reserved.revision });
   store.close();
@@ -170,7 +170,7 @@ test("SIGNED intent survives close/reopen for post-crash reconciliation", () => 
   try {
     const p = reopened.getPurchase("crash-safe");
     assert.equal(p.stage, "SIGNED");
-    assert.equal(p.nonce, "0xdead");
+    assert.equal(p.nonce, "0xdeaddeaddeaddeaddeaddeaddeaddeaddeaddeaddeaddeaddeaddeaddeaddead");
     assert.equal(p.reconcileFromBlock, "0x100");
     assert.equal(reopened.budget().spentBudget, 4000);
   } finally { reopened.close(); }
@@ -201,7 +201,7 @@ test("expired SIGNED reservation releases only after complete no-transfer chain 
   const { store } = initTestnetStore(dir);
   try {
     const p = store.reservePurchase({ purchaseId: "expired", amount: 7000 });
-    store.transitionPurchase("expired", "SIGNED", { nonce: "0x1", validBefore: "10" }, {
+    store.transitionPurchase("expired", "SIGNED", { nonce: "0x0101010101010101010101010101010101010101010101010101010101010101", validBefore: "10" }, {
       expectedRevision: p.revision,
     });
     const held = decideReconciliation(store.getPurchase("expired"), {
@@ -238,7 +238,7 @@ test("positive chain evidence settles an ambiguous purchase", async () => {
   const { store } = initTestnetStore(dir);
   try {
     let p = store.reservePurchase({ purchaseId: "amb", amount: 9000 });
-    p = store.transitionPurchase("amb", "SIGNED", { nonce: "0xa", validBefore: "9999999999" }, { expectedRevision: p.revision });
+    p = store.transitionPurchase("amb", "SIGNED", { nonce: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", validBefore: "9999999999" }, { expectedRevision: p.revision });
     store.transitionPurchase("amb", "AMBIGUOUS", {}, { expectedRevision: p.revision });
     const result = await reconcilePurchase(store, "amb", {
       chainEvidence: { status: "SETTLED", complete: true, transaction: "0xsettled" },
@@ -255,7 +255,7 @@ test("authoritative chain evidence can recover a conservatively FAILED purchase"
   const { store } = initTestnetStore(dir);
   try {
     let p = store.reservePurchase({ purchaseId: "recover", amount: 8000 });
-    p = store.transitionPurchase("recover", "SIGNED", { validBefore: "10", nonce: "0xb" }, { expectedRevision: p.revision });
+    p = store.transitionPurchase("recover", "SIGNED", { validBefore: "10", nonce: "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb" }, { expectedRevision: p.revision });
     store.transitionPurchase("recover", "FAILED", { reason: "earlier conservative classification" }, { expectedRevision: p.revision });
     assert.equal(store.budget().spentBudget, 0);
     const result = await reconcilePurchase(store, "recover", {
@@ -337,7 +337,7 @@ test("JSON audit export advances compatible history but refuses divergence", () 
   const { store, ledgerPath } = initTestnetStore(dir);
   try {
     let p = store.reservePurchase({ purchaseId: "new-one", amount: 5000, payTo: "0x0000000000000000000000000000000000000001" });
-    p = store.transitionPurchase("new-one", "SIGNED", { nonce: "0x2", validBefore: "9999999999" }, { expectedRevision: p.revision });
+    p = store.transitionPurchase("new-one", "SIGNED", { nonce: "0x0202020202020202020202020202020202020202020202020202020202020202", validBefore: "9999999999" }, { expectedRevision: p.revision });
     store.transitionPurchase("new-one", "SETTLED", { transaction: "0xnew" }, { expectedRevision: p.revision });
 
     const before = compareFinancialStoreToLedger(store, ledgerPath);

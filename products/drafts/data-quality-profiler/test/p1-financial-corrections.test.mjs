@@ -54,6 +54,20 @@ function initStore(dir, network = NETWORK_TESTNET, wallet = TESTNET_WALLET) {
 const TRANSFER_TOPIC = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
 const pad = (a) => String(a).replace(/^0x/i, "").toLowerCase().padStart(64, "0");
 
+// Deterministic 32-byte (bytes32) EIP-3009 nonces for reconciliation tests.
+const NONCE32 = {
+  a: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  b: "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  feed: "0xfeedfeedfeedfeedfeedfeedfeedfeedfeedfeedfeedfeedfeedfeedfeedfeed",
+  beef: "0xbeefbeefbeefbeefbeefbeefbeefbeefbeefbeefbeefbeefbeefbeefbeef",
+  dead: "0xdeaddeaddeaddeaddeaddeaddeaddeaddeaddeaddeaddeaddeaddeaddeaddead",
+  one: "0x0101010101010101010101010101010101010101010101010101010101010101",
+  two: "0x0202020202020202020202020202020202020202020202020202020202020202",
+  aa: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  cc: "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+  bad: "0xzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz",
+};
+
 // A fake RPC that answers every jsonrpc call from a handler table.
 function fakeRpc(handlers) {
   return async (url, init) => {
@@ -73,9 +87,9 @@ test("audit export strips paymentPayload while local store retains it", () => {
   try {
     let p = store.reservePurchase({ purchaseId: "signed-one", amount: 5000, payTo: TESTNET_WALLET });
     p = store.transitionPurchase("signed-one", "SIGNED", {
-      nonce: "0xfeed",
+      nonce: NONCE32.feed,
       validBefore: "9999999999",
-      paymentPayload: { signature: "SENSITIVE_TEST_SIGNATURE", x402Version: 2, payload: { authorization: { nonce: "0xfeed" } } },
+      paymentPayload: { signature: "SENSITIVE_TEST_SIGNATURE", x402Version: 2, payload: { authorization: { nonce: NONCE32.feed } } },
       paymentRequirements: { network: NETWORK_TESTNET, amount: "5000" },
     }, { expectedRevision: p.revision });
 
@@ -88,7 +102,7 @@ test("audit export strips paymentPayload while local store retains it", () => {
     assert.ok(exportedPurchase, "purchase present in export");
     assert.equal(exportedPurchase.paymentPayload, undefined, "paymentPayload must not reach public snapshot");
     assert.equal(exportedPurchase.stage, "SIGNED");
-    assert.equal(exportedPurchase.nonce, "0xfeed");
+    assert.equal(exportedPurchase.nonce, NONCE32.feed);
 
     const serialized = JSON.stringify(exported);
     assert.ok(!serialized.includes("paymentPayload"), "no paymentPayload key in exported JSON");
@@ -102,7 +116,7 @@ test("local SQLite row still carries the signed payload after export", () => {
   try {
     let p = store.reservePurchase({ purchaseId: "signed-two", amount: 4000, payTo: TESTNET_WALLET });
     p = store.transitionPurchase("signed-two", "SIGNED", {
-      nonce: "0xbeef",
+      nonce: NONCE32.beef,
       validBefore: "9999999999",
       paymentPayload: { signature: "SENSITIVE_TEST_SIGNATURE", payload: {} },
     }, { expectedRevision: p.revision });
@@ -140,7 +154,7 @@ test("negative paid response leaves purchase AMBIGUOUS and budget reserved", asy
   const { store } = initStore(dir);
   try {
     let p = store.reservePurchase({ purchaseId: "neg", amount: 7000, payTo: TESTNET_WALLET });
-    p = store.transitionPurchase("neg", "SIGNED", { nonce: "0x1", validBefore: "9999999999" }, { expectedRevision: p.revision });
+    p = store.transitionPurchase("neg", "SIGNED", { nonce: NONCE32.one, validBefore: "9999999999" }, { expectedRevision: p.revision });
     assert.equal(store.budget().spentBudget, 7000);
 
     const result = await reconcilePurchase(store, "neg", {
@@ -167,7 +181,7 @@ test("reconciliation fails closed when RPC reports the wrong chain", async () =>
   const { store } = initStore(dir, NETWORK_MAINNET, MAINNET_WALLET);
   try {
     let p = store.reservePurchase({ purchaseId: "wrong-chain", amount: 5000, payTo: MAINNET_WALLET, assetContract: BASE_USDC_BY_NETWORK[NETWORK_MAINNET] });
-    p = store.transitionPurchase("wrong-chain", "SIGNED", { nonce: "0xaa", validBefore: "9999999999" }, { expectedRevision: p.revision });
+    p = store.transitionPurchase("wrong-chain", "SIGNED", { nonce: NONCE32.aa, validBefore: "9999999999" }, { expectedRevision: p.revision });
 
     const rpc = fakeRpc({
       eth_chainId: () => "0x1", // Ethereum mainnet, not Base
@@ -190,7 +204,7 @@ test("reconciliation fails closed when RPC chain id is malformed", async () => {
   const { store } = initStore(dir, NETWORK_TESTNET, TESTNET_WALLET);
   try {
     let p = store.reservePurchase({ purchaseId: "malformed", amount: 3000, payTo: TESTNET_WALLET });
-    p = store.transitionPurchase("malformed", "SIGNED", { nonce: "0xcc", validBefore: "9999999999" }, { expectedRevision: p.revision });
+    p = store.transitionPurchase("malformed", "SIGNED", { nonce: NONCE32.cc, validBefore: "9999999999" }, { expectedRevision: p.revision });
     const rpc = fakeRpc({ eth_chainId: () => 8453 }); // not 0x-hex
     const evidence = await collectChainEvidence(store.getPurchase("malformed"), store.meta(), {
       rpcUrl: "https://rpc.invalid", fetchImpl: rpc,
@@ -209,10 +223,10 @@ test("same amount / wrong nonce cannot settle the purchase", async () => {
     const payTo = TESTNET_WALLET;
     const amount = 5000;
     let p = store.reservePurchase({ purchaseId: "A", amount, payTo, reconcileFromBlock: "0x100" });
-    p = store.transitionPurchase("A", "SIGNED", { nonce: "0xaaaaaaaa", validBefore: "9999999999" }, { expectedRevision: p.revision });
+    p = store.transitionPurchase("A", "SIGNED", { nonce: NONCE32.a, validBefore: "9999999999" }, { expectedRevision: p.revision });
 
     // Chain contains a USDC Transfer W->P amount 5000 AND an AuthorizationUsed for
-    // a DIFFERENT nonce (0xbbbbbbbb). Purchase A must NOT settle.
+    // a DIFFERENT nonce (NONCE32.b). Purchase A must NOT settle.
     const rpc = fakeRpc({
       eth_chainId: () => EXPECTED_RPC_CHAIN_ID_BY_NETWORK[NETWORK_TESTNET],
       eth_blockNumber: () => "0x200",
@@ -226,7 +240,7 @@ test("same amount / wrong nonce cannot settle the purchase", async () => {
         },
         {
           address: BASE_USDC_BY_NETWORK[NETWORK_TESTNET],
-          topics: [AUTHORIZATION_USED_TOPIC, `0x${pad(payTo)}`, `0x${pad("0xbbbbbbbb")}`],
+          topics: [AUTHORIZATION_USED_TOPIC, `0x${pad(payTo)}`, `0x${pad(NONCE32.b)}`],
           transactionHash: "0xunrelated",
           blockNumber: "0x150",
         },
@@ -236,7 +250,7 @@ test("same amount / wrong nonce cannot settle the purchase", async () => {
         blockNumber: "0x150",
         logs: [
           { address: BASE_USDC_BY_NETWORK[NETWORK_TESTNET], topics: [TRANSFER_TOPIC, `0x${pad(payTo)}`, `0x${pad(payTo)}`], data: `0x${amount.toString(16)}`, transactionHash: "0xunrelated" },
-          { address: BASE_USDC_BY_NETWORK[NETWORK_TESTNET], topics: [AUTHORIZATION_USED_TOPIC, `0x${pad(payTo)}`, `0x${pad("0xbbbbbbbb")}`], transactionHash: "0xunrelated" },
+          { address: BASE_USDC_BY_NETWORK[NETWORK_TESTNET], topics: [AUTHORIZATION_USED_TOPIC, `0x${pad(payTo)}`, `0x${pad(NONCE32.b)}`], transactionHash: "0xunrelated" },
         ],
       }),
     });
@@ -255,7 +269,7 @@ test("exact nonce AuthorizationUsed + Transfer settles the purchase", async () =
   try {
     const payTo = TESTNET_WALLET;
     const amount = 5000;
-    const nonce = "0xaaaaaaaa";
+    const nonce = NONCE32.a;
     let p = store.reservePurchase({ purchaseId: "B", amount, payTo, reconcileFromBlock: "0x100" });
     p = store.transitionPurchase("B", "SIGNED", { nonce, validBefore: "9999999999" }, { expectedRevision: p.revision });
 
@@ -295,7 +309,7 @@ test("expired unused nonce with complete chain scan is eligible for FAILED", asy
   const { store } = initStore(dir, NETWORK_TESTNET, TESTNET_WALLET);
   try {
     let p = store.reservePurchase({ purchaseId: "expired-nonce", amount: 2000, payTo: TESTNET_WALLET, reconcileFromBlock: "0x100" });
-    p = store.transitionPurchase("expired-nonce", "SIGNED", { nonce: "0xdead", validBefore: "10" }, { expectedRevision: p.revision });
+    p = store.transitionPurchase("expired-nonce", "SIGNED", { nonce: NONCE32.dead, validBefore: "10" }, { expectedRevision: p.revision });
 
     const rpc = fakeRpc({
       eth_chainId: () => EXPECTED_RPC_CHAIN_ID_BY_NETWORK[NETWORK_TESTNET],
@@ -313,13 +327,14 @@ test("expired unused nonce with complete chain scan is eligible for FAILED", asy
   } finally { store.close(); }
 });
 
-test("reconciliation HOLDs when nonce is absent and no known transaction (current-runtime)", async () => {
+test("no-nonce unresolved SIGNED/AMBIGUOUS purchase HOLDs (NONCE_REQUIRED)", async () => {
   const dir = tmpDir();
   const { store } = initStore(dir, NETWORK_TESTNET, TESTNET_WALLET);
   try {
-    // A current-runtime purchase with NO stored nonce and NO known transaction: a
-    // bare transaction-less Transfer scan is ambiguous by design and must HOLD,
-    // never auto-settle from (wallet, payTo, amount) alone.
+    // A current-runtime purchase with NO stored nonce and NO known transaction:
+    // it cannot be safely resolved by (wallet, payTo, amount) evidence. The
+    // reconciler must return NONCE_REQUIRED (complete=false) and HOLD — never
+    // settle and never release the reserved budget.
     let p = store.reservePurchase({ purchaseId: "no-nonce", amount: 1500, payTo: TESTNET_WALLET, reconcileFromBlock: "0x100" });
     p = store.transitionPurchase("no-nonce", "AMBIGUOUS", {}, { expectedRevision: p.revision });
     const rpc = fakeRpc({
@@ -334,9 +349,131 @@ test("reconciliation HOLDs when nonce is absent and no known transaction (curren
       }]),
     });
     const evidence = await collectChainEvidence(store.getPurchase("no-nonce"), store.meta(), { rpcUrl: "https://rpc.invalid", fetchImpl: rpc });
-    assert.equal(evidence.status, "SETTLED_AMBIGUOUS_TRANSFER_ONLY", "no-nonce transaction-less transfer scan is not authoritative");
+    assert.equal(evidence.status, "NONCE_REQUIRED", "no-nonce current-runtime unresolved purchase requires a nonce");
+    assert.equal(evidence.complete, false, "NONCE_REQUIRED is incomplete evidence");
     const decision = decideReconciliation(store.getPurchase("no-nonce"), { chain: evidence, facilitator: { status: "UNAVAILABLE", complete: false } });
-    assert.equal(decision.action, "HOLD", "current-runtime no-nonce purchase must HOLD, not settle");
+    assert.equal(decision.action, "HOLD", "current-runtime no-nonce purchase must HOLD, not settle or release");
+    assert.equal(store.budget().spentBudget, 1500, "budget stays reserved");
+  } finally { store.close(); }
+});
+
+test("no-nonce expired SIGNED with zero matching transfers still HOLDs", async () => {
+  const dir = tmpDir();
+  const { store } = initStore(dir, NETWORK_TESTNET, TESTNET_WALLET);
+  try {
+    let p = store.reservePurchase({ purchaseId: "no-nonce-x", amount: 1500, payTo: TESTNET_WALLET, reconcileFromBlock: "0x100" });
+    p = store.transitionPurchase("no-nonce-x", "SIGNED", { validBefore: "10" }, { expectedRevision: p.revision });
+    const rpc = fakeRpc({
+      eth_chainId: () => EXPECTED_RPC_CHAIN_ID_BY_NETWORK[NETWORK_TESTNET],
+      eth_blockNumber: () => "0x300",
+      eth_getLogs: () => [], // zero matching transfers
+    });
+    const evidence = await collectChainEvidence(store.getPurchase("no-nonce-x"), store.meta(), { rpcUrl: "https://rpc.invalid", fetchImpl: rpc });
+    assert.equal(evidence.status, "NONCE_REQUIRED");
+    const decision = decideReconciliation(store.getPurchase("no-nonce-x"), { chain: evidence, facilitator: { status: "INVALID", complete: true } }, { nowMs: 100_000 });
+    assert.equal(decision.action, "HOLD", "expired no-nonce unresolved cannot be released");
+    assert.equal(store.budget().spentBudget, 1500, "budget remains reserved");
+  } finally { store.close(); }
+});
+
+test("AuthorizationUsed emitted by a non-USDC contract is rejected (USDC event binding)", async () => {
+  const dir = tmpDir();
+  const { store } = initStore(dir, NETWORK_TESTNET, TESTNET_WALLET);
+  try {
+    const payTo = TESTNET_WALLET;
+    const amount = 5000;
+    const fakeContract = "0x1111111111111111111111111111111111111111";
+    let p = store.reservePurchase({ purchaseId: "fake-contract", amount, payTo, reconcileFromBlock: "0x100" });
+    p = store.transitionPurchase("fake-contract", "SIGNED", { nonce: NONCE32.a, validBefore: "9999999999" }, { expectedRevision: p.revision });
+
+    // Fake AuthorizationUsed(wallet, correctNonce) emitted by 0x1111... (NOT USDC)
+    // plus a real USDC Transfer with same wallet/payTo/amount.
+    const rpc = fakeRpc({
+      eth_chainId: () => EXPECTED_RPC_CHAIN_ID_BY_NETWORK[NETWORK_TESTNET],
+      eth_blockNumber: () => "0x200",
+      eth_getLogs: () => ([{
+        address: fakeContract,
+        topics: [AUTHORIZATION_USED_TOPIC, `0x${pad(payTo)}`, `0x${pad(NONCE32.a)}`],
+        transactionHash: "0xfake",
+        blockNumber: "0x150",
+      }]),
+      eth_getTransactionReceipt: () => ({
+        status: "0x1",
+        blockNumber: "0x150",
+        logs: [
+          { address: fakeContract, topics: [AUTHORIZATION_USED_TOPIC, `0x${pad(payTo)}`, `0x${pad(NONCE32.a)}`], transactionHash: "0xfake" },
+          { address: BASE_USDC_BY_NETWORK[NETWORK_TESTNET], topics: [TRANSFER_TOPIC, `0x${pad(payTo)}`, `0x${pad(payTo)}`], data: `0x${amount.toString(16)}`, transactionHash: "0xfake" },
+        ],
+      }),
+    });
+    const evidence = await collectChainEvidence(store.getPurchase("fake-contract"), store.meta(), { rpcUrl: "https://rpc.invalid", fetchImpl: rpc });
+    assert.equal(evidence.status, "NO_AUTHORIZATION", "AuthorizationUsed from non-USDC contract must not settle");
+    const decision = decideReconciliation(store.getPurchase("fake-contract"), { chain: evidence, facilitator: { status: "UNAVAILABLE", complete: false } });
+    assert.equal(decision.action, "HOLD", "fake-contract auth event must not settle");
+    assert.equal(store.budget().spentBudget, amount, "budget reserved");
+  } finally { store.close(); }
+});
+
+test("correct-nonce AuthorizationUsed from expected USDC DOES settle", async () => {
+  const dir = tmpDir();
+  const { store } = initStore(dir, NETWORK_TESTNET, TESTNET_WALLET);
+  try {
+    const payTo = TESTNET_WALLET;
+    const amount = 5000;
+    let p = store.reservePurchase({ purchaseId: "real-usdc", amount, payTo, reconcileFromBlock: "0x100" });
+    p = store.transitionPurchase("real-usdc", "SIGNED", { nonce: NONCE32.a, validBefore: "9999999999" }, { expectedRevision: p.revision });
+
+    const rpc = fakeRpc({
+      eth_chainId: () => EXPECTED_RPC_CHAIN_ID_BY_NETWORK[NETWORK_TESTNET],
+      eth_blockNumber: () => "0x200",
+      eth_getLogs: () => ([{
+        address: BASE_USDC_BY_NETWORK[NETWORK_TESTNET],
+        topics: [AUTHORIZATION_USED_TOPIC, `0x${pad(payTo)}`, `0x${pad(NONCE32.a)}`],
+        transactionHash: "0xreal",
+        blockNumber: "0x150",
+      }]),
+      eth_getTransactionReceipt: () => ({
+        status: "0x1",
+        blockNumber: "0x150",
+        logs: [
+          { address: BASE_USDC_BY_NETWORK[NETWORK_TESTNET], topics: [AUTHORIZATION_USED_TOPIC, `0x${pad(payTo)}`, `0x${pad(NONCE32.a)}`], transactionHash: "0xreal" },
+          { address: BASE_USDC_BY_NETWORK[NETWORK_TESTNET], topics: [TRANSFER_TOPIC, `0x${pad(payTo)}`, `0x${pad(payTo)}`], data: `0x${amount.toString(16)}`, transactionHash: "0xreal" },
+        ],
+      }),
+    });
+    const evidence = await collectChainEvidence(store.getPurchase("real-usdc"), store.meta(), { rpcUrl: "https://rpc.invalid", fetchImpl: rpc });
+    assert.equal(evidence.status, "SETTLED", "AuthorizationUsed from expected USDC settles");
+    const result = await reconcilePurchase(store, "real-usdc", { chainEvidence: evidence, facilitatorEvidence: { status: "UNAVAILABLE", complete: false } });
+    assert.equal(result.purchase.stage, "SETTLED");
+    assert.equal(store.budget().spentBudget, amount);
+  } finally { store.close(); }
+});
+
+test("malformed 32-byte nonce fails closed (HOLD / incomplete)", async () => {
+  const dir = tmpDir();
+  const { store } = initStore(dir, NETWORK_TESTNET, TESTNET_WALLET);
+  try {
+    // A short/malformed nonce is not valid bytes32; reconciliation must not treat
+    // it as authoritative identity.
+    let p = store.reservePurchase({ purchaseId: "bad-nonce", amount: 2500, payTo: TESTNET_WALLET, reconcileFromBlock: "0x100" });
+    p = store.transitionPurchase("bad-nonce", "SIGNED", { nonce: "0xabcd", validBefore: "9999999999" }, { expectedRevision: p.revision });
+    const rpc = fakeRpc({
+      eth_chainId: () => EXPECTED_RPC_CHAIN_ID_BY_NETWORK[NETWORK_TESTNET],
+      eth_blockNumber: () => "0x200",
+      eth_getLogs: () => ([{
+        address: BASE_USDC_BY_NETWORK[NETWORK_TESTNET],
+        topics: [AUTHORIZATION_USED_TOPIC, `0x${pad(TESTNET_WALLET)}`, `0x${pad("0xabcd")}`],
+        transactionHash: "0xbad",
+        blockNumber: "0x150",
+      }]),
+    });
+    const evidence = await collectChainEvidence(store.getPurchase("bad-nonce"), store.meta(), { rpcUrl: "https://rpc.invalid", fetchImpl: rpc });
+    // padNonce throws -> caught -> ERROR (incomplete). Must never settle.
+    assert.equal(evidence.status, "ERROR", "malformed nonce produces incomplete/error evidence");
+    assert.equal(evidence.complete, false);
+    const decision = decideReconciliation(store.getPurchase("bad-nonce"), { chain: evidence, facilitator: { status: "UNAVAILABLE", complete: false } });
+    assert.equal(decision.action, "HOLD", "malformed nonce must not settle or release");
+    assert.equal(store.budget().spentBudget, 2500, "budget reserved");
   } finally { store.close(); }
 });
 
@@ -348,7 +485,7 @@ test("proven reverted transaction releases budget and preserves the hash", async
   const { store } = initStore(dir, NETWORK_TESTNET, TESTNET_WALLET);
   try {
     let p = store.reservePurchase({ purchaseId: "reverted", amount: 6000, payTo: TESTNET_WALLET });
-    p = store.transitionPurchase("reverted", "SIGNED", { nonce: "0x77", validBefore: "9999999999" }, { expectedRevision: p.revision });
+    p = store.transitionPurchase("reverted", "SIGNED", { nonce: NONCE32.cc, validBefore: "9999999999" }, { expectedRevision: p.revision });
     p = store.transitionPurchase("reverted", "AMBIGUOUS", { transaction: "0xrevertedtx" }, { expectedRevision: p.revision });
     assert.equal(store.budget().spentBudget, 6000, "reserved before reconciliation");
 

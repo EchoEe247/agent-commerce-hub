@@ -38,14 +38,21 @@ function padAddress(address) {
   return raw.padStart(64, "0");
 }
 
-// EIP-3009 nonces are 32-byte values. Strip a possible 0x prefix and left-pad to
-// 64 hex chars so the indexed topic[2] comparison is exact.
+// EIP-3009 nonces are 32-byte (bytes32) values. For the authoritative
+// reconciliation identity we require the exact canonical 32-byte form: an
+// optional 0x prefix followed by exactly 64 hex characters. Shorter/longer or
+// non-hex values are not valid bytes32 and must never be treated as identity.
+function isValidBytes32Nonce(nonce) {
+  const raw = String(nonce ?? "").replace(/^0x/i, "").toLowerCase();
+  return /^[0-9a-f]{64}$/.test(raw);
+}
+
 function padNonce(nonce) {
   const raw = String(nonce ?? "").replace(/^0x/i, "").toLowerCase();
-  if (!/^[0-9a-f]{1,64}$/.test(raw)) {
-    throw new FinancialStoreError(`invalid authorization nonce ${nonce}`, "RECONCILIATION_INPUT_INVALID");
+  if (!isValidBytes32Nonce(raw)) {
+    throw new FinancialStoreError(`invalid authorization nonce ${nonce} (expected 32-byte bytes32)`, "RECONCILIATION_INPUT_INVALID");
   }
-  return raw.padStart(64, "0");
+  return raw;
 }
 
 function normalizeHex(value) {
@@ -107,15 +114,14 @@ function expectedTransferContext(purchase, meta, assetAddress) {
 }
 
 // EIP-3009 AuthorizationUsed(authorizer indexed, nonce indexed). Confirm the
-// exact authorization was consumed: authorizer == authoritative wallet and
-// nonce == the stored purchase nonce.
-function authorizationUsedMatches(log, { wallet, nonce }) {
+// exact authorization was consumed AND that the event was emitted by the
+// expected USDC contract. The nonce proof is incomplete without the contract
+// binding: an AuthorizationUsed event from any other address must not count.
+function authorizationUsedMatches(log, { wallet, nonce, assetAddress }) {
   if (!log) return false;
+  if (!assetAddress) return false;
+  if (normalizeHex(log.address) !== normalizeHex(assetAddress)) return false;
   const topics = log.topics ?? [];
-  // EIP-3009 AuthorizationUsed(authorizer indexed, nonce indexed). The event is
-  // emitted by the USDC contract; the log address binding is enforced by the
-  // eth_getLogs query (address: USDC) and by the receipt's Transfer match, so
-  // here we only need to confirm the topic0 and the indexed authorizer+nonce.
   if (normalizeHex(topics[0]) !== AUTHORIZATION_USED_TOPIC) return false;
   if (normalizeHex(topics[1]) !== `0x${padAddress(wallet)}`) return false;
   if (normalizeHex(topics[2]) !== `0x${padNonce(nonce)}`) return false;
@@ -124,9 +130,9 @@ function authorizationUsedMatches(log, { wallet, nonce }) {
 
 // A nonce-bound transfer scan only settles when the SAME transaction emits both
 // the AuthorizationUsed(authorizer, nonce) event AND the exact USDC Transfer.
-function findNonceBoundSettlementInReceipt(receipt, transfer, { wallet, nonce }) {
+function findNonceBoundSettlementInReceipt(receipt, transfer, { wallet, nonce, assetAddress }) {
   const logs = receipt?.logs ?? [];
-  const authLog = logs.find((log) => authorizationUsedMatches(log, { wallet, nonce }));
+  const authLog = logs.find((log) => authorizationUsedMatches(log, { wallet, nonce, assetAddress }));
   if (!authLog) return null;
   const txHash = authLog.transactionHash ?? receipt?.transactionHash ?? null;
   if (!txHash) return null;
@@ -181,7 +187,7 @@ export async function collectChainEvidence(
         return { status: "REVERTED", complete: true, transaction: purchase.transaction, chainId: expectedChainId };
       }
       if (hasNonce) {
-        const bound = findNonceBoundSettlementInReceipt(receipt, transfer, { wallet: transfer.from, nonce: purchase.nonce });
+        const bound = findNonceBoundSettlementInReceipt(receipt, transfer, { wallet: transfer.from, nonce: purchase.nonce, assetAddress: transfer.assetAddress });
         if (bound) {
           return { status: "SETTLED", complete: true, transaction: bound.transaction, blockNumber: receipt.blockNumber ?? null, chainId: expectedChainId };
         }
@@ -236,7 +242,7 @@ export async function collectChainEvidence(
         rpcCall(rpcUrl, "eth_blockNumber", [], fetchImpl),
       ]);
 
-      const matching = (authLogs ?? []).filter((log) => authorizationUsedMatches(log, { wallet: transfer.from, nonce: purchase.nonce }));
+      const matching = (authLogs ?? []).filter((log) => authorizationUsedMatches(log, { wallet: transfer.from, nonce: purchase.nonce, assetAddress: transfer.assetAddress }));
       if (matching.length === 0) {
         return { status: "NO_AUTHORIZATION", complete: true, matchCount: 0, latestBlock, chainId: expectedChainId };
       }
@@ -252,7 +258,7 @@ export async function collectChainEvidence(
       if (!receipt) {
         return { status: "PENDING", complete: false, transaction: txHash, chainId: expectedChainId };
       }
-      const bound = findNonceBoundSettlementInReceipt(receipt, transfer, { wallet: transfer.from, nonce: purchase.nonce });
+      const bound = findNonceBoundSettlementInReceipt(receipt, transfer, { wallet: transfer.from, nonce: purchase.nonce, assetAddress: transfer.assetAddress });
       if (bound) {
         return { status: "SETTLED", complete: true, transaction: bound.transaction, blockNumber: receipt.blockNumber ?? null, latestBlock, chainId: expectedChainId };
       }
@@ -266,8 +272,24 @@ export async function collectChainEvidence(
       };
     }
 
-    // No stored nonce and no known transaction: a transaction-less Transfer scan
-    // is ambiguous by design and must NOT settle current-runtime state.
+    // No stored nonce and no known transaction: a current-runtime SIGNED/
+    // AMBIGUOUS purchase cannot be safely resolved by (wallet, payTo, amount)
+    // evidence. The EIP-3009 nonce is the authoritative identity; without it we
+    // cannot settle OR release. Do NOT perform the ambiguous Transfer scan —
+    // that path is not authoritative. Hold for operator review / non-nonce-proof
+    // reconciliation. (Known historical records that already carry a transaction
+    // hash retain the legacy exact-Transfer receipt compatibility path above.)
+    if (purchase.stage === "SIGNED" || purchase.stage === "AMBIGUOUS") {
+      return {
+        status: "NONCE_REQUIRED",
+        complete: false,
+        reason: "current-runtime unresolved purchase has no stored EIP-3009 nonce; nonce-required for authoritative release/settlement",
+        chainId: expectedChainId,
+      };
+    }
+    // PREPARED (unsigned) with no nonce/transaction falls through to a normal
+    // ambiguous Transfer scan (its release is governed by the unsigned PREPARED
+    // expiry rule, not chain authorization).
     const [logs, latestBlock] = await Promise.all([
       rpcCall(rpcUrl, "eth_getLogs", [{
         address: transfer.assetAddress,
