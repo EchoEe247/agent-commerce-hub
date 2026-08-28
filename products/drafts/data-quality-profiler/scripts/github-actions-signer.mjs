@@ -14,9 +14,7 @@ import { paymentMiddleware } from "@x402/fastify";
 import { buildApp } from "../src/app.mjs";
 import { buildPaymentPlugin } from "../src/payments/x402-plugin.mjs";
 
-const TEST_WALLET = "0xc6139957cf09F97718cA6b3c88fB3931aDC04ead";
 const TEST_USDC = "0x036CbD53842c5426634e7929541eC2318f3dCF7e";
-const BASE_SEPOLIA = "eip155:84532";
 const FACILITATOR_URL = process.env.X402_FACILITATOR_URL ?? "https://x402.org/facilitator";
 const PAY_TO = "0x0000000000000000000000000000000000000001";
 const PAY_TO_FAIL = "0x0000000000000000000000000000000000000002";
@@ -115,26 +113,29 @@ function sendAndAbandon(port, pathName, paymentHeaderName, paymentHeaderValue, b
 // without contacting testnet or signing.
 import {
   loadTestnetLedger,
+  initializeTestnetLedger,
+  stageTestnetUpdate,
   resolveSignerNetwork,
   verifyTestnetWallet,
   SIGNER_NETWORK,
+  DEFAULT_LEDGER_PATH,
+  TEST_WALLET,
+  BASE_SEPOLIA,
   recalculateBudget,
 } from "./signer-init.mjs";
 
 // Explicitly declared at module scope. The strict loader assigns it before any
 // purchase-stage mutation or signing happens.
 let ledgerData;
-const ledgerPath = (await import("node:path")).join(
-  (await import("node:url")).fileURLToPath(import.meta.url),
-  "../../../../state/commerce-control/ledgers/testnet-budget-ledger.json"
-);
+const ledgerPath = DEFAULT_LEDGER_PATH;
 
 function updatePurchaseStage(networkKey, purchaseId, stage, extra = {}) {
-  // Single canonical totals path: stageUpdate recalculates spent/remaining from
-  // purchases and atomically persists consistent root totals.
-  ledgerData = stageUpdate(
+  // Single canonical totals path: stageTestnetUpdate recalculates spent/remaining
+  // from purchases and atomically persists consistent root totals. Network and
+  // wallet are pinned inside the helper (NETWORK_TESTNET + TESTNET_WALLET), so
+  // this signer never chooses them directly for ledger writes.
+  ledgerData = stageTestnetUpdate(
     ledgerPath,
-    SIGNER_NETWORK,
     purchaseId,
     stage,
     extra

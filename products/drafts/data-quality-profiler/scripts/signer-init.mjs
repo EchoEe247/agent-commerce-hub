@@ -11,6 +11,7 @@ import { fileURLToPath } from "node:url";
 import { privateKeyToAccount } from "viem/accounts";
 import {
   loadLedger,
+  stageUpdate,
   NETWORK_TESTNET,
   TESTNET_WALLET,
   LedgerError,
@@ -56,10 +57,12 @@ export function verifyTestnetWallet(privateKey, expectedWallet = SIGNER_EXPECTED
   return account;
 }
 
-// Load the testnet ledger strictly (bound to TESTNET_WALLET). Missing file ->
-// first-run empty ledger (persisted). Malformed/existing -> fatal (no reset).
-// Returns the in-memory ledger object.
-export function loadTestnetLedger(ledgerPath = DEFAULT_LEDGER_PATH, allowCreate = true) {
+// Load the testnet ledger strictly (bound to TESTNET_WALLET). The canonical
+// testnet ledger is tracked financial history, so the OPERATIONAL loader must
+// NOT silently bootstrap a replacement if it disappears. Therefore the default
+// is allowCreate=false: a missing canonical ledger is LEDGER_MISSING / fatal.
+// Use initializeTestnetLedger() for an explicit first-run / admin bootstrap.
+export function loadTestnetLedger(ledgerPath = DEFAULT_LEDGER_PATH, allowCreate = false) {
   try {
     const { ledger } = loadLedger(ledgerPath, NETWORK_TESTNET, {
       allowCreate,
@@ -74,6 +77,27 @@ export function loadTestnetLedger(ledgerPath = DEFAULT_LEDGER_PATH, allowCreate 
   }
 }
 
+// Every testnet stage write goes through this wallet-bound helper. The caller
+// never chooses network or wallet parameters for ledger writes — they are
+// pinned here to NETWORK_TESTNET + { expectedWallet: TESTNET_WALLET } so a
+// stage mutation can never land on the wrong network or an unbound ledger.
+export function stageTestnetUpdate(ledgerPath, purchaseId, stage, extra = {}) {
+  return stageUpdate(ledgerPath, NETWORK_TESTNET, purchaseId, stage, extra, {
+    expectedWallet: SIGNER_EXPECTED_WALLET,
+  });
+}
+
+// Explicit first-run / admin bootstrap ONLY. Creates a fresh canonical empty
+// ledger bound to the expected testnet wallet: network eip155:84532, asset
+// USDC, wallet = TESTNET_WALLET, correct budget ID / ceiling, zero purchases
+// and zero totals. Used by tests and admin tooling — NEVER by the operational
+// runtime path (which must treat a missing ledger as fatal).
+export function initializeTestnetLedger(ledgerPath) {
+  const ledger = createEmptyLedger(NETWORK_TESTNET, { wallet: SIGNER_EXPECTED_WALLET });
+  saveLedger(ledgerPath, ledger);
+  return ledger;
+}
+
 // Used by tests to create a throwaway ledger file already bound to the expected
 // testnet wallet without touching the canonical path.
 export function makeTestnetLedger(ledgerPath) {
@@ -83,3 +107,8 @@ export function makeTestnetLedger(ledgerPath) {
 }
 
 export { recalculateBudget } from "../src/payments/ledger.mjs";
+
+// Canonical aliases so historical testnet validation scripts and the signer do
+// not re-declare divergent TEST_WALLET / BASE_SEPOLIA constants that can drift.
+export const TEST_WALLET = TESTNET_WALLET;
+export const BASE_SEPOLIA = NETWORK_TESTNET;

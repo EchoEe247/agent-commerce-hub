@@ -269,12 +269,17 @@ export function loadLedger(filePath, authoritativeNetwork, opts = {}) {
     if (!allowCreate) {
       throw new LedgerError(`ledger path does not exist: ${filePath}`, "LEDGER_MISSING");
     }
+    // Construct the fresh ledger, then resolve and VALIDATE the wallet binding
+    // BEFORE any persistence. Never write a brand-new ledger to disk and only
+    // afterwards discover it violates the requested binding.
     const fresh = createEmptyLedger(authoritativeNetwork, {
-      wallet: opts.defaultWallet ?? "",
+      wallet: opts.defaultWallet ?? expectedWallet ?? "",
       asset: LEDGER_ASSET,
     });
-    saveLedger(filePath, fresh); // explicit first-run persistence
-    return { ledger: fresh, budget: validateLedger(fresh, authoritativeNetwork, { expectedWallet }) };
+    const budget = validateLedger(fresh, authoritativeNetwork, { expectedWallet });
+    // Only after validation succeeds do we atomically persist.
+    saveLedger(filePath, fresh);
+    return { ledger: fresh, budget };
   }
 
   let raw;
