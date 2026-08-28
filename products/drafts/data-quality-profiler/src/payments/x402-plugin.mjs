@@ -4,6 +4,9 @@ import { ExactEvmScheme } from "@x402/evm/exact/server";
 import { paymentMiddleware } from "@x402/fastify";
 import { createFacilitatorConfig as createCdpFacilitatorConfig } from "@coinbase/x402";
 import { declareDiscoveryExtension, bazaarResourceServerExtension, withBazaar } from "@x402/extensions/bazaar";
+import { resolvePaymentMode } from "../config.mjs";
+
+const X402_FACILITATOR_MODES = new Set(["xpay", "cdp"]);
 
 const JSON_DATASET_SCHEMA = {
   type: "object",
@@ -40,7 +43,47 @@ export function buildFacilitatorClient(config) {
 
 export function buildPaymentPlugin(config) {
   return function installPayment(app) {
-    if (!config.x402Enabled) return;
+    // P1 Batch 2: production must FAIL CLOSED.
+    //
+    // Decide mode from the resolved config object (prefer an explicit
+    // paymentMode, otherwise infer from whether payment is enabled or a
+    // mainnet network is requested). We never infer "safe unpaid development"
+    // merely from a missing variable on a production-like instance.
+    //   - production + complete config -> register protected routes
+    //   - production + INCOMPLETE/invalid config -> throw during install so the
+    //     process fails startup loudly (fail closed)
+    //   - explicit local-unpaid (or disabled x402 on a non-mainnet network) ->
+    //     leave paid routes intentionally unprotected for local testing only
+    const mode = config.paymentMode ?? resolvePaymentMode({
+      X402_ENABLED: config.x402Enabled ? "true" : "false",
+      X402_NETWORK: config.x402Network ?? "eip155:84532",
+      ALLOW_MAINNET: config.x402Network === "eip155:8453" ? "true" : "",
+      X402_PAY_TO: config.x402PayTo ?? "",
+      X402_FACILITATOR_MODE: config.x402FacilitatorMode ?? "xpay",
+    });
+    const isProduction = mode === "production";
+
+    if (!isProduction) {
+      // Explicit local/test unpaid mode: intentionally do not wrap paid routes.
+      return;
+    }
+
+    // Production: required payment configuration must be present and valid in
+    // the config object itself. Throws PRODUCTION_PAYMENT_CONFIG_INVALID on any
+    // missing/invalid piece, which aborts installPayment and (via server.mjs)
+    // fails startup.
+    if (!config.x402Enabled) {
+      throw new Error("PRODUCTION_PAYMENT_CONFIG_INVALID: x402Enabled must be true in production payment mode");
+    }
+    if (!config.x402PayTo) {
+      throw new Error("PRODUCTION_PAYMENT_CONFIG_INVALID: x402PayTo is required in production payment mode");
+    }
+    if (config.x402Network === "eip155:8453" && !config.allowMainnet) {
+      throw new Error("PRODUCTION_PAYMENT_CONFIG_INVALID: Base mainnet requires allowMainnet=true");
+    }
+    if (!X402_FACILITATOR_MODES.has(config.x402FacilitatorMode ?? "xpay")) {
+      throw new Error(`PRODUCTION_PAYMENT_CONFIG_INVALID: X402_FACILITATOR_MODE "${config.x402FacilitatorMode}" is unsupported`);
+    }
 
     const facilitatorClient = buildFacilitatorClient(config);
     const resourceServer = new x402ResourceServer(facilitatorClient)
