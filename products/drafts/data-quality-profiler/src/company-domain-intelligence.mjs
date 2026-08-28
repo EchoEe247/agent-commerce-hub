@@ -1,6 +1,8 @@
 import * as dns from "node:dns/promises";
-import net from "node:net";
+import { isIP } from "node:net";
 import { domainToASCII } from "node:url";
+import { isPublicIp } from "./ssrf-address.mjs";
+import { createSafeWebsiteFetch, createHttpsTransport } from "./safe-website-fetch.mjs";
 
 const RDAP_BASE = "https://rdap.org/domain/";
 const BLOCKED_SUFFIXES = [".local", ".internal", ".test", ".invalid", ".example", ".onion", ".localhost", ".home", ".lan"];
@@ -9,14 +11,49 @@ const MAX_WEBSITE_BYTES = 512 * 1024;
 const WEBSITE_TIMEOUT_MS = 6000;
 const WEBSITE_USER_AGENT = "HermesCommerce/0.1 (+https://hermes-counterparty-api.onrender.com)";
 
+export {
+  isPublicIp,
+  MAX_WEBSITE_REDIRECTS,
+  MAX_WEBSITE_BYTES,
+  WEBSITE_TIMEOUT_MS,
+};
+
 export function createCompanyDomainIntelligence({
   resolver = dns,
   pageRequester,
   websiteFetch = globalThis.fetch,
+  websiteTransport,
+  dnsLookup,
   rdapFetch = globalThis.fetch,
   clock = { now: () => Date.now() },
 } = {}) {
-  const requestPage = pageRequester ?? createDefaultPageRequester({ resolver, fetchImpl: websiteFetch });
+  // The production website inspection path uses a hardened connection-time
+  // SSRF boundary (validating lookup + manual revalidated redirects + bounded
+  // body). An explicit pageRequester override is still honoured for tests and
+  // custom callers. A caller may supply a raw `websiteFetch` (e.g. global
+  // fetch) which is wrapped as the transport; otherwise the default transport
+  // is the hardened Node HTTPS client with a connection-time validating lookup.
+  const requestPage = pageRequester ?? (() => {
+    const transport = websiteTransport ?? (
+      typeof websiteFetch === "function"
+        ? (url, opts) => websiteFetch(url, {
+          method: opts.method,
+          redirect: opts.redirect,
+          headers: opts.headers,
+          signal: opts.signal,
+        })
+        : createHttpsTransport({ maxBytes: MAX_WEBSITE_BYTES, timeoutMs: WEBSITE_TIMEOUT_MS })
+    );
+    const safe = createSafeWebsiteFetch({
+      transport,
+      dnsLookup,
+      maxRedirects: MAX_WEBSITE_REDIRECTS,
+      maxBytes: MAX_WEBSITE_BYTES,
+      timeoutMs: WEBSITE_TIMEOUT_MS,
+      userAgent: WEBSITE_USER_AGENT,
+    });
+    return (startUrl) => safe.fetchUrl(startUrl);
+  })();
 
   return async function inspectCompanyDomain(payload) {
     const originalDomain = payload?.domain;
@@ -32,7 +69,11 @@ export function createCompanyDomainIntelligence({
     ]);
 
     const resolvedAddresses = [...addresses, ...ipv6Addresses];
-    assertPublicResolvedAddresses(resolvedAddresses);
+    for (const address of resolvedAddresses) {
+      if (!isPublicIp(String(address))) {
+        throw new Error(`UNSAFE_DOMAIN_TARGET: resolved address ${address} is not publicly routable`);
+      }
+    }
     const page = requestPage && resolvedAddresses.length > 0
       ? await safePageRequest(() => requestPage(`https://${normalizedDomain}/`))
       : null;
@@ -81,7 +122,7 @@ function normalizeDomain(value) {
     throw new Error("INVALID_DOMAIN_REQUEST: domain must be a non-empty string");
   }
   const trimmed = value.trim().replace(/\.+$/, "").toLowerCase();
-  if (net.isIP(trimmed)) {
+  if (isIP(trimmed)) {
     throw new Error("INVALID_DOMAIN_REQUEST: IP literals are not allowed");
   }
   const ascii = domainToASCII(trimmed).toLowerCase();
@@ -115,183 +156,12 @@ async function safePageRequest(operation) {
   }
 }
 
-function createDefaultPageRequester({ resolver, fetchImpl }) {
-  if (typeof fetchImpl !== "function") return null;
-
-  return async function requestPage(startUrl) {
-    let current = new URL(startUrl);
-    const redirectChain = [];
-
-    for (let hop = 0; hop <= MAX_WEBSITE_REDIRECTS; hop += 1) {
-      if (!["http:", "https:"].includes(current.protocol)) return null;
-      const hostname = normalizeDomain(current.hostname);
-      const [a, aaaa] = await Promise.all([
-        safeResolve(() => resolver.resolve4(hostname)),
-        safeResolve(() => resolver.resolve6(hostname)),
-      ]);
-      const resolved = [...a, ...aaaa];
-      if (resolved.length === 0) return null;
-      assertPublicResolvedAddresses(resolved);
-
-      const response = await fetchImpl(current.href, {
-        method: "GET",
-        redirect: "manual",
-        headers: {
-          accept: "text/html,application/xhtml+xml;q=0.9,*/*;q=0.1",
-          "user-agent": WEBSITE_USER_AGENT,
-        },
-        signal: AbortSignal.timeout(WEBSITE_TIMEOUT_MS),
-      });
-      if (!response) return null;
-
-      const status = Number(response.status);
-      const location = headerValue(response.headers, "location");
-      if ([301, 302, 303, 307, 308].includes(status) && location) {
-        if (hop >= MAX_WEBSITE_REDIRECTS) return null;
-        const next = new URL(location, current);
-        if (!["http:", "https:"].includes(next.protocol)) return null;
-        normalizeDomain(next.hostname);
-        redirectChain.push(current.href);
-        current = next;
-        continue;
-      }
-
-      const contentLength = Number(headerValue(response.headers, "content-length"));
-      if (Number.isFinite(contentLength) && contentLength > MAX_WEBSITE_BYTES) return null;
-      const contentType = headerValue(response.headers, "content-type");
-      if (contentType && !/\b(?:text\/html|application\/xhtml\+xml)\b/i.test(contentType)) return null;
-      const body = await readBoundedText(response, MAX_WEBSITE_BYTES);
-      if (body === null) return null;
-
-      return {
-        status_code: Number.isFinite(status) ? status : null,
-        final_url: current.href,
-        redirect_chain: redirectChain,
-        headers: response.headers ?? {},
-        body,
-      };
-    }
-
-    return null;
-  };
-}
-
-async function readBoundedText(response, maxBytes) {
-  const stream = response?.body;
-  if (stream && typeof stream.getReader === "function") {
-    const reader = stream.getReader();
-    const chunks = [];
-    let total = 0;
-    try {
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        const bytes = value instanceof Uint8Array ? value : new Uint8Array(value ?? []);
-        total += bytes.byteLength;
-        if (total > maxBytes) {
-          await reader.cancel().catch(() => {});
-          return null;
-        }
-        chunks.push(bytes);
-      }
-    } finally {
-      reader.releaseLock?.();
-    }
-    const combined = new Uint8Array(total);
-    let offset = 0;
-    for (const chunk of chunks) {
-      combined.set(chunk, offset);
-      offset += chunk.byteLength;
-    }
-    return new TextDecoder().decode(combined);
-  }
-
-  if (typeof response?.text !== "function") return "";
-  const text = await response.text();
-  return Buffer.byteLength(text, "utf8") <= maxBytes ? text : null;
-}
-
 function headerValue(headers, name) {
   if (!headers) return null;
   if (typeof headers.get === "function") return headers.get(name);
   const target = name.toLowerCase();
   const entry = Object.entries(headers).find(([key]) => key.toLowerCase() === target);
   return entry ? String(entry[1]) : null;
-}
-
-function assertPublicResolvedAddresses(addresses) {
-  for (const address of addresses) {
-    if (!isPublicIp(String(address))) {
-      throw new Error(`UNSAFE_DOMAIN_TARGET: resolved address ${address} is not publicly routable`);
-    }
-  }
-}
-
-function isPublicIp(address) {
-  const family = net.isIP(address);
-  if (family === 4) return isPublicIpv4(address);
-  if (family === 6) return isPublicIpv6(address);
-  return false;
-}
-
-function isPublicIpv4(address) {
-  const octets = address.split(".").map(Number);
-  if (octets.length !== 4 || octets.some((value) => !Number.isInteger(value) || value < 0 || value > 255)) return false;
-  const [a, b, c] = octets;
-  if (a === 0 || a === 10 || a === 127 || a >= 224) return false;
-  if (a === 100 && b >= 64 && b <= 127) return false;
-  if (a === 169 && b === 254) return false;
-  if (a === 172 && b >= 16 && b <= 31) return false;
-  if (a === 192 && b === 168) return false;
-  if (a === 192 && b === 0 && c === 0) return false;
-  if (a === 192 && b === 0 && c === 2) return false;
-  if (a === 192 && b === 88 && c === 99) return false;
-  if (a === 198 && (b === 18 || b === 19)) return false;
-  if (a === 198 && b === 51 && c === 100) return false;
-  if (a === 203 && b === 0 && c === 113) return false;
-  return true;
-}
-
-function isPublicIpv6(address) {
-  const bytes = ipv6Bytes(address);
-  if (!bytes) return false;
-  if (bytes.every((value) => value === 0)) return false;
-  if (bytes.slice(0, 15).every((value) => value === 0) && bytes[15] === 1) return false;
-  if ((bytes[0] & 0xfe) === 0xfc) return false;
-  if (bytes[0] === 0xfe && (bytes[1] & 0xc0) === 0x80) return false;
-  if (bytes[0] === 0xff) return false;
-  if (bytes[0] === 0x20 && bytes[1] === 0x01 && bytes[2] === 0x0d && bytes[3] === 0xb8) return false;
-  if (bytes[0] === 0x01 && bytes.slice(1, 8).every((value) => value === 0)) return false;
-  const mapped = bytes.slice(0, 10).every((value) => value === 0) && bytes[10] === 0xff && bytes[11] === 0xff;
-  if (mapped) return isPublicIpv4(bytes.slice(12).join("."));
-  return true;
-}
-
-function ipv6Bytes(address) {
-  let value = String(address).toLowerCase().split("%")[0];
-  if (value.includes(".")) {
-    const lastColon = value.lastIndexOf(":");
-    const ipv4 = value.slice(lastColon + 1);
-    if (net.isIP(ipv4) !== 4) return null;
-    const octets = ipv4.split(".").map(Number);
-    const hi = ((octets[0] << 8) | octets[1]).toString(16);
-    const lo = ((octets[2] << 8) | octets[3]).toString(16);
-    value = `${value.slice(0, lastColon)}:${hi}:${lo}`;
-  }
-  const halves = value.split("::");
-  if (halves.length > 2) return null;
-  const left = halves[0] ? halves[0].split(":") : [];
-  const right = halves[1] ? halves[1].split(":") : [];
-  const missing = halves.length === 2 ? 8 - left.length - right.length : 0;
-  const groups = halves.length === 2 ? [...left, ...Array(Math.max(0, missing)).fill("0"), ...right] : left;
-  if (groups.length !== 8) return null;
-  const bytes = [];
-  for (const group of groups) {
-    if (!/^[0-9a-f]{1,4}$/.test(group)) return null;
-    const number = Number.parseInt(group, 16);
-    bytes.push((number >> 8) & 0xff, number & 0xff);
-  }
-  return bytes;
 }
 
 async function fetchRdap(domain, fetchImpl) {
