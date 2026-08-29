@@ -107,12 +107,13 @@ A routed `reject` is forced to score 0 and priority band `blocked`, regardless o
 
 Ranking is deterministic for the same persisted state, evaluator selection, triage profile, age window, ranking clock, and options.
 
-## Next boundary
+## Implemented downstream preparation pipeline
 
-The ranked queue is still not an execution engine. Future work can consume `review_for_pursuit` rows and decide whether to:
+The ranked queue is still not an execution engine, but its downstream preparation layers are now implemented rather than hypothetical:
 
-1. perform more verification/enrichment;
-2. prepare an operator-facing response/contact draft;
-3. route an approved task to AI, remote-human, physical-human, hybrid, or manual execution.
+1. `npm run opportunities:prepare-operator -- --json` — builds bounded operator-preparation packets from eligible ranked rows. See `docs/opportunity-operator-preparation.md`.
+2. `npm run opportunities:prepare-pursuit -- --json` — builds internal pursuit dossiers with economics, execution planning, deterministic checks, and a controlled contact brief. See `docs/opportunity-pursuit-dossiers.md`.
+3. `npm run opportunities:verification-plan -- --json` — materializes current controlled checks and their effective resolution state. See `docs/opportunity-verification-ledger.md`.
+4. `npm run opportunities:record-verification -- ...` — appends compatible local verification evidence for a specific current dossier/check identity.
 
-Any contacting, claiming, hiring, submission, payment, or other mutation must remain behind a separate explicit approval/policy boundary.
+These layers preserve `externalActionsAllowed: false`. Even a fully resolved `ready_for_operator_decision` state authorizes only a human decision about what to do next. Contacting, claiming/accepting work, hiring, submission, payment, or any other external mutation remains outside this pipeline and requires a separate explicit authorization/policy boundary.
