@@ -82,10 +82,11 @@ Legacy generated research files such as `research/normalized/commerce-control/se
 
 ## Staged pull requests
 
-- **PR #76** — Batch 4 promotion subset; OPEN/DRAFT/UNMERGED. Do not merge. It is superseded as a complete promotion candidate by later staged work and will be dispositioned during Batch 6C.
-- **PR #77** — Batch 5 promotion candidate; OPEN/DRAFT/UNMERGED. Do not merge. It includes the closed hardening baseline through Batch 5 but not Batch 6A canonicalization.
+- **PR #76** — Batch 4 promotion subset; OPEN/DRAFT/UNMERGED. Do not merge. Superseded by later staged candidates; disposition deferred to Batch 6C.
+- **PR #77** — Batch 5 promotion subset; OPEN/DRAFT/UNMERGED. Do not merge. Superseded as the complete promotion candidate by PR #78; disposition deferred to Batch 6C.
+- **PR #78** — Batch 6A canonicalization promotion candidate; OPEN/DRAFT/UNMERGED. This is the newest complete staged candidate. Do not merge while Batch 6 canonicalization continues.
 
-Any later Batch 6 promotion PR must also remain draft/unmerged until the repository canonicalization sequence is complete and a deliberate production deployment is authorized.
+Production-target validation PRs remain draft/unmerged until the canonicalization sequence is complete and a deliberate production deployment is authorized.
 
 ## Archive policy
 
@@ -97,7 +98,7 @@ Never place raw credentials or secrets in the repository archive.
 
 ## Current cleanup sequence
 
-1. **Batch 6A — canonical state + stale operational truth archive** (this branch)
+1. **Batch 6A — canonical state + stale operational truth archive** (this branch / PR #78)
 2. **Batch 6B — seller lifecycle move out of `drafts` + coherent path updates**
 3. **Batch 6C — branch/PR cleanup + default/canonical branch alignment**
 4. **Later Commerce Control durability** — JSONL inter-process locking/claim safety, sanitizer/storage invariant, and legacy export namespace cleanup
