@@ -1,6 +1,7 @@
 import * as dns from "node:dns/promises";
 import { isIP } from "node:net";
 import { domainToASCII } from "node:url";
+import { COMPANY_DOMAIN_PREVIEW_MARKER } from "./company-domain-preview-guard.mjs";
 import { isPublicIp } from "./ssrf-address.mjs";
 import { createSafeWebsiteFetch, createHttpsTransport } from "./safe-website-fetch.mjs";
 
@@ -12,6 +13,10 @@ const MAX_WEBSITE_REDIRECTS = 4;
 const MAX_WEBSITE_BYTES = 512 * 1024;
 const WEBSITE_TIMEOUT_MS = 6000;
 const WEBSITE_USER_AGENT = "HermesCommerce/0.1 (+https://hermes-counterparty-api.onrender.com)";
+
+export const PREVIEW_DNS_TIMEOUT_MS = 1500;
+export const PREVIEW_CACHE_TTL_MS = 10 * 60 * 1000;
+export const PREVIEW_CACHE_MAX_ENTRIES = 1024;
 
 export {
   isPublicIp,
@@ -47,9 +52,66 @@ export function createCompanyDomainIntelligence({
     return (startUrl) => safe.fetchUrl(startUrl);
   })();
 
+  const previewCache = new Map();
+  const previewInflight = new Map();
+
+  async function inspectPreview(originalDomain, normalizedDomain) {
+    const now = Number(clock.now());
+    const cached = previewCache.get(normalizedDomain);
+    if (cached && cached.expiresAt > now) {
+      return buildPreviewInspection(originalDomain, normalizedDomain, cached.value, true);
+    }
+    if (cached) previewCache.delete(normalizedDomain);
+
+    let pending = previewInflight.get(normalizedDomain);
+    if (!pending) {
+      pending = (async () => {
+        const [addresses, ipv6Addresses] = await Promise.all([
+          safeResolveWithTimeout(() => resolver.resolve4(normalizedDomain), PREVIEW_DNS_TIMEOUT_MS),
+          safeResolveWithTimeout(() => resolver.resolve6(normalizedDomain), PREVIEW_DNS_TIMEOUT_MS),
+        ]);
+
+        for (const address of [...addresses, ...ipv6Addresses]) {
+          if (!isPublicIp(String(address))) {
+            throw new Error(`UNSAFE_DOMAIN_TARGET: resolved address ${address} is not publicly routable`);
+          }
+        }
+
+        return {
+          has_a: addresses.length > 0,
+          has_aaaa: ipv6Addresses.length > 0,
+          observed_at: new Date(clock.now()).toISOString(),
+        };
+      })();
+      previewInflight.set(normalizedDomain, pending);
+    }
+
+    try {
+      const value = await pending;
+      setBoundedCache(previewCache, normalizedDomain, {
+        expiresAt: Number(clock.now()) + PREVIEW_CACHE_TTL_MS,
+        value,
+      }, PREVIEW_CACHE_MAX_ENTRIES);
+      return buildPreviewInspection(originalDomain, normalizedDomain, value, false);
+    } finally {
+      if (previewInflight.get(normalizedDomain) === pending) {
+        previewInflight.delete(normalizedDomain);
+      }
+    }
+  }
+
   return async function inspectCompanyDomain(payload) {
     const originalDomain = payload?.domain;
     const normalizedDomain = normalizeDomain(originalDomain);
+
+    // The free preview is intentionally not the paid inspector with fields
+    // removed afterwards. A request-level guard marks preview payloads with a
+    // non-enumerable symbol. That path performs only two bounded DNS lookups,
+    // with cache and in-flight de-duplication; no RDAP, MX/TXT/DMARC, or website
+    // request is made.
+    if (payload?.[COMPANY_DOMAIN_PREVIEW_MARKER] === true) {
+      return inspectPreview(originalDomain, normalizedDomain);
+    }
 
     const [addresses, ipv6Addresses, mx, rootTxt, dmarcTxt, rdap] = await Promise.all([
       safeResolve(() => resolver.resolve4(normalizedDomain)),
@@ -109,7 +171,73 @@ export function createCompanyDomainIntelligence({
   };
 }
 
-function normalizeDomain(value) {
+function buildPreviewInspection(originalDomain, normalizedDomain, dnsSignals, cacheHit) {
+  const hasPublicDns = Boolean(dnsSignals?.has_a || dnsSignals?.has_aaaa);
+  const warnings = [
+    "Free preview is intentionally limited to bounded public A/AAAA DNS validation; website, RDAP, MX, SPF, DMARC, and security enrichment require the paid operation.",
+  ];
+  if (!hasPublicDns) warnings.push("No public A/AAAA record was available within the preview DNS deadline.");
+  if (cacheHit) warnings.push("Preview result served from bounded in-memory DNS cache.");
+
+  return {
+    schema_version: "1.0",
+    query: {
+      domain: originalDomain,
+      normalized_domain: normalizedDomain,
+    },
+    company: {
+      display_name: normalizedDomain,
+      source: "normalized_domain",
+      confidence: "low",
+    },
+    domain: {
+      registered: null,
+      registrar: null,
+      registration_date: null,
+      expiration_date: null,
+      age_days: null,
+      statuses: [],
+      nameservers: [],
+    },
+    website: {
+      reachable: false,
+      https: false,
+      status_code: null,
+      final_url: null,
+      redirect_chain: [],
+      title: null,
+      description: null,
+      canonical_url: null,
+      social_links: [],
+      contact_links: [],
+    },
+    dns: {
+      has_a: Boolean(dnsSignals?.has_a),
+      has_aaaa: Boolean(dnsSignals?.has_aaaa),
+      addresses: [],
+      ipv6_addresses: [],
+    },
+    mail: {
+      has_mx: false,
+      mx: [],
+      spf_present: false,
+      dmarc_present: false,
+    },
+    security: {
+      hsts: false,
+      content_security_policy: false,
+    },
+    sources: {
+      fetched_at: dnsSignals?.observed_at ?? null,
+      dns: "system-resolver-preview",
+      rdap: null,
+      website: null,
+    },
+    warnings,
+  };
+}
+
+export function normalizeDomain(value) {
   if (typeof value !== "string" || !value.trim()) {
     throw new Error("INVALID_DOMAIN_REQUEST: domain must be a non-empty string");
   }
@@ -138,6 +266,33 @@ async function safeResolve(operation) {
   } catch {
     return [];
   }
+}
+
+async function safeResolveWithTimeout(operation, timeoutMs) {
+  let timer;
+  try {
+    const timeout = new Promise((resolve) => {
+      timer = setTimeout(() => resolve([]), timeoutMs);
+      timer.unref?.();
+    });
+    const lookup = Promise.resolve()
+      .then(operation)
+      .then((value) => Array.isArray(value) ? value : [])
+      .catch(() => []);
+    return await Promise.race([lookup, timeout]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
+function setBoundedCache(cache, key, value, maxEntries) {
+  if (cache.has(key)) cache.delete(key);
+  while (cache.size >= maxEntries) {
+    const oldest = cache.keys().next().value;
+    if (oldest === undefined) break;
+    cache.delete(oldest);
+  }
+  cache.set(key, value);
 }
 
 async function safePageRequest(operation) {
