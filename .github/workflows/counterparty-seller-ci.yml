@@ -44,12 +44,12 @@ jobs:
         with:
           node-version: '24'
           cache: npm
-          cache-dependency-path: products/drafts/data-quality-profiler/package-lock.json
+          cache-dependency-path: products/published/data-quality-profiler/package-lock.json
       - name: Install seller dependencies
-        working-directory: products/drafts/data-quality-profiler
+        working-directory: products/published/data-quality-profiler
         run: npm ci
       - name: Full seller gate
-        working-directory: products/drafts/data-quality-profiler
+        working-directory: products/published/data-quality-profiler
         run: npm test
       - name: Financial audit snapshots unchanged by tests
         run: |
