@@ -7,21 +7,29 @@ export function buildOpenApiDocument(config) {
   const company = document.paths["/v1/company-domain-intelligence"].post;
   const domainSchema = company.requestBody.content["application/json"].schema;
 
-  document.info.description = "Agent utilities for company research, package maintenance intelligence, dependency vulnerability checks, counterparty availability, SEC company snapshots, OFAC sanctions screening, and deterministic JSON/CSV data-quality work. Company domain intelligence includes a free preview before the paid enrichment call.";
-  document.info["x-guidance"] = "Thirteen paid POST operations are pay-per-call x402 resources on Base using USDC, plus one free company-intelligence preview at /v1/company-domain-intelligence/preview. Agents researching a company, enriching a business, investigating a domain, or qualifying a lead can call the free preview first, then use the paid company-domain-intelligence operation for RDAP, DNS, mail-policy, social/contact, security, and source details. For paid operations, an unpaid call returns HTTP 402 with the runtime payment challenge; retry with a valid x402 payment. Dataset operations accept JSON records or CSV text. The sanctions screen returns candidate matches from authoritative OFAC SDN source files and is not a legal compliance determination. No MPP payment support is advertised by this API yet.";
+  document.info.description = "Agent utilities for company research, package maintenance intelligence, dependency vulnerability checks, counterparty availability, SEC company snapshots, OFAC sanctions screening, and deterministic JSON/CSV data-quality work. Company domain intelligence includes a bounded free DNS preview before the paid enrichment call.";
+  document.info["x-guidance"] = "Thirteen paid POST operations are pay-per-call x402 resources on Base using USDC, plus one bounded free company-intelligence preview at /v1/company-domain-intelligence/preview. Agents researching a company, enriching a business, investigating a domain, or qualifying a lead can call the free preview first. The free preview performs only public A/AAAA DNS validation with rate limiting and bounded in-memory caching; it does not fetch RDAP, website content, MX/TXT/DMARC, social/contact, or security enrichment. Use the paid company-domain-intelligence operation for those richer signals. For paid operations, an unpaid call returns HTTP 402 with the runtime payment challenge; retry with a valid x402 payment. Dataset operations accept JSON records or CSV text. The sanctions screen returns candidate matches from authoritative OFAC SDN source files and is not a legal compliance determination. No MPP payment support is advertised by this API yet.";
   document.info.contact = { url: "https://github.com/EchoEe247/agent-commerce-hub" };
 
   company.operationId = "companyDomainIntelligenceEnrichment";
   company.summary = "Company domain intelligence: research and enrich a business domain with public web and infrastructure signals";
-  company.description = "Use this paid operation to research a company, enrich a business, investigate a domain, or qualify a lead after trying the free preview at /v1/company-domain-intelligence/preview. Returns normalized domain identity, public DNS A/AAAA records, MX/SPF/DMARC signals, RDAP registration metadata, website reachability and identity metadata, selected social/contact links, HSTS/CSP presence, and source provenance. Public-domain input only; IP literals, special-use hostnames, and private/non-routable resolved targets are rejected.";
+  company.description = "Use this paid operation to research a company, enrich a business, investigate a domain, or qualify a lead after trying the bounded free preview at /v1/company-domain-intelligence/preview. Returns normalized domain identity, public DNS A/AAAA records, MX/SPF/DMARC signals, RDAP registration metadata, website reachability and identity metadata, selected social/contact links, HSTS/CSP presence, and source provenance. Public-domain input only; IP literals, special-use hostnames, and private/non-routable resolved targets are rejected.";
 
   document.paths[PREVIEW_PATH] = {
     post: {
       operationId: "previewCompanyDomainIntelligence",
-      summary: "Free company and domain intelligence preview",
-      description: "Free acquisition preview for agents that need to research a company, inspect a business domain, investigate a website, or qualify a lead before paying. Returns company identity confidence, website reachability/title/description, and high-level mail/security signals. The paid /v1/company-domain-intelligence operation adds full RDAP, DNS addresses, mail records, social/contact links, security details, and source provenance.",
+      summary: "Bounded free company-domain DNS preview",
+      description: "Free acquisition preview for agents that need to research a company, inspect a business domain, investigate a website target, or qualify a lead before paying. It validates and normalizes the public domain and performs only bounded A/AAAA DNS resolution. It intentionally does not fetch website content, RDAP, MX, SPF, DMARC, social/contact links, or HTTP security headers. Results are protected by a per-client fixed-window request limit and bounded in-memory DNS cache. The paid /v1/company-domain-intelligence operation provides the full enrichment.",
       tags: ["Business Intelligence"],
       security: [],
+      "x-preview-limits": {
+        rate_limit: "20 requests per 60 seconds per client",
+        cache_ttl_seconds: 600,
+        cache_max_entries: 1024,
+        dns_queries_per_cache_miss: 2,
+        rdap_fetches: 0,
+        website_fetches: 0,
+      },
       requestBody: {
         required: true,
         content: {
@@ -33,7 +41,7 @@ export function buildOpenApiDocument(config) {
       },
       responses: {
         "200": {
-          description: "Successful free preview",
+          description: "Successful bounded free preview",
           content: {
             "application/json": {
               schema: {
@@ -54,8 +62,8 @@ export function buildOpenApiDocument(config) {
             },
           },
         },
-        "400": { description: "Invalid request" },
-        "408": { description: "Processing timeout" },
+        "400": { description: "Invalid or unsafe public domain request" },
+        "429": { description: "Free preview rate limit exceeded" },
       },
     },
   };
