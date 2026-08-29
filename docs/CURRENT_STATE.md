@@ -10,10 +10,11 @@ Last current-state update: **2026-08-29**.
 - **Canonical main protection:** enabled; pull requests are required with strict `workflow-policy`, `seller`, and `commerce-control` checks, admins enforced, force-push/deletion disabled.
 - **Production deployment branch:** `feat/hermes-commerce-control-plane`.
 - **Latest completed implementation batch:** P1 Holiday Provenance Batch 10, code validated at `63a8d78a3c0db7d6de75e3f267647015af4cccec` through PR #87.
+- **Latest production-staging alignment:** P1 Production Candidate Alignment Batch 11, with draft PR #89 as the sole current production candidate.
 
 Batch 6C aligned canonical state into `main` through PR #81. Batch 7 was then validated at `378fdcec5240076c20381b3310ad7fbdb018eae9`, merged through PR #82, and completed its GitHub administration at `main` merge commit `db344147e8ed490f486a6aa86f4b19a3e1d675bf`. Ten already-archived obsolete branch refs were removed while preservation refs were retained.
 
-Batch 8 centralized seller pricing and merged through PR #84. Batch 9 bounded public upstream response bodies before parsing, validated at `f9d465fa0986fb6f9a902acfae2a3fb2a57a2576`, and merged through PR #86 as `dcaa00adb88e3ed62207a870be95128d500a4edb`. Batch 10 adds explicit static holiday-rule provenance and corrects Brazil Carnival national-scope classification.
+Batch 8 centralized seller pricing and merged through PR #84. Batch 9 bounded public upstream response bodies before parsing, validated at `f9d465fa0986fb6f9a902acfae2a3fb2a57a2576`, and merged through PR #86 as `dcaa00adb88e3ed62207a870be95128d500a4edb`. Batch 10 adds explicit static holiday-rule provenance and corrects Brazil Carnival national-scope classification. Batch 11 replaced stale/conflicted production staging with a dedicated reconciliation branch whose candidate tree is canonical `main` while the unchanged production head remains in its ancestry.
 
 The production branch remains separately protected with the same required checks and remains at `bc6b1a80aa4f71a7db68c35c07c54bbae7e69ef9`.
 
@@ -21,7 +22,11 @@ The production branch remains separately protected with the same required checks
 
 Render auto-deploys from `feat/hermes-commerce-control-plane`, not from `main`. Repository hardening merged into `main` does **not** deploy production.
 
-PR **#79** remains the production-promotion candidate. It stays OPEN/DRAFT/UNMERGED until an explicit production deployment is authorized. Merging #79 into the production branch is the deployment event.
+PR **#89** is the sole current production-promotion candidate. It is OPEN/DRAFT/UNMERGED on `promote/main-through-batch-10` and targets the protected Render-linked production branch. Merging #89 is a live production deployment event and requires explicit production authorization.
+
+The direct `main` → production attempt in PR #88 was closed unmerged after GitHub confirmed a real dirty history conflict. The older Batch-6B-only PR #79 was also closed unmerged as stale. Neither changed production.
+
+The promotion branch uses an explicit reconciliation commit: production remains an ancestor while the candidate file tree is taken from validated canonical `main`. If `main` advances before deployment, refresh and revalidate the promotion branch before any merge rather than treating an older green check as current.
 
 The repository candidate `render.yaml` uses `products/published/data-quality-profiler`; that candidate root is not proof that the live Render service has moved. Validated batches through Batch 10 remain **not production-deployed**.
 
@@ -41,6 +46,7 @@ The repository candidate `render.yaml` uses `products/published/data-quality-pro
 | P1 Seller Pricing Source Batch 8 | CLOSED | code validated at `85918d271c107881d8cd9a7781370f4e1742a42e`, merge PR #84 |
 | P1 Upstream Response Bounds Batch 9 | CLOSED | `f9d465fa0986fb6f9a902acfae2a3fb2a57a2576`, PR #86, merged to `main` as `dcaa00adb88e3ed62207a870be95128d500a4edb` |
 | P1 Holiday Provenance Batch 10 | CLOSED | code validated at `63a8d78a3c0db7d6de75e3f267647015af4cccec`, merge PR #87 |
+| P1 Production Candidate Alignment Batch 11 | CLOSED | draft PR #89; clean reconciliation candidate validated at `62e09f8aa7f3139c8dbc5103af03ad5cb01bb489`; production unchanged |
 
 ## Financial state
 
@@ -71,7 +77,7 @@ The Batch 8 pricing-consistency suite proves all thirteen defaults and route-spe
 
 No package or lockfile upgrade was required for Batch 8.
 
-Published repository lifecycle **does not mean deployed**. Production remains on the older protected deployment branch until #79 is deliberately merged.
+Published repository lifecycle **does not mean deployed**. Production remains on the older protected deployment branch until #89 is deliberately authorized and merged.
 
 ## Seller upstream resource bounds
 
@@ -118,13 +124,18 @@ The former active-looking tracked snapshots remain preserved by exact Git blob i
 
 ## PR state
 
-Deliberately retained older PRs:
+Deliberately retained open PRs:
 
 - **#8** — deferred the402 provider adapter; do not merge stale implementation wholesale. If revived, rebase/reimplement and add replay protection.
 - **#63** — useful root landing page; extract/rebase onto the canonical seller later.
-- **#79** — production-promotion candidate; OPEN/DRAFT/UNMERGED.
+- **#89** — current production-promotion candidate; OPEN/DRAFT/UNMERGED. Do not merge without explicit production authorization and current Render inspection.
 
-PR **#82** is merged and closed as Batch 7. Draft PRs **#83** and **#85** were validated but closed unmerged solely because the ChatGPT GitHub connector could not clear their draft flags; their identical validated branches were merged through non-draft PRs **#84** and **#86** respectively. PR **#87** is the protected-main Batch 10 merge path. None of these hardening PRs target the Render-linked production branch.
+Superseded production candidates:
+
+- **#79** — CLOSED/UNMERGED; stale Batch-6B-only candidate.
+- **#88** — CLOSED/UNMERGED; direct-main candidate with confirmed dirty history conflict.
+
+PR **#82** is merged and closed as Batch 7. Draft PRs **#83** and **#85** were validated but closed unmerged solely because the ChatGPT GitHub connector could not clear their draft flags; their identical validated branches were merged through non-draft PRs **#84** and **#86** respectively. PR **#87** merged Batch 10 into protected `main`.
 
 ## Archive policy
 
@@ -135,7 +146,7 @@ PR **#82** is merged and closed as Batch 7. Draft PRs **#83** and **#85** were v
 1. Read `state/CURRENT.json` and this document before older status, handoff, plan, receipt, or research files.
 2. A filename containing `latest` is not automatically current; Commerce Control may no longer generate `*-latest.json` outputs.
 3. A closed validation batch or `products/published/` path is not automatically deployed.
-4. Merging #79 is a production deployment event; do not use it merely for validation or repository cleanup.
+4. Merging #89 is a production deployment event; do not use it merely for validation or repository cleanup. Refresh/revalidate its promotion branch if `main` has advanced.
 5. All seller default-price changes must update the canonical `SELLER_PRICE_DEFAULTS` / `SELLER_PRICE_CATALOG` authority and pass the pricing-consistency suite.
 6. Counterparty holiday output is advisory static-rule data, not a live authoritative calendar; retain provenance and limitations if the holiday implementation changes.
 7. Preserve uncertain historical material before removing it.
