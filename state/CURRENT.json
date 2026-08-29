@@ -17,7 +17,7 @@
     "admins_enforced": true,
     "force_push_allowed": false,
     "branch_deletion_allowed": false,
-    "default_branch_alignment": "batch_6c_main_history_preserving_merge",
+    "default_branch_alignment": "batch_6c_main_history_preserving_snapshot_merge",
     "pre_alignment_main_head": "fb1574abcad25f68c59d9589ae1701d43e3107cc",
     "pre_alignment_main_preservation_ref": "archive/batch-6c-main-before-alignment-fb1574a"
   },
@@ -47,7 +47,7 @@
     "validated_batches_through_6b_deployed": false,
     "candidate_root_dir": "products/published/data-quality-profiler",
     "candidate_root_dir_deployed": false,
-    "rule": "Merging PR #79 into the protected production branch is a production deployment event. Aligning the default main branch through PR #80 does not deploy Render."
+    "rule": "Merging PR #79 into the protected production branch is a production deployment event. Aligning the default main branch through PR #81 does not deploy Render."
   },
   "financial": {
     "transactional_authority": "local_gitignored_sqlite",
@@ -79,17 +79,17 @@
     "legacy_export_namespace_cleanup": "deferred_later_durability_batch"
   },
   "pull_requests": {
-    "closed_unmerged_batch_6c": [1,2,33,34,35,64,76,77,78],
+    "closed_unmerged_batch_6c": [1,2,33,34,35,64,76,77,78,80],
     "deferred_open": [8,63],
     "production_candidate": 79,
     "production_candidate_state": "open_draft_unmerged",
-    "alignment_pr": 80,
+    "alignment_pr": 81,
     "preservation_index": "Unknown/Archived/branches/2026-08-29-batch-6c-pr-branch-index.md"
   },
   "canonicalization": {
-    "branch": "chore/p1-repository-alignment-batch-6c",
+    "branch": "chore/p1-main-snapshot-alignment-6c",
     "alignment_target": "main",
-    "alignment_pull_request": 80,
+    "alignment_pull_request": 81,
     "batch": "6c",
     "state": "alignment_candidate_no_production_deploy",
     "completed": ["6a", "6b"],
