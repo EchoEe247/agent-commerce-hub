@@ -6,7 +6,7 @@ import { join } from "node:path";
 import { openStateDatabase, closeStateDatabase } from "../src/state/sqlite.js";
 import { runMigrations } from "../src/state/migrations.js";
 import { CommerceRepository } from "../src/state/repository.js";
-import { exportRepositoryOutputs, sanitizeForExport } from "../src/export/repo.js";
+import { EXPORT_PATHS, exportRepositoryOutputs, sanitizeForExport, writeArtifact } from "../src/export/repo.js";
 import { loadConfig } from "../src/config.js";
 
 function tempContext(): {
@@ -45,7 +45,7 @@ function tempContext(): {
   };
 }
 
-test("export: writes to correct canonical paths in the repo root", () => {
+test("export: writes only to the explicit non-authoritative legacy snapshot namespace", () => {
   const ctx = tempContext();
   try {
     const exportedAt = "2026-08-19T00:00:00.000Z";
@@ -58,20 +58,40 @@ test("export: writes to correct canonical paths in the repo root", () => {
     assert.equal(artifacts.length, 4);
 
     const expectedPaths = [
-      "research/normalized/commerce-control/services-latest.json",
-      "research/normalized/commerce-control/work-latest.json",
-      "analytics/commerce-control/source-health-latest.json",
-      "analytics/commerce-control/status-latest.json",
+      "analytics/commerce-control/legacy/services-snapshot.json",
+      "analytics/commerce-control/legacy/work-snapshot.json",
+      "analytics/commerce-control/legacy/source-health-snapshot.json",
+      "analytics/commerce-control/legacy/status-snapshot.json",
     ];
+    assert.deepEqual(Object.values(EXPORT_PATHS), expectedPaths);
 
     for (const p of expectedPaths) {
+      assert.equal(p.startsWith("state/"), false);
+      assert.doesNotMatch(p, /latest\.json$/i);
       const fullPath = join(ctx.repoRoot, p);
       assert.ok(existsSync(fullPath), `Export path ${p} should exist`);
       const content = readFileSync(fullPath, "utf8");
       const parsed = JSON.parse(content);
+      assert.equal(parsed.authority, false);
       assert.equal(parsed.mode, "A");
       assert.equal(parsed.generatedAt ?? parsed.checkedAt ?? exportedAt, exportedAt);
     }
+  } finally {
+    ctx.cleanup();
+  }
+});
+
+test("export: refuses authoritative-looking state and latest paths", () => {
+  const ctx = tempContext();
+  try {
+    assert.throws(
+      () => writeArtifact(ctx.repoRoot, "state/commerce-control/STATUS.json", "bad", {}, "2026-08-19T00:00:00.000Z"),
+      /authoritative-looking legacy export path/i,
+    );
+    assert.throws(
+      () => writeArtifact(ctx.repoRoot, "analytics/commerce-control/status-latest.json", "bad", {}, "2026-08-19T00:00:00.000Z"),
+      /authoritative-looking legacy export path/i,
+    );
   } finally {
     ctx.cleanup();
   }
@@ -82,7 +102,6 @@ test("export: robustly scrubs and redacts secret-like values during export", () 
   const bearerToken = "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.dummyPayload.signature";
   const privateKeyEnvLine = "PRIVATE_KEY=secret_value";
 
-  // Check the robust standalone export sanitizer first
   const payload = {
     nested: {
       secret_key: secretKey,
@@ -90,13 +109,12 @@ test("export: robustly scrubs and redacts secret-like values during export", () 
       safe_field: "this is completely safe text",
       config_line: privateKeyEnvLine,
     },
-    digest: "abcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcd", // safe 64-hex under DIGEST_KEYS
-    other_hex: "1111111111111111111111111111111111111111111111111111111111111111", // redacted under non-digest key
+    digest: "abcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcd",
+    other_hex: "1111111111111111111111111111111111111111111111111111111111111111",
   };
 
   const sanitized = sanitizeForExport(payload) as Record<string, any>;
 
-  // Check that secrets are scrubbed
   assert.notEqual(sanitized.nested.secret_key, secretKey);
   assert.ok(sanitized.nested.secret_key.includes("REDACTED"));
   assert.notEqual(sanitized.nested.token, bearerToken);
@@ -104,9 +122,7 @@ test("export: robustly scrubs and redacts secret-like values during export", () 
   assert.notEqual(sanitized.nested.config_line, privateKeyEnvLine);
   assert.ok(sanitized.nested.config_line.includes("REDACTED"));
 
-  // Check digest preservation
   assert.equal(sanitized.digest, "abcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcd");
-  // Check other 64-hex redaction
   assert.notEqual(sanitized.other_hex, "1111111111111111111111111111111111111111111111111111111111111111");
   assert.ok(sanitized.other_hex.includes("REDACTED"));
 });
@@ -129,7 +145,7 @@ test("export: operation receipt records correct Mode-A booleans and false execut
       resultCount: 42,
       financialActionExecuted: false,
       externalMutationExecuted: false,
-      evidencePaths: ["research/normalized/commerce-control/services-latest.json"],
+      evidencePaths: [EXPORT_PATHS.services],
       errors: ["the402:unreachable"],
     });
 
@@ -140,9 +156,7 @@ test("export: operation receipt records correct Mode-A booleans and false execut
     assert.equal(record.financialActionExecuted, false);
     assert.equal(record.externalMutationExecuted, false);
     assert.equal(record.resultCount, 42);
-    assert.deepEqual([...(record.evidencePaths ?? [])], [
-      "research/normalized/commerce-control/services-latest.json",
-    ]);
+    assert.deepEqual([...(record.evidencePaths ?? [])], [EXPORT_PATHS.services]);
     assert.deepEqual([...(record.errors ?? [])], ["the402:unreachable"]);
   } finally {
     ctx.cleanup();
