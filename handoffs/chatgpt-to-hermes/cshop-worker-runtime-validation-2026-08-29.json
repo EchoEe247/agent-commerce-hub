@@ -3,12 +3,13 @@
   "from": "chatgpt",
   "to": "hermes",
   "created_at": "2026-08-29T16:35:00Z",
+  "updated_at": "2026-08-29T16:55:00Z",
   "status": "ready",
   "repository": "EchoEe247/agent-commerce-hub",
   "source_branch": "feat/cshop-worker-adapter",
   "source_base_main": "579bc7c43d5a7b8fc6283080e96f9c850f2dcb91",
   "implementation_state": "unmerged_preproduction_branch",
-  "objective": "Run the complete local validation loop for the new private C-Shop worker adapter against the pinned standalone C-Shop runtime. Fix concrete adapter defects if found, rerun the full relevant validation, and return one evidence-backed PASS/FAIL receipt. Do not merge or deploy.",
+  "objective": "Run the native local validation loop for the new private C-Shop worker adapter against the pinned standalone C-Shop runtime. The adapter implementation and dependency-free contract suite are already complete. Confirm the Rust build/runtime/GPU path, confirm the pinned-source findings under the real server, run the real graphics smoke export, fix only concrete adapter defects if found, rerun validation, and return one evidence-backed PASS/FAIL receipt. Do not merge or deploy.",
   "upstream": {
     "repository": "https://github.com/stubbb/c-shop.git",
     "commit": "f3b2033c07df92e8e72ff83a29955a2c10494d95",
@@ -17,6 +18,34 @@
     "expected_mcp_url": "http://127.0.0.1:7333/mcp",
     "expected_protocol": "2025-06-18"
   },
+  "chatgpt_validation_already_completed": {
+    "adapter_contract_tests": "4/4 PASS",
+    "runner_environment": "Node v22.16.0",
+    "note": "Node 22 passing is incidental compatibility only; package support remains Node >=24.",
+    "rust_runtime_available_in_chatgpt_runner": false,
+    "docker_or_podman_available_in_chatgpt_runner": false,
+    "reason_hermes_is_still_required": "Native C-Shop compilation and real MCP rendering cannot be completed in the ChatGPT runner because Rust and container runtimes are absent."
+  },
+  "pinned_source_findings": [
+    {
+      "id": "explicit-session-required-for-multicall-persistence",
+      "state": "STATICALLY_CONFIRMED",
+      "finding": "C-Shop session_of() uses the supplied sane Mcp-Session-Id, otherwise generates a fresh random session id for that request. Omitted-session multi-call workflows therefore do not retain one document across calls.",
+      "adapter_boundary": "CShopClient always supplies one explicit session id for every RPC call."
+    },
+    {
+      "id": "unauthenticated-root-health-metadata",
+      "state": "STATICALLY_CONFIRMED",
+      "finding": "GET / and GET /health do not pass through the bearer-token guard. /health reports workspace and active session metadata; / also reports workspace/auth/tool information.",
+      "adapter_boundary": "Loopback is enforced by default. Non-loopback client endpoints require explicit allowRemote=true plus a bearer token."
+    },
+    {
+      "id": "style-filesystem-surface",
+      "state": "STATICALLY_CONFIRMED_BOUNDARY",
+      "finding": "Style lookup searches the workspace/base and style directories beside the executable, while served Runner instances otherwise carry a Sandbox for script-named file paths.",
+      "adapter_boundary": "The commerce job rejects unknown fields including script and emits no style command. Do not broaden this during validation."
+    }
+  ],
   "implementation_paths": [
     "tools/cshop-worker-adapter/package.json",
     "tools/cshop-worker-adapter/src/cshop-client.mjs",
@@ -30,7 +59,7 @@
     "Do not touch the protected production branch feat/hermes-commerce-control-plane.",
     "Do not modify Render, seller payment configuration, ledgers, wallets, signing state, or live-value settings.",
     "Do not merge this feature branch.",
-    "The commerce adapter must not accept arbitrary raw scripts and must not emit C-Shop style commands in this first slice.",
+    "The commerce adapter rejects arbitrary/unknown raw job fields including script and must not emit C-Shop style commands in this first slice.",
     "Use an isolated disposable C-Shop workspace for runtime tests."
   ],
   "execution": [
@@ -55,7 +84,7 @@
         "node --version",
         "npm test"
       ],
-      "pass": "All adapter tests pass under Node 24 or newer. If Node is older, use the existing project-supported Node 24 environment rather than weakening the package requirement."
+      "pass": "All 4 adapter tests pass under Node 24 or newer. If Node is older, use the existing project-supported Node 24 environment rather than weakening the package requirement."
     },
     {
       "step": 3,
@@ -84,13 +113,14 @@
     },
     {
       "step": 5,
-      "name": "Reproduce the three previously identified server questions",
+      "name": "Runtime-confirm the three pinned-source findings",
       "instructions": [
-        "Inspect and runtime-test the pinned source for style loading relative to the Sandbox. Specifically trace find_style/cmd_style and determine whether a served script can cause style loading to read outside the configured workspace. Use only disposable canary files. Report CONFIRMED, NOT_REPRODUCED, or FIXED_UPSTREAM_AT_PIN with exact evidence.",
-        "Test session behavior both with an explicit Mcp-Session-Id and with that header omitted. Confirm that explicit sessions retain one document across calls. Record exactly what no-header calls do; do not assume the earlier classification is still correct.",
-        "GET / and GET /health while loopback-bound and record which workspace/session metadata is exposed without authorization. Then classify the practical risk under the adapter's loopback-only boundary. Do not bind publicly for this test."
+        "Do not perform a fresh architecture investigation. Confirm the already-recorded static findings against the actual pinned server with bounded disposable tests.",
+        "Confirm explicit Mcp-Session-Id calls retain one document across calls and omitted-header calls do not retain one document across separate requests.",
+        "GET / and GET /health while loopback-bound and capture the unauthenticated workspace/session metadata actually returned.",
+        "Use a disposable style canary only if needed to confirm the recorded style filesystem surface. Do not enable style in the adapter and do not edit upstream unless this bounded confirmation reveals a blocker to the existing no-style workflow."
       ],
-      "pass": "Each question has a reproducible result and evidence. The adapter itself must remain safe even if the upstream behavior is unchanged: explicit session IDs, no style commands, loopback-only runtime."
+      "pass": "Runtime evidence matches or precisely corrects each recorded finding. Any correction must identify the exact source/runtime discrepancy."
     },
     {
       "step": 6,
@@ -127,12 +157,12 @@
       "name": "Return one closure receipt",
       "instructions": [
         "Write handoffs/hermes-to-chatgpt/cshop-worker-runtime-validation-2026-08-29.json on feat/cshop-worker-adapter.",
-        "Include: hub HEAD, C-Shop SHA, Node/Rust/Cargo versions, adapter test totals, cargo test totals, build result, the three server-question results with evidence, smoke report, output file size/type, any patches made, and a final CSHOP_WORKER_RUNTIME_VALIDATION=PASS or FAIL.",
+        "Include: hub HEAD, C-Shop SHA, Node/Rust/Cargo versions, adapter test totals, cargo test totals, build result, runtime confirmation of the three source findings, smoke report, output file size/type, any patches made, and a final CSHOP_WORKER_RUNTIME_VALIDATION=PASS or FAIL.",
         "If code was changed, commit it together with the result and push feat/cshop-worker-adapter. Do not merge."
       ],
       "pass": "The result is self-contained enough for ChatGPT to fix a failure or close the validation without another discovery pass."
     }
   ],
   "fallback": "If native C-Shop cannot start solely because the local environment lacks the graphics/Vulkan runtime, preserve the exact native failure and make one bounded attempt using C-Shop's own pinned Docker setup if Docker is already available. Do not install a large new virtualization stack solely for this validation. If neither path is available, return FAIL_ENVIRONMENT with the exact blocker rather than looping.",
-  "stop_condition": "Implementation complete + adapter tests pass + pinned C-Shop build/relevant tests pass (or explicitly bounded environment-only exclusions) + real MCP smoke export passes + three server questions are evidenced + no known adapter blocker = DONE."
+  "stop_condition": "Adapter implementation complete + 4/4 adapter tests pass + pinned C-Shop build/relevant tests pass (or explicitly bounded environment-only exclusions) + real MCP smoke export passes + three pinned-source findings are runtime-confirmed + no known adapter blocker = DONE."
 }
