@@ -6,26 +6,24 @@ Last canonicalization update: **2026-08-29**.
 
 ## Repository roles
 
-- **Canonical/default repository branch:** `main` after the Batch 6C history-preserving alignment merge.
+- **Canonical/default repository branch:** `main` after Batch 6C PR #81 merges.
 - **Production deployment branch:** `feat/hermes-commerce-control-plane`.
 - **Validated Batch 6B baseline:** `c9512348567459be3164f2413d4e187a7bed7501`.
-- **Batch 6C alignment branch:** `chore/p1-repository-alignment-batch-6c`.
+- **Batch 6C alignment branch:** `chore/p1-main-snapshot-alignment-6c`.
 
-Before Batch 6C, `main` was stale at `fb1574abcad25f68c59d9589ae1701d43e3107cc`. That exact pre-alignment head is preserved by ref `archive/batch-6c-main-before-alignment-fb1574a`. Batch 6C aligns `main` by normal PR/merge rather than force-resetting history.
+Before Batch 6C, `main` was stale at `fb1574abcad25f68c59d9589ae1701d43e3107cc`. That exact head is preserved by `archive/batch-6c-main-before-alignment-fb1574a`.
+
+The first alignment PR (#80) exposed conflicts in the two legacy `main`-only signer/buyer workflow commits. Those workflow versions are superseded by the hardened canonical workflows. Rather than force-resetting `main`, Batch 6C keeps the old `main` head as ancestry and applies the validated canonical tree as a snapshot commit. PR #81 is the clean alignment PR.
 
 The production branch remains separately protected with required `workflow-policy`, `seller`, and `commerce-control` checks, admins enforced, and force-push/deletion disabled.
 
 ## Deployment boundary
 
-Render auto-deploys from `feat/hermes-commerce-control-plane`, not from `main`. Therefore aligning canonical repository state into `main` **does not deploy production**.
+Render auto-deploys from `feat/hermes-commerce-control-plane`, not from `main`. Merging PR #81 into `main` **does not deploy production**.
 
 PR **#79** remains the production-promotion candidate. It stays OPEN/DRAFT/UNMERGED until an explicit production deployment is authorized. Merging #79 into the production branch is the deployment event.
 
-The repository candidate `render.yaml` uses:
-
-`products/published/data-quality-profiler`
-
-That candidate root is not proof that the live Render service has moved.
+The repository candidate `render.yaml` uses `products/published/data-quality-profiler`; that candidate root is not proof that the live Render service has moved.
 
 ## Closed validation batches
 
@@ -39,7 +37,7 @@ That candidate root is not proof that the live Render service has moved.
 | P1 Canonical-State Batch 6A | CLOSED | `54674d29ffb6fed9614ea6ef56b1520d16a8ec47` |
 | P1 Seller Lifecycle Batch 6B | CLOSED | `c9512348567459be3164f2413d4e187a7bed7501` |
 
-Validated properties include fail-closed production payment configuration, physically separated mainnet/testnet financial histories, local SQLite transactional authority, conservative reconciliation, private signed authorization material excluded from tracked audit exports, production branch change control, bounded free preview, explicit current-state authority, and the seller lifecycle move to the published path.
+Validated properties include fail-closed production payment configuration, physically separated mainnet/testnet financial histories, local SQLite transactional authority, conservative reconciliation, private signed authorization material excluded from tracked audit exports, protected production change control, bounded free preview, explicit current-state authority, and the seller lifecycle move to the published path.
 
 ## Financial state
 
@@ -49,7 +47,7 @@ Tracked JSON ledgers are audit snapshots, not the transactional runtime database
 - Testnet: `state/commerce-control/ledgers/testnet-budget-ledger.json`, blob `0632862d26c600634068b61669db8de11faa8dad`.
 - Mainnet validated totals: initial `2380000`, spent `10000`, remaining `2370000` atomic USDC.
 
-The authoritative mainnet SQLite database remains local/gitignored and must not be initialized, replaced, exported, or reconciled merely for repository cleanup.
+The authoritative mainnet SQLite database remains local/gitignored and must not be initialized, replaced, exported, or reconciled for repository cleanup.
 
 ## Seller lifecycle
 
@@ -76,21 +74,20 @@ Inter-process JSONL locking/atomic claims, sanitizer/storage invariants, and rem
 
 ## PR cleanup
 
-Batch 6C preserved terminal identities in:
+Batch 6C preserved terminal identities in `Unknown/Archived/branches/2026-08-29-batch-6c-pr-branch-index.md`.
 
-`Unknown/Archived/branches/2026-08-29-batch-6c-pr-branch-index.md`
+Closed unmerged as temporary, historical, divergent, superseded, or conflicted:
 
-Closed unmerged as temporary, historical, divergent, or superseded:
-
-`#1, #2, #33, #34, #35, #64, #76, #77, #78`
+`#1, #2, #33, #34, #35, #64, #76, #77, #78, #80`
 
 Deliberately retained:
 
 - **#8** — deferred the402 provider adapter; do not merge stale implementation wholesale. If revived, rebase/reimplement and add replay protection.
 - **#63** — useful root landing page; extract/rebase onto canonical seller later.
 - **#79** — current production-promotion candidate; OPEN/DRAFT/UNMERGED.
+- **#81** — Batch 6C default/canonical `main` alignment PR; safe to merge after its repository checks pass because its base is `main`, not the Render production branch.
 
-Obsolete branch-ref deletion is mechanical follow-up after preservation; it is not authority and must never erase the archived terminal SHA record.
+Obsolete branch-ref deletion is mechanical follow-up after preservation; it must never erase the archived terminal SHA record.
 
 ## Archive policy
 
@@ -100,7 +97,7 @@ Obsolete branch-ref deletion is mechanical follow-up after preservation; it is n
 
 1. Batch 6A — canonical state/stale operational truth archive — CLOSED.
 2. Batch 6B — seller lifecycle move/path rewiring — CLOSED.
-3. Batch 6C — PR cleanup + history-preserving default/canonical `main` alignment — CURRENT until the alignment PR is merged.
+3. Batch 6C — PR cleanup + default/canonical `main` alignment — CURRENT through PR #81; no production deployment.
 4. Next coherent implementation: Commerce Control durability — JSONL multiwriter locking/atomic claims, sanitizer/storage invariant, legacy export namespace cleanup.
 
 ## Rules for future agents
