@@ -9,12 +9,12 @@ Last current-state update: **2026-08-29**.
 - **Canonical/default repository branch:** `main`.
 - **Canonical main protection:** enabled; pull requests are required with strict `workflow-policy`, `seller`, and `commerce-control` checks, admins enforced, force-push/deletion disabled.
 - **Production deployment branch:** `feat/hermes-commerce-control-plane`.
-- **Latest completed implementation batch:** P1 Testnet Signer Writeback Batch 14, code validated at `c1c4778cd04a6dd77f35f1cd8fd3cf7a7a9d0378` through PR #93.
+- **Latest completed implementation batch:** P1 Root Landing Extraction Batch 15, code validated at `797ea54dcf888036dea50ebc7a16a0f78a99fe78` through PR #94.
 - **Latest production-staging alignment:** draft PR #89 is the sole current production candidate and is refreshed whenever canonical `main` advances.
 
 Batch 6C aligned canonical state into `main` through PR #81. Batch 7 was then validated at `378fdcec5240076c20381b3310ad7fbdb018eae9`, merged through PR #82, and completed its GitHub administration at `main` merge commit `db344147e8ed490f486a6aa86f4b19a3e1d675bf`. Ten already-archived obsolete branch refs were removed while preservation refs were retained.
 
-Batch 8 centralized seller pricing and merged through PR #84. Batch 9 bounded public upstream response bodies before parsing, validated at `f9d465fa0986fb6f9a902acfae2a3fb2a57a2576`, and merged through PR #86 as `dcaa00adb88e3ed62207a870be95128d500a4edb`. Batch 10 adds explicit static holiday-rule provenance and corrects Brazil Carnival national-scope classification. Batch 11 replaced stale/conflicted production staging with a dedicated reconciliation branch whose candidate tree is canonical `main` while the unchanged production head remains in its ancestry. Batch 12 minimizes the public seller Docker artifact so repository-only buyer, reconciliation, financial-store, discovery, admin, test, and documentation material is not shipped with the seller process. Batch 13 removes direct GitHub-expression interpolation from shell commands and makes that a repository-enforced workflow policy. Batch 14 removes the testnet signer's dependency on direct writeback to whichever protected/default branch launched the workflow.
+Batch 8 centralized seller pricing and merged through PR #84. Batch 9 bounded public upstream response bodies before parsing, validated at `f9d465fa0986fb6f9a902acfae2a3fb2a57a2576`, and merged through PR #86 as `dcaa00adb88e3ed62207a870be95128d500a4edb`. Batch 10 adds explicit static holiday-rule provenance and corrects Brazil Carnival national-scope classification. Batch 11 replaced stale/conflicted production staging with a dedicated reconciliation branch whose candidate tree is canonical `main` while the unchanged production head remains in its ancestry. Batch 12 minimizes the public seller Docker artifact so repository-only buyer, reconciliation, financial-store, discovery, admin, test, and documentation material is not shipped with the seller process. Batch 13 removes direct GitHub-expression interpolation from shell commands and makes that a repository-enforced workflow policy. Batch 14 removes the testnet signer's dependency on direct writeback to whichever protected/default branch launched the workflow. Batch 15 reimplements the useful human-readable root landing from stale PR #63 on the canonical published seller without merging obsolete draft-path history.
 
 The production branch remains separately protected with the same required checks and remains at `bc6b1a80aa4f71a7db68c35c07c54bbae7e69ef9`.
 
@@ -28,7 +28,7 @@ The direct `main` → production attempt in PR #88 was closed unmerged after Git
 
 The promotion branch uses explicit reconciliation commits: production remains an ancestor while the candidate file tree is taken from validated canonical `main`. If `main` advances before deployment, refresh and revalidate the promotion branch before any merge rather than treating an older green check as current.
 
-The repository candidate `render.yaml` uses `products/published/data-quality-profiler`; that candidate root is not proof that the live Render service has moved. Validated implementation through Batch 14 remains **not production-deployed**.
+The repository candidate `render.yaml` uses `products/published/data-quality-profiler`; that candidate root is not proof that the live Render service has moved. Validated implementation through Batch 15 remains **not production-deployed**.
 
 ## Closed validation batches
 
@@ -50,6 +50,7 @@ The repository candidate `render.yaml` uses `products/published/data-quality-pro
 | P1 Public/Private Runtime Boundary Batch 12 | CLOSED | code validated at `53b1c500af48257cd524f674367041640ec0850a`, PR #91 |
 | P1 Workflow Shell Interpolation Batch 13 | CLOSED | code validated at `5e1d0ce3e7d6a790acfaf3409ca67c82185a4ce0`, PR #92 |
 | P1 Testnet Signer Writeback Batch 14 | CLOSED | code validated at `c1c4778cd04a6dd77f35f1cd8fd3cf7a7a9d0378`, PR #93 |
+| P1 Root Landing Extraction Batch 15 | CLOSED | code validated at `797ea54dcf888036dea50ebc7a16a0f78a99fe78`, PR #94; replaces stale PR #63 semantics on canonical seller |
 
 ## Financial state
 
@@ -79,6 +80,12 @@ The previously drifting defaults are now explicitly aligned:
 The Batch 8 pricing-consistency suite proves all thirteen defaults and route-specific environment overrides match between resolved config, `/.well-known/x402`, and OpenAPI; it also verifies the payment plugin consumes every canonical price config key. The existing Distribution Readiness CI path filter already covers the entire published seller tree, so changes to the canonical price source automatically run distribution contracts and the full seller suite.
 
 Published repository lifecycle **does not mean deployed**. Production remains on the older protected deployment branch until #89 is deliberately authorized and merged.
+
+## Public root landing
+
+Batch 15 replaces the useful intent of stale PR #63 on the current seller architecture. `src/root-landing.mjs` provides a static, read-only `GET /` API-discovery page and `src/server.mjs` registers it before listening. The canonical `app.mjs` and payment implementation remain unchanged.
+
+The landing page links to `/openapi.json`, `/llms.txt`, `/.well-known/x402`, and `/health`, includes no request-derived content, is bounded below 16 KiB by regression, and sends a restrictive content-security policy plus `X-Content-Type-Options: nosniff`. It is public discovery only and does not alter paid-route protection or pricing.
 
 ## Public/private seller deployment boundary
 
@@ -150,15 +157,15 @@ The former active-looking tracked snapshots remain preserved by exact Git blob i
 Deliberately retained open PRs:
 
 - **#8** — deferred the402 provider adapter; do not merge stale implementation wholesale. If revived, rebase/reimplement and add replay protection.
-- **#63** — useful root landing page; extract/rebase onto the canonical seller later.
 - **#89** — current production-promotion candidate; OPEN/DRAFT/UNMERGED. Do not merge without explicit production authorization and current Render inspection.
 
-Superseded production candidates:
+Superseded or replaced PRs:
 
-- **#79** — CLOSED/UNMERGED; stale Batch-6B-only candidate.
+- **#63** — stale draft-path root landing; useful semantics reimplemented on canonical seller by Batch 15 / PR #94; close unmerged.
+- **#79** — CLOSED/UNMERGED; stale Batch-6B-only production candidate.
 - **#88** — CLOSED/UNMERGED; direct-main candidate with confirmed dirty history conflict.
 
-PR **#82** is merged and closed as Batch 7. Draft PRs **#83** and **#85** were validated but closed unmerged solely because the ChatGPT GitHub connector could not clear their draft flags; their identical validated branches were merged through non-draft PRs **#84** and **#86** respectively. PR **#87** merged Batch 10 into protected `main`. PR **#91** merged Batch 12. PR **#92** merged Batch 13. PR **#93** is the Batch 14 protected-main merge path.
+PR **#82** is merged and closed as Batch 7. Draft PRs **#83** and **#85** were validated but closed unmerged solely because the ChatGPT GitHub connector could not clear their draft flags; their identical validated branches were merged through non-draft PRs **#84** and **#86** respectively. PR **#87** merged Batch 10 into protected `main`. PR **#91** merged Batch 12. PR **#92** merged Batch 13. PR **#93** merged Batch 14. PR **#94** is the Batch 15 protected-main merge path.
 
 ## Archive policy
 
@@ -175,5 +182,6 @@ PR **#82** is merged and closed as Batch 7. Draft PRs **#83** and **#85** were v
 7. Public seller Docker changes must preserve the Batch 12 boundary: seller payment enforcement may ship, but buyer/discovery/private financial/operator modules must remain outside the public server import graph and Docker artifact.
 8. GitHub expressions must not appear directly inside workflow `run:` commands or blocks; pass values through `env:` and quote shell variables.
 9. Testnet signer audit snapshots must write only to run-scoped `testnet-audit/` branches; do not write directly to the selected/default/protected branch or force-push audit refs.
-10. Preserve uncertain historical material before removing it.
-11. Never commit secrets, private paid results, local SQLite/WAL/SHM files, or generated `node_modules`.
+10. Preserve the public root landing as a static read-only discovery surface; do not add request-derived HTML or couple it to payment execution.
+11. Preserve uncertain historical material before removing it.
+12. Never commit secrets, private paid results, local SQLite/WAL/SHM files, or generated `node_modules`.
