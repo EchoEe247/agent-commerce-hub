@@ -84,14 +84,16 @@ test("export: writes only to the explicit non-authoritative legacy snapshot name
 test("export: refuses authoritative-looking state and latest paths", () => {
   const ctx = tempContext();
   try {
-    assert.throws(
-      () => writeArtifact(ctx.repoRoot, "state/commerce-control/STATUS.json", "bad", {}, "2026-08-19T00:00:00.000Z"),
-      /authoritative-looking legacy export path/i,
-    );
-    assert.throws(
-      () => writeArtifact(ctx.repoRoot, "analytics/commerce-control/status-latest.json", "bad", {}, "2026-08-19T00:00:00.000Z"),
-      /authoritative-looking legacy export path/i,
-    );
+    for (const path of [
+      "state/commerce-control/STATUS.json",
+      "analytics/commerce-control/status-latest.json",
+      "analytics/commerce-control/source-health-latest.json",
+    ]) {
+      assert.throws(
+        () => writeArtifact(ctx.repoRoot, path, "bad", {}, "2026-08-19T00:00:00.000Z"),
+        /authoritative-looking legacy export path/i,
+      );
+    }
   } finally {
     ctx.cleanup();
   }
