@@ -3,6 +3,21 @@ import { toolImage, toolText } from './cshop-client.mjs';
 const SAFE_FILENAME = /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/;
 const HEX_COLOUR = /^#[0-9a-fA-F]{6}(?:[0-9a-fA-F]{2})?$/;
 const OUTPUT_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg']);
+const ALLOWED_JOB_FIELDS = new Set([
+  'width',
+  'height',
+  'title',
+  'price',
+  'titleSize',
+  'priceSize',
+  'background',
+  'titleColor',
+  'priceColor',
+  'overlayFrom',
+  'overlayTo',
+  'asset',
+  'output',
+]);
 
 function integer(value, name, min, max) {
   if (!Number.isSafeInteger(value) || value < min || value > max) {
@@ -56,6 +71,11 @@ function parseMeasurement(report) {
 export function normalizeProductGraphicsJob(input) {
   if (!input || typeof input !== 'object' || Array.isArray(input)) {
     throw new TypeError('job must be an object');
+  }
+  for (const key of Object.keys(input)) {
+    if (!ALLOWED_JOB_FIELDS.has(key)) {
+      throw new TypeError(`unsupported product graphics job field: ${key}`);
+    }
   }
 
   const width = integer(input.width ?? 1200, 'width', 256, 4096);
