@@ -47,7 +47,7 @@
     "validated_batches_through_6b_deployed": false,
     "candidate_root_dir": "products/published/data-quality-profiler",
     "candidate_root_dir_deployed": false,
-    "rule": "Merging PR #79 into the protected production branch is a production deployment event. Aligning the default main branch does not deploy Render."
+    "rule": "Merging PR #79 into the protected production branch is a production deployment event. Aligning the default main branch through PR #80 does not deploy Render."
   },
   "financial": {
     "transactional_authority": "local_gitignored_sqlite",
@@ -83,12 +83,13 @@
     "deferred_open": [8,63],
     "production_candidate": 79,
     "production_candidate_state": "open_draft_unmerged",
+    "alignment_pr": 80,
     "preservation_index": "Unknown/Archived/branches/2026-08-29-batch-6c-pr-branch-index.md"
   },
   "canonicalization": {
     "branch": "chore/p1-repository-alignment-batch-6c",
     "alignment_target": "main",
-    "alignment_pull_request": null,
+    "alignment_pull_request": 80,
     "batch": "6c",
     "state": "alignment_candidate_no_production_deploy",
     "completed": ["6a", "6b"],
