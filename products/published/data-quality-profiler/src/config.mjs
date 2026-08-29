@@ -2,6 +2,86 @@ const X402_FACILITATOR_MODES = new Set(["xpay", "cdp"]);
 const XPAY_FACILITATOR_URL = "https://facilitator.xpay.sh";
 const CDP_FACILITATOR_URL = "https://api.cdp.coinbase.com/platform/v2/x402";
 
+// Canonical seller price defaults. Every runtime/payment/discovery surface must
+// derive defaults from this object rather than carrying independent literals.
+// The config-property keys are intentionally stable because Commerce Control
+// derives publication-readiness facts from this source file.
+export const SELLER_PRICE_DEFAULTS = Object.freeze({
+  x402Price: "$0.02",
+  x402LocalePrice: "$0.03",
+  x402SanctionsScreenPrice: "$0.02",
+  x402CompanyDomainPrice: "$0.02",
+  x402SecCompanyPrice: "$0.02",
+  x402DependencyVulnerabilityPrice: "$0.005",
+  x402PackageMaintenancePrice: "$0.005",
+  x402DuplicateAuditPrice: "$0.005",
+  x402QualityGatePrice: "$0.01",
+  x402SchemaDriftPrice: "$0.015",
+  x402DataContractPrice: "$0.015",
+  x402CleanNormalizePrice: "$0.02",
+  x402RepairPlanPrice: "$0.02",
+});
+
+const SELLER_PRICE_ENV_VARS = Object.freeze({
+  x402Price: "X402_PRICE",
+  x402LocalePrice: "X402_LOCALE_PRICE",
+  x402SanctionsScreenPrice: "X402_SANCTIONS_SCREEN_PRICE",
+  x402CompanyDomainPrice: "X402_COMPANY_DOMAIN_PRICE",
+  x402SecCompanyPrice: "X402_SEC_COMPANY_PRICE",
+  x402DependencyVulnerabilityPrice: "X402_DEPENDENCY_VULNERABILITY_PRICE",
+  x402PackageMaintenancePrice: "X402_PACKAGE_MAINTENANCE_PRICE",
+  x402DuplicateAuditPrice: "X402_DUPLICATE_AUDIT_PRICE",
+  x402QualityGatePrice: "X402_QUALITY_GATE_PRICE",
+  x402SchemaDriftPrice: "X402_SCHEMA_DRIFT_PRICE",
+  x402DataContractPrice: "X402_DATA_CONTRACT_PRICE",
+  x402CleanNormalizePrice: "X402_CLEAN_NORMALIZE_PRICE",
+  x402RepairPlanPrice: "X402_REPAIR_PLAN_PRICE",
+});
+
+const SELLER_PRICE_ROUTES = Object.freeze({
+  x402Price: "/v1/profile",
+  x402LocalePrice: "/v1/counterparty-availability",
+  x402SanctionsScreenPrice: "/v1/entity-sanctions-screen",
+  x402CompanyDomainPrice: "/v1/company-domain-intelligence",
+  x402SecCompanyPrice: "/v1/sec-company-snapshot",
+  x402DependencyVulnerabilityPrice: "/v1/dependency-vulnerability-check",
+  x402PackageMaintenancePrice: "/v1/package-maintenance-snapshot",
+  x402DuplicateAuditPrice: "/v1/duplicate-audit",
+  x402QualityGatePrice: "/v1/quality-gate",
+  x402SchemaDriftPrice: "/v1/schema-drift",
+  x402DataContractPrice: "/v1/data-contract-check",
+  x402CleanNormalizePrice: "/v1/clean-normalize",
+  x402RepairPlanPrice: "/v1/repair-plan",
+});
+
+export const SELLER_PRICE_CATALOG = Object.freeze(
+  Object.fromEntries(
+    Object.keys(SELLER_PRICE_DEFAULTS).map((configKey) => [
+      SELLER_PRICE_ROUTES[configKey],
+      Object.freeze({
+        configKey,
+        envVar: SELLER_PRICE_ENV_VARS[configKey],
+        defaultPrice: SELLER_PRICE_DEFAULTS[configKey],
+      }),
+    ]),
+  ),
+);
+
+export function resolveSellerPrices(env = process.env) {
+  return Object.freeze(
+    Object.fromEntries(
+      Object.entries(SELLER_PRICE_DEFAULTS).map(([configKey, defaultPrice]) => [
+        configKey,
+        env[SELLER_PRICE_ENV_VARS[configKey]] ?? defaultPrice,
+      ]),
+    ),
+  );
+}
+
+export function withSellerPriceDefaults(config = {}) {
+  return Object.freeze({ ...SELLER_PRICE_DEFAULTS, ...config });
+}
+
 // A syntactically valid EVM (Base) address is "0x" + 40 hex characters.
 // The seller only supports Base EVM networks, so a production payTo must be
 // one of these; a random nonempty string must never satisfy validation.
@@ -136,19 +216,7 @@ export function loadConfig(env = process.env) {
     isProduction,
     x402Enabled,
     x402Network,
-    x402Price: env.X402_PRICE ?? "$0.02",
-    x402LocalePrice: env.X402_LOCALE_PRICE ?? "$0.03",
-    x402SanctionsScreenPrice: env.X402_SANCTIONS_SCREEN_PRICE ?? "$0.02",
-    x402CompanyDomainPrice: env.X402_COMPANY_DOMAIN_PRICE ?? "$0.02",
-    x402SecCompanyPrice: env.X402_SEC_COMPANY_PRICE ?? "$0.02",
-    x402DependencyVulnerabilityPrice: env.X402_DEPENDENCY_VULNERABILITY_PRICE ?? "$0.005",
-    x402PackageMaintenancePrice: env.X402_PACKAGE_MAINTENANCE_PRICE ?? "$0.005",
-    x402DuplicateAuditPrice: env.X402_DUPLICATE_AUDIT_PRICE ?? "$0.005",
-    x402QualityGatePrice: env.X402_QUALITY_GATE_PRICE ?? "$0.01",
-    x402SchemaDriftPrice: env.X402_SCHEMA_DRIFT_PRICE ?? "$0.015",
-    x402DataContractPrice: env.X402_DATA_CONTRACT_PRICE ?? "$0.015",
-    x402CleanNormalizePrice: env.X402_CLEAN_NORMALIZE_PRICE ?? "$0.02",
-    x402RepairPlanPrice: env.X402_REPAIR_PLAN_PRICE ?? "$0.02",
+    ...resolveSellerPrices(env),
     x402PayTo,
     x402FacilitatorMode,
     x402FacilitatorUrl,

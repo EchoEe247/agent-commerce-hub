@@ -6,13 +6,14 @@ Last current-state update: **2026-08-29**.
 
 ## Repository roles
 
-- **Canonical/default repository branch:** `main`, aligned by Batch 6C PR #81.
+- **Canonical/default repository branch:** `main`.
+- **Canonical main protection:** enabled; pull requests are required with strict `workflow-policy`, `seller`, and `commerce-control` checks, admins enforced, force-push/deletion disabled.
 - **Production deployment branch:** `feat/hermes-commerce-control-plane`.
-- **Latest completed implementation batch:** P1 Commerce Control Durability Batch 7, validated on PR #82.
+- **Latest completed implementation batch:** P1 Seller Pricing Source Batch 8, validated for merge through PR #84.
 
-Before Batch 6C, `main` was stale at `fb1574abcad25f68c59d9589ae1701d43e3107cc`. That exact head is preserved by `archive/batch-6c-main-before-alignment-fb1574a`.
+Batch 6C aligned canonical state into `main` through PR #81. Batch 7 was then validated at `378fdcec5240076c20381b3310ad7fbdb018eae9`, merged through PR #82, and completed its GitHub administration at `main` merge commit `db344147e8ed490f486a6aa86f4b19a3e1d675bf`. Ten already-archived obsolete branch refs were removed while preservation refs were retained.
 
-The production branch remains separately protected with required `workflow-policy`, `seller`, and `commerce-control` checks, admins enforced, and force-push/deletion disabled.
+The production branch remains separately protected with the same required checks and remains at `bc6b1a80aa4f71a7db68c35c07c54bbae7e69ef9`.
 
 ## Deployment boundary
 
@@ -20,7 +21,7 @@ Render auto-deploys from `feat/hermes-commerce-control-plane`, not from `main`. 
 
 PR **#79** remains the production-promotion candidate. It stays OPEN/DRAFT/UNMERGED until an explicit production deployment is authorized. Merging #79 into the production branch is the deployment event.
 
-The repository candidate `render.yaml` uses `products/published/data-quality-profiler`; that candidate root is not proof that the live Render service has moved.
+The repository candidate `render.yaml` uses `products/published/data-quality-profiler`; that candidate root is not proof that the live Render service has moved. Validated batches through Batch 8 remain **not production-deployed**.
 
 ## Closed validation batches
 
@@ -34,7 +35,8 @@ The repository candidate `render.yaml` uses `products/published/data-quality-pro
 | P1 Canonical-State Batch 6A | CLOSED | `54674d29ffb6fed9614ea6ef56b1520d16a8ec47` |
 | P1 Seller Lifecycle Batch 6B | CLOSED | `c9512348567459be3164f2413d4e187a7bed7501` |
 | P1 Repository Alignment Batch 6C | CLOSED | PR #81 aligned canonical state into `main` without production deploy |
-| P1 Commerce Control Durability Batch 7 | CLOSED | code validated at `fcb576a485e3629dd739d1f8760bfa5ec5e724fd`, PR #82 |
+| P1 Commerce Control Durability Batch 7 | CLOSED | `378fdcec5240076c20381b3310ad7fbdb018eae9`, PR #82, merged to `main` as `db344147e8ed490f486a6aa86f4b19a3e1d675bf` |
+| P1 Seller Pricing Source Batch 8 | CLOSED | code validated at `85918d271c107881d8cd9a7781370f4e1742a42e`, merge PR #84 |
 
 ## Financial state
 
@@ -46,7 +48,7 @@ Tracked JSON ledgers are audit snapshots, not the transactional runtime database
 
 The authoritative mainnet SQLite database remains local/gitignored and must not be initialized, replaced, exported, or reconciled for repository cleanup.
 
-## Seller lifecycle
+## Seller lifecycle and pricing
 
 Canonical seller source:
 
@@ -54,13 +56,24 @@ Canonical seller source:
 
 Batch 6B moved the seller tree byte-for-byte from `products/drafts/data-quality-profiler/`; active workflows, financial CI, distribution CI, Commerce Control readiness inspection, and repository Render configuration use the published path.
 
+Batch 8 makes `products/published/data-quality-profiler/src/config.mjs` the canonical seller price source. `SELLER_PRICE_DEFAULTS` contains the thirteen default prices and `SELLER_PRICE_CATALOG` binds each paid route to its config key, environment variable, and default. Config resolution, the Agent402 manifest, and public OpenAPI now normalize from this authority rather than carrying independent runtime fallbacks.
+
+The previously drifting defaults are now explicitly aligned:
+
+- `/v1/dependency-vulnerability-check` — `$0.005`
+- `/v1/package-maintenance-snapshot` — `$0.005`
+
+The Batch 8 pricing-consistency suite proves all thirteen defaults and route-specific environment overrides match between resolved config, `/.well-known/x402`, and OpenAPI; it also verifies the payment plugin consumes every canonical price config key. The existing Distribution Readiness CI path filter already covers the entire published seller tree, so changes to the canonical price source automatically run distribution contracts and the full seller suite.
+
+No package or lockfile upgrade was required for Batch 8.
+
 Published repository lifecycle **does not mean deployed**. Production remains on the older protected deployment branch until #79 is deliberately merged.
 
 ## Commerce Control durability
 
-`tools/hermes-commerce-control/` remains the Commerce Control package. Batch 7 closes the known durability gaps without enabling external writes or value movement.
+`tools/hermes-commerce-control/` remains the Commerce Control package. Batch 7 closed the known durability gaps without enabling external writes or value movement.
 
-Durability guarantees now include:
+Durability guarantees include:
 
 - opportunity JSONL tail repair, dedupe, and append are serialized across independent processes with bounded stale-lock recovery;
 - evaluator workers acquire a durable per-request/evaluator lease **before** calling the model, preventing duplicate concurrent evaluations;
@@ -76,17 +89,9 @@ Current legacy export paths are:
 - `analytics/commerce-control/legacy/source-health-snapshot.json`
 - `analytics/commerce-control/legacy/status-snapshot.json`
 
-The former active-looking tracked snapshots were preserved by exact Git blob identity and retired from their old paths:
-
-- services: `74eac508a8c54e1e0e50101b9d817051c3a12765`
-- work: `963facec4a4cf93fa8aa43c904190f07b00e1e24`
-- source health: `f2969d7242a0ce9b5b03702f9ca1f6c44be403cc`
-
-Archive location: `Unknown/Archived/legacy-commerce-exports/2026-08-29/`.
+The former active-looking tracked snapshots remain preserved by exact Git blob identity under `Unknown/Archived/legacy-commerce-exports/2026-08-29/`.
 
 ## PR state
-
-Batch 6C preserved historical terminal identities in `Unknown/Archived/branches/2026-08-29-batch-6c-pr-branch-index.md`.
 
 Deliberately retained older PRs:
 
@@ -94,11 +99,7 @@ Deliberately retained older PRs:
 - **#63** — useful root landing page; extract/rebase onto the canonical seller later.
 - **#79** — production-promotion candidate; OPEN/DRAFT/UNMERGED.
 
-PR **#82** is the Batch 7 Commerce Control durability change targeting `main`. It does not target the Render-linked production branch.
-
-## Remaining repository administration
-
-Canonical `main` still needs branch protection equivalent to the production checks, and obsolete preserved branch refs can be deleted after consulting the Batch 6C archive index. Those are mechanical GitHub-administration tasks; they do not require a production deployment or financial runtime mutation.
+PR **#82** is merged and closed as Batch 7. Draft PR **#83** was validated but closed unmerged solely because the ChatGPT GitHub connector could not clear its draft flag; the identical branch is carried by non-draft PR **#84** for the protected-main merge. Neither PR targets the Render-linked production branch.
 
 ## Archive policy
 
@@ -110,5 +111,6 @@ Canonical `main` still needs branch protection equivalent to the production chec
 2. A filename containing `latest` is not automatically current; Commerce Control may no longer generate `*-latest.json` outputs.
 3. A closed validation batch or `products/published/` path is not automatically deployed.
 4. Merging #79 is a production deployment event; do not use it merely for validation or repository cleanup.
-5. Preserve uncertain historical material before removing it.
-6. Never commit secrets, private paid results, local SQLite/WAL/SHM files, or generated `node_modules`.
+5. All seller default-price changes must update the canonical `SELLER_PRICE_DEFAULTS` / `SELLER_PRICE_CATALOG` authority and pass the pricing-consistency suite.
+6. Preserve uncertain historical material before removing it.
+7. Never commit secrets, private paid results, local SQLite/WAL/SHM files, or generated `node_modules`.

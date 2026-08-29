@@ -1,26 +1,14 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { buildApp } from "../src/app.mjs";
+import { loadConfig } from "../src/config.mjs";
 
 const PUBLIC_ORIGIN = "https://hermes-counterparty-api.onrender.com";
 
 function app() {
   return buildApp({
     config: {
-      serviceVersion: "0.1.0",
-      x402Price: "$0.02",
-      x402LocalePrice: "$0.03",
-      x402SanctionsScreenPrice: "$0.02",
-      x402CompanyDomainPrice: "$0.02",
-      x402SecCompanyPrice: "$0.02",
-      x402DependencyVulnerabilityPrice: "$0.015",
-      x402PackageMaintenancePrice: "$0.015",
-      x402DuplicateAuditPrice: "$0.005",
-      x402QualityGatePrice: "$0.01",
-      x402SchemaDriftPrice: "$0.015",
-      x402DataContractPrice: "$0.015",
-      x402CleanNormalizePrice: "$0.02",
-      x402RepairPlanPrice: "$0.02",
+      ...loadConfig({ X402_PAYMENT_MODE: "local-unpaid" }),
       x402Network: "eip155:8453",
       x402PayTo: "0x2BD7c4e294B09E9a853168a58712498D03A45B01",
     },
@@ -54,7 +42,7 @@ test("manifest exposes all thirteen POST tools including Product 13", async () =
   const developer = body.capabilities.categories.find((category) => category.key === "developer-intelligence");
   assert.ok(developer);
   assert.equal(developer.tools, 1);
-  assert.equal(developer.priceRange, "$0.015");
+  assert.equal(developer.priceRange, "$0.005");
 
   const domainProduct = body.endpoints.find((endpoint) => endpoint.path === "/v1/company-domain-intelligence");
   assert.ok(domainProduct);
@@ -83,10 +71,14 @@ test("manifest exposes all thirteen POST tools including Product 13", async () =
   assert.equal(secProduct.summary, "SEC company snapshot by ticker or CIK with filings and financial facts");
   assert.match(secProduct.description, /XBRL/i);
 
+  const dependencyProduct = body.endpoints.find((endpoint) => endpoint.path === "/v1/dependency-vulnerability-check");
+  assert.ok(dependencyProduct);
+  assert.equal(dependencyProduct.price_usd, 0.005);
+
   const packageProduct = body.endpoints.find((endpoint) => endpoint.path === "/v1/package-maintenance-snapshot");
   assert.ok(packageProduct);
   assert.equal(packageProduct.method, "POST");
-  assert.equal(packageProduct.price_usd, 0.015);
+  assert.equal(packageProduct.price_usd, 0.005);
   assert.equal(packageProduct.network, "eip155:8453");
   assert.match(packageProduct.summary, /package maintenance/i);
   assert.match(packageProduct.description, /npm/i);
