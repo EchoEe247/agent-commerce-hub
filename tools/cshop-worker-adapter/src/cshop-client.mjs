@@ -8,11 +8,18 @@ function normalizeEndpoint(value) {
   if (!['http:', 'https:'].includes(url.protocol)) {
     throw new TypeError('C-Shop URL must use http or https');
   }
+  if (url.username || url.password) {
+    throw new TypeError('C-Shop URL must not contain embedded credentials');
+  }
   if (url.pathname === '/' || url.pathname === '') url.pathname = '/mcp';
   if (url.pathname !== '/mcp') {
     throw new TypeError('C-Shop URL must target the /mcp endpoint');
   }
-  return url.toString();
+  return url;
+}
+
+function isLoopbackHostname(hostname) {
+  return hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '[::1]';
 }
 
 function parsePositiveInteger(value, fallback) {
@@ -43,14 +50,27 @@ export class CShopClient {
     token = process.env.CSHOP_TOKEN || null,
     sessionId = randomUUID(),
     timeoutMs = process.env.CSHOP_TIMEOUT_MS || 120_000,
+    allowRemote = false,
     fetchImpl = globalThis.fetch,
   } = {}) {
     if (typeof fetchImpl !== 'function') throw new TypeError('fetch implementation is required');
     if (typeof sessionId !== 'string' || sessionId.length < 8 || sessionId.length > 128) {
       throw new TypeError('sessionId must be an 8-128 character string');
     }
+    if (token != null && (typeof token !== 'string' || token.length === 0)) {
+      throw new TypeError('token must be a non-empty string when provided');
+    }
 
-    this.baseUrl = normalizeEndpoint(baseUrl);
+    const endpoint = normalizeEndpoint(baseUrl);
+    const remote = !isLoopbackHostname(endpoint.hostname);
+    if (remote && !allowRemote) {
+      throw new TypeError('remote C-Shop endpoints are disabled; pass allowRemote=true explicitly');
+    }
+    if (remote && !token) {
+      throw new TypeError('remote C-Shop endpoints require a bearer token');
+    }
+
+    this.baseUrl = endpoint.toString();
     this.token = token;
     this.sessionId = sessionId;
     this.timeoutMs = parsePositiveInteger(timeoutMs, 120_000);
