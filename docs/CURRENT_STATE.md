@@ -97,9 +97,10 @@ Batch 6A moved the legacy status exporter out of the retired authoritative-looki
 
 - **PR #76** — Batch 4 promotion subset; OPEN/DRAFT/UNMERGED. Do not merge. Superseded by later staged candidates; disposition deferred to Batch 6C.
 - **PR #77** — Batch 5 promotion subset; OPEN/DRAFT/UNMERGED. Do not merge. Superseded by later staged candidates; disposition deferred to Batch 6C.
-- **PR #78** — Batch 6A promotion subset; OPEN/DRAFT/UNMERGED. Do not merge. Superseded by the Batch 6B complete candidate once its validation PR is opened; disposition deferred to Batch 6C.
+- **PR #78** — Batch 6A promotion subset; OPEN/DRAFT/UNMERGED. Do not merge. Superseded by PR #79; disposition deferred to Batch 6C.
+- **PR #79** — Batch 6B seller-lifecycle candidate; OPEN/DRAFT/UNMERGED. This is the newest complete staged candidate. Do not merge while Batch 6 canonicalization continues.
 
-The Batch 6B validation PR, once opened, is the newest complete staged candidate. Production-target validation PRs remain draft/unmerged until the canonicalization sequence is complete and a deliberate production deployment is authorized.
+Production-target validation PRs remain draft/unmerged until the canonicalization sequence is complete and a deliberate production deployment is authorized.
 
 ## Archive policy
 
@@ -112,7 +113,7 @@ Never place raw credentials or secrets in the repository archive.
 ## Current cleanup sequence
 
 1. **Batch 6A — canonical state + stale operational truth archive** — CLOSED at `54674d29ffb6fed9614ea6ef56b1520d16a8ec47`
-2. **Batch 6B — seller lifecycle move out of `drafts` + coherent path updates** — CURRENT
+2. **Batch 6B — seller lifecycle move out of `drafts` + coherent path updates** — CURRENT / PR #79
 3. **Batch 6C — branch/PR cleanup + default/canonical branch alignment**
 4. **Later Commerce Control durability** — JSONL inter-process locking/claim safety, sanitizer/storage invariant, and remaining legacy export namespace cleanup
 
