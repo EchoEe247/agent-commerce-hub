@@ -13,9 +13,11 @@ Those two files are the repository-level source of truth for what is current. Ol
 
 ## Production boundary
 
-The production branch is `feat/hermes-commerce-control-plane` and is protected by required CI checks. Render auto-deploys from that branch, so merging a promotion PR into it is a production deployment event.
+The canonical repository branch is `main`. The separately protected production branch is `feat/hermes-commerce-control-plane`, and Render deploys from that branch rather than from `main`.
 
-Validated security/financial hardening may exist on staged branches before it is deployed. Do not equate “validated/closed” with “live.”
+A merge to `main` is therefore **not** a production deployment. Production changes require a separately validated promotion into the protected production branch, explicit production authorization, and separate review of any pending Render Blueprint mutation before it is applied.
+
+The canonical seller source is `products/published/data-quality-profiler/`; the lifecycle move from the former draft path is complete and the published path is live in production. See `docs/CURRENT_STATE.md` for the exact deployed commit and current Render state.
 
 ## Repository layout
 
@@ -23,9 +25,9 @@ Validated security/financial hardening may exist on staged branches before it is
 agent-commerce-hub/
 ├── docs/                 # Current-state, operating, security, and subsystem docs
 ├── state/                # CURRENT.json and tracked audit snapshots
-├── products/             # Seller/product source; lifecycle cleanup is in progress
-├── tools/                 # Hermes Commerce Control and related tooling
-├── research/             # Historical/current research evidence; "latest" is not authority by name alone
+├── products/             # Published seller/product source plus empty lifecycle staging directories
+├── tools/                # Hermes Commerce Control and related tooling
+├── research/             # Research evidence; "latest" is not authority by name alone
 ├── analytics/            # Analysis outputs
 ├── receipts/             # Non-secret operational receipts
 ├── schemas/              # Shared machine-readable contracts
