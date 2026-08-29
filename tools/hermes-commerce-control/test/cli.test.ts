@@ -732,7 +732,7 @@ test("CLI: export writes the canonical repository outputs with checksums", async
       "research/normalized/commerce-control/services-latest.json",
       "research/normalized/commerce-control/work-latest.json",
       "analytics/commerce-control/source-health-latest.json",
-      "state/commerce-control/STATUS.json",
+      "analytics/commerce-control/status-latest.json",
     ]) {
       assert.ok(paths.includes(expected), `missing export ${expected}`);
       assert.ok(existsSync(join(roots.env.COMMERCE_REPO_ROOT as string, expected)));
@@ -755,7 +755,7 @@ test("CLI: exported files are valid JSON and contain no secret-like values", asy
     const repoRoot = roots.env.COMMERCE_REPO_ROOT as string;
     for (const rel of [
       "research/normalized/commerce-control/services-latest.json",
-      "state/commerce-control/STATUS.json",
+      "analytics/commerce-control/status-latest.json",
     ]) {
       const text = readFileSync(join(repoRoot, rel), "utf8");
       JSON.parse(text);
