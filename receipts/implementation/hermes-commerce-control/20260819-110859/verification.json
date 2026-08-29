@@ -1,0 +1,79 @@
+{
+  "receipt_id": "hermes-commerce-control-native-mcp-resolved-20260819-110859",
+  "product": "hermes-commerce-control",
+  "version": "0.1.0",
+  "phase": "runtime-verification-follow-up",
+  "agent": "hermes-auto",
+  "timestamp": "2026-08-19T11:08:59Z",
+  "source_commit": "00b400e07eacebc849136ff0d138004f492a930c",
+  "branch": "feat/hermes-commerce-control-plane",
+  "environment": {
+    "hermes_version": "Hermes Agent v0.20.0 (2026.8.3)",
+    "node_version": "v24.18.0",
+    "npm_version": "12.0.2",
+    "operating_system": "android (Termux)"
+  },
+  "native_hermes_mcp": {
+    "connection": "pass",
+    "tool_discovery": "pass",
+    "discovered_tool_count": 11,
+    "exact_native_tool_names": [
+      "mcp__commerce_control__commerce_status",
+      "mcp__commerce_control__commerce_sources",
+      "mcp__commerce_control__commerce_discover_services",
+      "mcp__commerce_control__commerce_discover_work",
+      "mcp__commerce_control__commerce_inspect",
+      "mcp__commerce_control__commerce_quote",
+      "mcp__commerce_control__commerce_prepare_purchase",
+      "mcp__commerce_control__commerce_prepare_claim",
+      "mcp__commerce_control__commerce_prepare_publish",
+      "mcp__commerce_control__commerce_probe",
+      "mcp__commerce_control__commerce_export_evidence"
+    ],
+    "commerce_status_native_call": "pass"
+  },
+  "commerce_status": {
+    "ok": true,
+    "mode": "A",
+    "externalWritesEnabled": false,
+    "liveValueMovementEnabled": false,
+    "walletSecretPresent": false,
+    "service_count": 68,
+    "work_count": 44,
+    "intent_count": 0,
+    "probe_count": 7,
+    "generated_at": "2026-08-19T11:07:49.668Z"
+  },
+  "root_cause": {
+    "summary": "Hermes' Termux stdio watchdog could not directly execute the commerce-control MCP wrapper and returned ENOENT.",
+    "detail": "The MCP server registration used the wrapper script as the executable directly. In this Termux environment, the Hermes stdio watchdog path resolution/execution failed for that wrapper entry, so native Hermes MCP tool discovery was blocked despite enabled registration."
+  },
+  "fix": {
+    "change": "Register the MCP server with Termux bash as the executable and the wrapper script as its argument.",
+    "launch_shape": [
+      "/data/data/com.termux/files/usr/bin/bash",
+      "/data/data/com.termux/files/home/.hermes/commerce-control/commerce-control-mcp.sh"
+    ],
+    "result": "Native Hermes MCP connection, tool discovery, and commerce_status execution all succeeded in this live Hermes session."
+  },
+  "security_invariants": {
+    "mode": "A",
+    "external_writes_enabled": false,
+    "live_value_movement_enabled": false,
+    "wallet_secret_present": false,
+    "financial_action_executed": false,
+    "external_mutation_executed": false,
+    "real_payment_sent": false,
+    "real_claim_sent": false,
+    "real_submission_sent": false,
+    "production_publication": false,
+    "coinbase_action": false
+  },
+  "limitations": [
+    "Stage B1 and B2 remain unimplemented and inactive.",
+    "No payment, claim, submission, publication, wallet, Coinbase, or other financial/external-write operation was performed."
+  ],
+  "history_preserved": [
+    "receipts/implementation/hermes-commerce-control/20260819-102859/verification.json"
+  ]
+}

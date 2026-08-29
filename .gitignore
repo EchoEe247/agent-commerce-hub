@@ -1,0 +1,61 @@
+# ===========================================================================
+# Reproducible dependencies — never commit installed packages.
+# Restored from package-lock.json via `npm ci`.
+# ===========================================================================
+node_modules/
+**/node_modules/
+
+# ===========================================================================
+# Environment / secrets
+# ===========================================================================
+.env
+.env.*
+!.env.example
+
+# ===========================================================================
+# Logs
+# ===========================================================================
+*.log
+logs/
+
+# ===========================================================================
+# Local runtime databases and SQLite sidecars (never commit live state)
+# ===========================================================================
+*.db
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+
+# ===========================================================================
+# Local opportunity / runtime private results (never commit)
+# ===========================================================================
+state/commerce-control/private-results/
+
+# ===========================================================================
+# Local secret / credential material (never commit)
+# ===========================================================================
+*.token.json
+secrets/
+**/secrets/
+
+# ===========================================================================
+# Local reconciliation preservation directories (evidence only; live outside
+# Git in the Hermes-local area and the original checkout's Unknown/Archived).
+# Sanitized preservation receipts under Unknown/Archived remain trackable.
+# ===========================================================================
+Unknown/Archived/*-reconciliation-preservation/
+**/*-reconciliation-preservation/
+preservation-*/
+
+# ===========================================================================
+# Build output
+# ===========================================================================
+dist/
+*.tsbuildinfo
+
+# ===========================================================================
+# OS / editor noise
+# ===========================================================================
+.DS_Store

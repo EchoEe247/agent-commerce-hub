@@ -1,0 +1,33 @@
+{
+  "observedAt": "2026-08-20T14:21:29.055Z",
+  "origin": "https://hermes-counterparty-api.onrender.com",
+  "endpoint": "/v1/counterparty-availability",
+  "facilitator": "https://facilitator.xpay.sh",
+  "health": "PASS",
+  "manifest": "PASS",
+  "quote": {
+    "status": 402,
+    "scheme": "exact",
+    "network": "eip155:8453",
+    "amountRaw": "30000",
+    "priceUsd": 0.03,
+    "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+    "payTo": "0x2BD7c4e294B09E9a853168a58712498D03A45B01"
+  },
+  "agent402": {
+    "registrationHttpStatus": 200,
+    "listed": true,
+    "origin": "https://hermes-counterparty-api.onrender.com",
+    "seller": {
+      "displayName": "Hermes Counterparty Availability",
+      "toolCount": 1,
+      "networks": [],
+      "routable": true,
+      "health": 1
+    }
+  },
+  "notes": [
+    "The original https://x402.org/facilitator rejected Base mainnet exact payments because it did not advertise eip155:8453 support.",
+    "Switching to the no-auth Base-mainnet-capable xPay facilitator produced the expected live 402 and allowed Agent402 self-registration to complete."
+  ]
+}

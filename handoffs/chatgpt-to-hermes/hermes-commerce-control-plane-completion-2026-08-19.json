@@ -1,0 +1,31 @@
+{
+  "handoff_id": "chatgpt-hermes-commerce-control-plane-completion-2026-08-19",
+  "from": "chatgpt",
+  "to": "hermes",
+  "created_at": "2026-08-19T10:25:00Z",
+  "status": "ready",
+  "objective": "Complete the Hermes Commerce Control Plane v0.1.0 implementation and provide a clear deferred runtime verification handoff for Hermes to execute.",
+  "summary": "Implementation of the unified Hermes Commerce Control Plane CLI and MCP server is complete and fully verified locally (393/393 parallel tests, 393/393 serial tests, 65/65 contract tests are green). Stable Termux wrappers and self-diagnostics are complete. By explicit directive, actual Hermes configuration updates and live runtime probes are deferred to a later Hermes execution run. This handoff provides the exact sequence of commands and checks Hermes must execute to complete runtime verification.",
+  "evidence_paths": [
+    "tools/hermes-commerce-control/README.md",
+    "tools/hermes-commerce-control/scripts/install-hermes-commerce-control.sh",
+    "tools/hermes-commerce-control/test/perf-bench.js",
+    "tools/hermes-commerce-control/test/export.test.ts",
+    "receipts/implementation/hermes-commerce-control/20260819-102000/verification.json"
+  ],
+  "requested_action": "Hermes must execute the native installer wrapper, register the commerce-control MCP server, verify that the 11 tools are successfully registered and carry zero secrets, execute the live read-only platform probes, and export the live platform evidence to complete the final verification receipt fields.",
+  "limitations": [
+    "Actual Hermes configuration modifications and live tool invocations via Hermes are deferred.",
+    "Mode A rules are strictly enforced; both external-writes and live-value-movement gates are false.",
+    "No financial activity, account creation, or wallet secret storage is permitted.",
+    "Stage B1 and B2 capabilities are out of scope."
+  ],
+  "source_commit": "666f5872ac1cf8a50221543c538ce700e99c1e58",
+  "checksums": {
+    "receipts/implementation/hermes-commerce-control/20260819-102000/verification.json": "71362f8b204ac6a90d9fea2c3289f599e26a5b1042440a188142e08c3eae9db8",
+    "tools/hermes-commerce-control/README.md": "866742d9af59782aab7626190981d7885936c07fcf821a5d4aebc9e123fd0168",
+    "tools/hermes-commerce-control/scripts/install-hermes-commerce-control.sh": "0ff9fe99b998a5651432f11be1128342894f9bbe11ce6ef05a1e644a6cd3b597",
+    "tools/hermes-commerce-control/test/perf-bench.js": "3bcee6233bf3ee63dc5e1fc0e8d0e60f1fa62b2a8a616d1a7457cba3f38e21bc",
+    "tools/hermes-commerce-control/test/export.test.ts": "624c66a70b42e81b0c3a7dae668199461342188f7affc5c260ae9566a1511db3"
+  }
+}

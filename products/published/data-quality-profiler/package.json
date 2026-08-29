@@ -1,0 +1,33 @@
+{
+  "name": "data-quality-profiler",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24 <25"
+  },
+  "scripts": {
+    "start": "node src/server.mjs",
+    "test": "node --test",
+    "test:api": "node --test test/api.test.mjs",
+    "check:buyer-discovery": "node scripts/buyer-discovery-check.mjs",
+    "check:distribution-readiness": "node scripts/distribution-readiness-check.mjs",
+    "financial:init:mainnet": "node scripts/financial-store-admin.mjs init-mainnet",
+    "financial:init:testnet": "node scripts/financial-store-admin.mjs init-testnet",
+    "financial:audit:mainnet": "node scripts/financial-store-admin.mjs audit-mainnet",
+    "financial:audit:testnet": "node scripts/financial-store-admin.mjs audit-testnet",
+    "financial:export:mainnet": "node scripts/financial-store-admin.mjs export-mainnet",
+    "financial:export:testnet": "node scripts/financial-store-admin.mjs export-testnet",
+    "financial:reconcile:mainnet": "node scripts/financial-store-admin.mjs reconcile-mainnet",
+    "financial:reconcile:testnet": "node scripts/financial-store-admin.mjs reconcile-testnet"
+  },
+  "dependencies": {
+    "@coinbase/x402": "2.1.0",
+    "@x402/core": "2.20.0",
+    "@x402/evm": "2.20.0",
+    "@x402/extensions": "2.20.0",
+    "@x402/fastify": "2.20.0",
+    "csv-parse": "7.0.2",
+    "fastify": "5.11.2"
+  }
+}
