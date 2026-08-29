@@ -23,8 +23,8 @@
     "default_branch_alignment": "deferred_batch_6c"
   },
   "validated_baseline": {
-    "branch": "fix/p1-preview-abuse-batch-5",
-    "head": "ab06f198904ff67e3d4b518d8c177af460a2c8ca",
+    "branch": "chore/p1-canonical-state-batch-6a",
+    "head": "54674d29ffb6fed9614ea6ef56b1520d16a8ec47",
     "state": "validated_not_deployed",
     "seller_tests": 306,
     "financial_targeted_tests": 82,
@@ -60,9 +60,11 @@
   "deployment": {
     "provider": "render",
     "auto_deploy_branch": "feat/hermes-commerce-control-plane",
-    "closed_batches_through_5_merged_to_production": false,
-    "closed_batches_through_5_deployed": false,
-    "rule": "Merging a promotion PR into the production branch is a production deployment event."
+    "production_promotion_merged": false,
+    "closed_batches_through_6a_deployed": false,
+    "candidate_root_dir": "products/published/data-quality-profiler",
+    "candidate_root_dir_deployed": false,
+    "rule": "Merging a promotion PR into the production branch is a production deployment event; repository candidate configuration is not proof of live Render state."
   },
   "financial": {
     "transactional_authority": "local_gitignored_sqlite",
@@ -84,8 +86,11 @@
     }
   },
   "seller": {
-    "path": "products/drafts/data-quality-profiler/",
-    "lifecycle_path_state": "historical_name_pending_batch_6b_move",
+    "path": "products/published/data-quality-profiler/",
+    "previous_path": "products/drafts/data-quality-profiler/",
+    "lifecycle_path_state": "canonical_published_candidate_not_deployed",
+    "tree_move_preserves_file_content": true,
+    "old_active_path_retired": true,
     "paid_x402_operations": 13,
     "free_preview": "/v1/company-domain-intelligence/preview",
     "free_preview_policy": {
@@ -99,6 +104,7 @@
   },
   "commerce_control": {
     "path": "tools/hermes-commerce-control/",
+    "seller_readiness_path": "products/published/data-quality-profiler",
     "legacy_latest_snapshots_authoritative": false,
     "legacy_export_paths": [
       "research/normalized/commerce-control/services-latest.json",
@@ -125,22 +131,30 @@
       "head": "fix/p1-preview-abuse-batch-5",
       "head_sha": "ab06f198904ff67e3d4b518d8c177af460a2c8ca",
       "base": "feat/hermes-commerce-control-plane",
-      "disposition": "do_not_merge_superseded_by_pr_78_disposition_batch_6c"
+      "disposition": "do_not_merge_superseded_subset_disposition_batch_6c"
     },
     {
       "number": 78,
       "state": "open_draft_unmerged",
       "head": "chore/p1-canonical-state-batch-6a",
+      "head_sha": "54674d29ffb6fed9614ea6ef56b1520d16a8ec47",
       "base": "feat/hermes-commerce-control-plane",
-      "disposition": "current_complete_staged_candidate_do_not_merge_during_batch_6"
+      "disposition": "do_not_merge_superseded_by_batch_6b_candidate_disposition_batch_6c"
     }
   ],
   "canonicalization": {
-    "branch": "chore/p1-canonical-state-batch-6a",
-    "pull_request": 78,
-    "batch": "6a",
+    "completed": [
+      {
+        "batch": "6a",
+        "state": "closed",
+        "head": "54674d29ffb6fed9614ea6ef56b1520d16a8ec47"
+      }
+    ],
+    "branch": "chore/p1-seller-lifecycle-batch-6b",
+    "pull_request": null,
+    "batch": "6b",
+    "state": "implementation_candidate_not_deployed",
     "next": [
-      "batch_6b_seller_lifecycle_move",
       "batch_6c_branch_pr_default_alignment",
       "commerce_control_durability"
     ]
