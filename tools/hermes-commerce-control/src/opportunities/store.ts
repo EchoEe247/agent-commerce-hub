@@ -14,6 +14,7 @@ import {
   parseOpportunityCandidate,
   type OpportunityCandidate,
 } from "./models.js";
+import { withFileLock } from "./file-lock.js";
 
 export interface OpportunityStore {
   seenIds(): Promise<ReadonlySet<string>>;
@@ -32,19 +33,22 @@ export class JsonlOpportunityStore implements OpportunityStore {
   public async saveMany(candidates: readonly OpportunityCandidate[]): Promise<number> {
     if (candidates.length === 0) return 0;
     await mkdir(dirname(this.path), { recursive: true });
-    await this.repairTailBeforeAppend();
-    const existing = new Set(await this.seenIds());
-    const fresh: OpportunityCandidate[] = [];
-    for (const raw of candidates) {
-      const candidate = parseOpportunityCandidate(raw);
-      if (existing.has(candidate.id)) continue;
-      existing.add(candidate.id);
-      fresh.push(candidate);
-    }
-    if (fresh.length === 0) return 0;
-    const payload = `${fresh.map((candidate) => canonicalJson(candidate)).join("\n")}\n`;
-    await appendFile(this.path, payload, { encoding: "utf8", mode: 0o600 });
-    return fresh.length;
+
+    return withFileLock(this.path, async () => {
+      await this.repairTailBeforeAppend();
+      const existing = new Set((await this.readAll()).map((row) => row.id));
+      const fresh: OpportunityCandidate[] = [];
+      for (const raw of candidates) {
+        const candidate = parseOpportunityCandidate(raw);
+        if (existing.has(candidate.id)) continue;
+        existing.add(candidate.id);
+        fresh.push(candidate);
+      }
+      if (fresh.length === 0) return 0;
+      const payload = `${fresh.map((candidate) => canonicalJson(candidate)).join("\n")}\n`;
+      await appendFile(this.path, payload, { encoding: "utf8", mode: 0o600 });
+      return fresh.length;
+    });
   }
 
   public async list(limit = 500): Promise<readonly OpportunityCandidate[]> {

@@ -1,0 +1,3595 @@
+{
+  "generated_at": "2026-08-28T04:45:00Z",
+  "candidate_branch": "reconcile/2026-08-27-canonical-candidate",
+  "base_sha": "bc6b1a80",
+  "local_only_total": 511,
+  "category_counts": {
+    "research/evidence": 411,
+    "active source/config": 42,
+    "receipts/proofs": 29,
+    "unknown": 18,
+    "credentials/private config": 8,
+    "runtime state": 3
+  },
+  "imported_into_candidate_now": 0,
+  "import_policy": "Only source/config necessary for the canonical current implementation (baseline bc6b1a80) is imported. The 4 reconciled dirty tracked source files were applied directly (see local-source-decisions.json), but no LOCAL_ONLY item is imported wholesale in this phase. The B1-ID/BountyBook auth feature fragments remain LOCAL_ONLY for later review/import.",
+  "items": [
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/debug-budget.mjs",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "active source/config",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/package-lock.json",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "active source/config",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/package.json",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "active source/config",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/products/drafts/data-quality-profiler/scripts/x402-live-validation.mjs",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "active source/config",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/products/drafts/data-quality-profiler/test/x402-lifecycle.test.mjs",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "active source/config",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/handoffs/2026-08-20-duo-fable-x402-live-validation.md",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/handoffs/2026-08-20-duo-fable-x402-production-signer.md",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent-bounties/2026-08-20/0x51408b922225594472fd1a55798209f813554c58714e7ad442177181697eba69/check.py",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent-bounties/2026-08-20/0x51408b922225594472fd1a55798209f813554c58714e7ad442177181697eba69/inventory-summary.json",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent-bounties/2026-08-20/0x51408b922225594472fd1a55798209f813554c58714e7ad442177181697eba69/issue-870-body.md",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent-bounties/2026-08-20/0x51408b922225594472fd1a55798209f813554c58714e7ad442177181697eba69/issue-870-comments.md",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent-bounties/2026-08-20/0x51408b922225594472fd1a55798209f813554c58714e7ad442177181697eba69/terms.json",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent-bounties/2026-08-20/0x51408b922225594472fd1a55798209f813554c58714e7ad442177181697eba69/workspace/AgentBounty.sol",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent-bounties/2026-08-20/0x51408b922225594472fd1a55798209f813554c58714e7ad442177181697eba69/workspace/AtomicClaimSponsor.sol",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent-bounties/2026-08-20/0x51408b922225594472fd1a55798209f813554c58714e7ad442177181697eba69/workspace/BoundedAgentWallet.sol",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent-bounties/2026-08-20/0x51408b922225594472fd1a55798209f813554c58714e7ad442177181697eba69/workspace/BoundedAgentWalletV2.sol",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent-bounties/2026-08-20/0x51408b922225594472fd1a55798209f813554c58714e7ad442177181697eba69/workspace/IAgentBounty.sol",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent-bounties/2026-08-20/0x51408b922225594472fd1a55798209f813554c58714e7ad442177181697eba69/workspace/OpenCompetitionBountyV1.sol",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent-bounties/2026-08-20/0x51408b922225594472fd1a55798209f813554c58714e7ad442177181697eba69/workspace/ab_tree.json",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent-bounties/2026-08-20/0x51408b922225594472fd1a55798209f813554c58714e7ad442177181697eba69/workspace/autonomous-gas-relay.yml",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent-bounties/2026-08-20/0x51408b922225594472fd1a55798209f813554c58714e7ad442177181697eba69/workspace/base-mainnet-activation.json",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent-bounties/2026-08-20/0x51408b922225594472fd1a55798209f813554c58714e7ad442177181697eba69/workspace/base-mainnet.json",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent-bounties/2026-08-20/0x51408b922225594472fd1a55798209f813554c58714e7ad442177181697eba69/workspace/bounded-agent-wallet-base-mainnet.json",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent-bounties/2026-08-20/0x51408b922225594472fd1a55798209f813554c58714e7ad442177181697eba69/workspace/bounded-agent-wallet-v2-base-mainnet.json",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent-bounties/2026-08-20/0x51408b922225594472fd1a55798209f813554c58714e7ad442177181697eba69/workspace/bounded-agent-wallet.md",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent-bounties/2026-08-20/0x51408b922225594472fd1a55798209f813554c58714e7ad442177181697eba69/workspace/bounded-wallet-gas-relay.yml",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent-bounties/2026-08-20/0x51408b922225594472fd1a55798209f813554c58714e7ad442177181697eba69/workspace/bounded_agent_create.py",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent-bounties/2026-08-20/0x51408b922225594472fd1a55798209f813554c58714e7ad442177181697eba69/workspace/bounded_wallet_policy.py",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent-bounties/2026-08-20/0x51408b922225594472fd1a55798209f813554c58714e7ad442177181697eba69/workspace/chain-base-lib.rs",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent-bounties/2026-08-20/0x51408b922225594472fd1a55798209f813554c58714e7ad442177181697eba69/workspace/check.py",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent-bounties/2026-08-20/0x51408b922225594472fd1a55798209f813554c58714e7ad442177181697eba69/workspace/cofund-claim.ts",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent-bounties/2026-08-20/0x51408b922225594472fd1a55798209f813554c58714e7ad442177181697eba69/workspace/dry_run_stage6.py",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent-bounties/2026-08-20/0x51408b922225594472fd1a55798209f813554c58714e7ad442177181697eba69/workspace/fixtures/autonomous_relay_invalid_network.json",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent-bounties/2026-08-20/0x51408b922225594472fd1a55798209f813554c58714e7ad442177181697eba69/workspace/fixtures/bounty_inventory_above.json",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent-bounties/2026-08-20/0x51408b922225594472fd1a55798209f813554c58714e7ad442177181697eba69/workspace/fixtures/bounty_inventory_below.json",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent-bounties/2026-08-20/0x51408b922225594472fd1a55798209f813554c58714e7ad442177181697eba69/workspace/fixtures/bounty_inventory_claimable_above.json",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent-bounties/2026-08-20/0x51408b922225594472fd1a55798209f813554c58714e7ad442177181697eba69/workspace/fixtures/bounty_inventory_claimable_below.json",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent-bounties/2026-08-20/0x51408b922225594472fd1a55798209f813554c58714e7ad442177181697eba69/workspace/fixtures/bounty_inventory_claimable_direct.json",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent-bounties/2026-08-20/0x51408b922225594472fd1a55798209f813554c58714e7ad442177181697eba69/workspace/fixtures/bounty_inventory_claimable_malformed.json",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent-bounties/2026-08-20/0x51408b922225594472fd1a55798209f813554c58714e7ad442177181697eba69/workspace/fixtures/bounty_inventory_claimable_unavailable.json",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent-bounties/2026-08-20/0x51408b922225594472fd1a55798209f813554c58714e7ad442177181697eba69/workspace/fixtures/bounty_inventory_noisy.json",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent-bounties/2026-08-20/0x51408b922225594472fd1a55798209f813554c58714e7ad442177181697eba69/workspace/inspect_bounded_agent_wallet.py",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent-bounties/2026-08-20/0x51408b922225594472fd1a55798209f813554c58714e7ad442177181697eba69/workspace/llms-upstream.txt",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent-bounties/2026-08-20/0x51408b922225594472fd1a55798209f813554c58714e7ad442177181697eba69/workspace/local_delegate_wallet.py",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent-bounties/2026-08-20/0x51408b922225594472fd1a55798209f813554c58714e7ad442177181697eba69/workspace/openapi-contract.json",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent-bounties/2026-08-20/0x51408b922225594472fd1a55798209f813554c58714e7ad442177181697eba69/workspace/plan_bounded_agent_action.py",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent-bounties/2026-08-20/0x51408b922225594472fd1a55798209f813554c58714e7ad442177181697eba69/workspace/public-api.json",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent-bounties/2026-08-20/0x51408b922225594472fd1a55798209f813554c58714e7ad442177181697eba69/workspace/relay_autonomous_action.py",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent-bounties/2026-08-20/0x51408b922225594472fd1a55798209f813554c58714e7ad442177181697eba69/workspace/relay_bounded_wallet_action.py",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent-bounties/2026-08-20/0x51408b922225594472fd1a55798209f813554c58714e7ad442177181697eba69/workspace/scripts/check-inventory-state-breakdown.py",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent-bounties/2026-08-20/0x51408b922225594472fd1a55798209f813554c58714e7ad442177181697eba69/workspace/scripts/fixtures/inventory-state-breakdown/degraded.json",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent-bounties/2026-08-20/0x51408b922225594472fd1a55798209f813554c58714e7ad442177181697eba69/workspace/scripts/fixtures/inventory-state-breakdown/empty.json",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent-bounties/2026-08-20/0x51408b922225594472fd1a55798209f813554c58714e7ad442177181697eba69/workspace/scripts/fixtures/inventory-state-breakdown/mixed.json",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent-bounties/2026-08-20/0x51408b922225594472fd1a55798209f813554c58714e7ad442177181697eba69/workspace/scripts/fixtures/inventory-state-breakdown/stale.json",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent-bounties/2026-08-20/0x51408b922225594472fd1a55798209f813554c58714e7ad442177181697eba69/workspace/sdk-index.ts",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent-bounties/2026-08-20/0x51408b922225594472fd1a55798209f813554c58714e7ad442177181697eba69/workspace/signer-custody-research.md",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent-bounties/2026-08-20/0x51408b922225594472fd1a55798209f813554c58714e7ad442177181697eba69/workspace/target/agent-bounties-dry-run.json",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent-bounties/2026-08-20/0x51408b922225594472fd1a55798209f813554c58714e7ad442177181697eba69/workspace/test_phase_a_security.py",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent-bounties/2026-08-20/0x51408b922225594472fd1a55798209f813554c58714e7ad442177181697eba69/workspace/test_relay_autonomous_action.py",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent-bounties/2026-08-20/0x51408b922225594472fd1a55798209f813554c58714e7ad442177181697eba69/workspace/test_relay_bounded_wallet_action.py",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent-bounties/2026-08-20/agent-bounties-source/benchmark-dir.json",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent-bounties/2026-08-20/agent-bounties-source/check-inventory-state-breakdown.py",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent-bounties/2026-08-20/agent-bounties-source/commit.json",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent-bounties/2026-08-20/agent-bounties-source/fixtures-dir.json",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent-bounties/2026-08-20/agent-bounties-source/scripts-dir.json",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent-bounties/2026-08-20/agent-bounties-source/tree.json",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent-bounties/2026-08-20/ba.json",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent-bounties/2026-08-20/et.json",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent-bounties/2026-08-20/feed-full.err",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent-bounties/2026-08-20/feed-full.json",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent-bounties/2026-08-20/github-discovery.json",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent-bounties/2026-08-20/provenance/usdc-transfer-table.json",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent-bounties/2026-08-20/stage2_relay_proof.py",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "receipts/proofs",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent-bounties/2026-08-20/sweep-full.json",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent-bounties/2026-08-20/target/stage2-relay-proof.json",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "receipts/proofs",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/EIP3009.sol",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/FiatTokenV2.sol",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/FiatTokenV2_2.sol",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/agent402-index.json",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/agent402-leaderboard.json",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/agent402-pricing.json",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/agent402-stats.json",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/cdp-bazaar-resources.json",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/cdp-openapi.json",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/coinbase-faucet.html",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/faucet-chunks/09df32cd3306.js",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/faucet-chunks/0df6b8607f3b.js",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/faucet-chunks/1bb4c5d65311.js",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/faucet-chunks/20b3eb197c00.js",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/faucet-chunks/23c0da1ce0e1.js",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/faucet-chunks/3df82067ae25.js",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/faucet-chunks/413b81e9885e.js",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/faucet-chunks/4b7ab295bfa0.js",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/faucet-chunks/59658177caf3.js",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/faucet-chunks/71371ed89bd5.js",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/faucet-chunks/8951d1d8234a.js",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/faucet-chunks/8b492f238138.js",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/faucet-chunks/8f818a2cc78d.js",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/faucet-chunks/95b2a14edd04.js",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/faucet-chunks/a5777eb8dfb9.js",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/faucet-chunks/c641c401cde6.js",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/faucet-chunks/c85e373536be.js",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/faucet-chunks/cad24d45a9c2.js",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/faucet-chunks/cb599f942bc7.js",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/faucet-chunks/cf0b8f85c0a9.js",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/faucet-chunks/f18d2027fa3d.js",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/faucet-chunks/f70ade384d21.js",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/faucet-chunks/faeff47f0011.js",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/faucet-chunks/fd8272421169.js",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/llms.txt",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/openapi.json",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/paysh-home.html",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/piprail-index.html",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/pr-bestsellers.h",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/pr-demradar.h",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/sales.json",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/seller-x402node.json",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/skill-packs.json",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/tollbooth.html",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/wishes-clusters.json",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/wishes.html",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/wishes.json",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-express-src/package/README.md",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-express-src/package/dist/cjs/index.d.ts",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-express-src/package/dist/cjs/index.js",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-express-src/package/dist/cjs/index.js.map",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-express-src/package/dist/esm/index.d.mts",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-express-src/package/dist/esm/index.mjs",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-express-src/package/dist/esm/index.mjs.map",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-express-src/package/package.json",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-express-src/x402-express-2.22.0.tgz",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-core-2.22.0.tgz",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-core/package/README.md",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-core/package/dist/cjs/client/index.d.ts",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-core/package/dist/cjs/client/index.js",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-core/package/dist/cjs/client/index.js.map",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-core/package/dist/cjs/facilitator/index.d.ts",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-core/package/dist/cjs/facilitator/index.js",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-core/package/dist/cjs/facilitator/index.js.map",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-core/package/dist/cjs/http/index.d.ts",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-core/package/dist/cjs/http/index.js",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-core/package/dist/cjs/http/index.js.map",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-core/package/dist/cjs/index.d.ts",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-core/package/dist/cjs/index.js",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-core/package/dist/cjs/index.js.map",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-core/package/dist/cjs/schemas/index.d.ts",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-core/package/dist/cjs/schemas/index.js",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-core/package/dist/cjs/schemas/index.js.map",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-core/package/dist/cjs/server/index.d.ts",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-core/package/dist/cjs/server/index.js",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-core/package/dist/cjs/server/index.js.map",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-core/package/dist/cjs/types/index.d.ts",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-core/package/dist/cjs/types/index.js",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-core/package/dist/cjs/types/index.js.map",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-core/package/dist/cjs/types/v1/index.d.ts",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-core/package/dist/cjs/types/v1/index.js",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-core/package/dist/cjs/types/v1/index.js.map",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-core/package/dist/cjs/utils/index.d.ts",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-core/package/dist/cjs/utils/index.js",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-core/package/dist/cjs/utils/index.js.map",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-core/package/dist/cjs/x402Client-DqU0Zcrq.d.ts",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-core/package/dist/esm/chunk-3LURPWBI.mjs",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-core/package/dist/esm/chunk-3LURPWBI.mjs.map",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-core/package/dist/esm/chunk-BJTO5JO5.mjs",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-core/package/dist/esm/chunk-BJTO5JO5.mjs.map",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-core/package/dist/esm/chunk-HX5GESJI.mjs",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-core/package/dist/esm/chunk-HX5GESJI.mjs.map",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-core/package/dist/esm/chunk-N4QXZG2Z.mjs",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-core/package/dist/esm/chunk-N4QXZG2Z.mjs.map",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-core/package/dist/esm/chunk-P3DFEIO7.mjs",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-core/package/dist/esm/chunk-P3DFEIO7.mjs.map",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-core/package/dist/esm/chunk-VE37GDG2.mjs",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-core/package/dist/esm/chunk-VE37GDG2.mjs.map",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-core/package/dist/esm/client/index.d.mts",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-core/package/dist/esm/client/index.mjs",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-core/package/dist/esm/client/index.mjs.map",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-core/package/dist/esm/facilitator/index.d.mts",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-core/package/dist/esm/facilitator/index.mjs",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-core/package/dist/esm/facilitator/index.mjs.map",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-core/package/dist/esm/http/index.d.mts",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-core/package/dist/esm/http/index.mjs",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-core/package/dist/esm/http/index.mjs.map",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-core/package/dist/esm/index.d.mts",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-core/package/dist/esm/index.mjs",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-core/package/dist/esm/index.mjs.map",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-core/package/dist/esm/schemas/index.d.mts",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-core/package/dist/esm/schemas/index.mjs",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-core/package/dist/esm/schemas/index.mjs.map",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-core/package/dist/esm/server/index.d.mts",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-core/package/dist/esm/server/index.mjs",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-core/package/dist/esm/server/index.mjs.map",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-core/package/dist/esm/types/index.d.mts",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-core/package/dist/esm/types/index.mjs",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-core/package/dist/esm/types/index.mjs.map",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-core/package/dist/esm/types/v1/index.d.mts",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-core/package/dist/esm/types/v1/index.mjs",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-core/package/dist/esm/types/v1/index.mjs.map",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-core/package/dist/esm/utils/index.d.mts",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-core/package/dist/esm/utils/index.mjs",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-core/package/dist/esm/utils/index.mjs.map",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-core/package/dist/esm/x402Client-DqU0Zcrq.d.mts",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-core/package/package.json",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm-2.22.0.tgz",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/README.md",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/cjs/auth-capture/client/index.d.ts",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/cjs/auth-capture/client/index.js",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/cjs/auth-capture/client/index.js.map",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/cjs/batch-settlement/client/file-storage.d.ts",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/cjs/batch-settlement/client/file-storage.js",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/cjs/batch-settlement/client/file-storage.js.map",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/cjs/batch-settlement/client/index.d.ts",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/cjs/batch-settlement/client/index.js",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/cjs/batch-settlement/client/index.js.map",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/cjs/batch-settlement/facilitator/index.d.ts",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/cjs/batch-settlement/facilitator/index.js",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/cjs/batch-settlement/facilitator/index.js.map",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/cjs/batch-settlement/server/file-storage.d.ts",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/cjs/batch-settlement/server/file-storage.js",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/cjs/batch-settlement/server/file-storage.js.map",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/cjs/batch-settlement/server/index.d.ts",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/cjs/batch-settlement/server/index.js",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/cjs/batch-settlement/server/index.js.map",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/cjs/batch-settlement/server/redis-storage.d.ts",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/cjs/batch-settlement/server/redis-storage.js",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/cjs/batch-settlement/server/redis-storage.js.map",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/cjs/exact/client/index.d.ts",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/cjs/exact/client/index.js",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/cjs/exact/client/index.js.map",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/cjs/exact/facilitator/index.d.ts",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/cjs/exact/facilitator/index.js",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/cjs/exact/facilitator/index.js.map",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/cjs/exact/server/index.d.ts",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/cjs/exact/server/index.js",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/cjs/exact/server/index.js.map",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/cjs/exact/v1/client/index.d.ts",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/cjs/exact/v1/client/index.js",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/cjs/exact/v1/client/index.js.map",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/cjs/exact/v1/facilitator/index.d.ts",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/cjs/exact/v1/facilitator/index.js",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/cjs/exact/v1/facilitator/index.js.map",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/cjs/index.d.ts",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/cjs/index.js",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/cjs/index.js.map",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/cjs/permit2-DhJRUcgY.d.ts",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/cjs/rpc-DULZzRne.d.ts",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/cjs/scheme-C41SfdnU.d.ts",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/cjs/scheme-DbvdjMb_.d.ts",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/cjs/signer-B127taDR.d.ts",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/cjs/storage-BFpn16ZW.d.ts",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/cjs/storage-xgzm9G4m.d.ts",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/cjs/types-B4ib_1f_.d.ts",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/cjs/types-BBC1mC8d.d.ts",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/cjs/upto/client/index.d.ts",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/cjs/upto/client/index.js",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/cjs/upto/client/index.js.map",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/cjs/upto/facilitator/index.d.ts",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/cjs/upto/facilitator/index.js",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/cjs/upto/facilitator/index.js.map",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/cjs/upto/server/index.d.ts",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/cjs/upto/server/index.js",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/cjs/upto/server/index.js.map",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/cjs/v1/index.d.ts",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/cjs/v1/index.js",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/cjs/v1/index.js.map",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/esm/auth-capture/client/index.d.mts",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/esm/auth-capture/client/index.mjs",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/esm/auth-capture/client/index.mjs.map",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/esm/batch-settlement/client/file-storage.d.mts",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/esm/batch-settlement/client/file-storage.mjs",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/esm/batch-settlement/client/file-storage.mjs.map",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/esm/batch-settlement/client/index.d.mts",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/esm/batch-settlement/client/index.mjs",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/esm/batch-settlement/client/index.mjs.map",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/esm/batch-settlement/facilitator/index.d.mts",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/esm/batch-settlement/facilitator/index.mjs",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/esm/batch-settlement/facilitator/index.mjs.map",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/esm/batch-settlement/server/file-storage.d.mts",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/esm/batch-settlement/server/file-storage.mjs",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/esm/batch-settlement/server/file-storage.mjs.map",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/esm/batch-settlement/server/index.d.mts",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/esm/batch-settlement/server/index.mjs",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/esm/batch-settlement/server/index.mjs.map",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/esm/batch-settlement/server/redis-storage.d.mts",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/esm/batch-settlement/server/redis-storage.mjs",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/esm/batch-settlement/server/redis-storage.mjs.map",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/esm/chunk-27MWX225.mjs",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/esm/chunk-27MWX225.mjs.map",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/esm/chunk-3632HGL3.mjs",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/esm/chunk-3632HGL3.mjs.map",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/esm/chunk-3QTA5JH4.mjs",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/esm/chunk-3QTA5JH4.mjs.map",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/esm/chunk-76GJG6LX.mjs",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/esm/chunk-76GJG6LX.mjs.map",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/esm/chunk-7ER7IIEN.mjs",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/esm/chunk-7ER7IIEN.mjs.map",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/esm/chunk-7KTOBWB2.mjs",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/esm/chunk-7KTOBWB2.mjs.map",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/esm/chunk-BEMCJZKA.mjs",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/esm/chunk-BEMCJZKA.mjs.map",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/esm/chunk-DR77D5IU.mjs",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/esm/chunk-DR77D5IU.mjs.map",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/esm/chunk-GSZION4V.mjs",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/esm/chunk-GSZION4V.mjs.map",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/esm/chunk-H25OEB2U.mjs",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/esm/chunk-H25OEB2U.mjs.map",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/esm/chunk-HR3TFOGA.mjs",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/esm/chunk-HR3TFOGA.mjs.map",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/esm/chunk-JFVEMVMS.mjs",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/esm/chunk-JFVEMVMS.mjs.map",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/esm/chunk-JK7SLLF7.mjs",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/esm/chunk-JK7SLLF7.mjs.map",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/esm/chunk-K3FJDFD6.mjs",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/esm/chunk-K3FJDFD6.mjs.map",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/esm/chunk-MACPBXCT.mjs",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/esm/chunk-MACPBXCT.mjs.map",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/esm/chunk-NVFLWXGP.mjs",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/esm/chunk-NVFLWXGP.mjs.map",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/esm/chunk-TW7Z65AO.mjs",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/esm/chunk-TW7Z65AO.mjs.map",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/esm/chunk-U4HCGTLU.mjs",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/esm/chunk-U4HCGTLU.mjs.map",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/esm/chunk-UBBS476I.mjs",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/esm/chunk-UBBS476I.mjs.map",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/esm/chunk-VS3RYAYE.mjs",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/esm/chunk-VS3RYAYE.mjs.map",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/esm/chunk-W6ON4LG2.mjs",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/esm/chunk-W6ON4LG2.mjs.map",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/esm/exact/client/index.d.mts",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/esm/exact/client/index.mjs",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/esm/exact/client/index.mjs.map",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/esm/exact/facilitator/index.d.mts",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/esm/exact/facilitator/index.mjs",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/esm/exact/facilitator/index.mjs.map",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/esm/exact/server/index.d.mts",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/esm/exact/server/index.mjs",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/esm/exact/server/index.mjs.map",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/esm/exact/v1/client/index.d.mts",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/esm/exact/v1/client/index.mjs",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/esm/exact/v1/client/index.mjs.map",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/esm/exact/v1/facilitator/index.d.mts",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/esm/exact/v1/facilitator/index.mjs",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/esm/exact/v1/facilitator/index.mjs.map",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/esm/index.d.mts",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/esm/index.mjs",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/esm/index.mjs.map",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/esm/permit2-DhJRUcgY.d.mts",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/esm/rpc-DULZzRne.d.mts",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/esm/scheme-B1OAu4_v.d.mts",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/esm/scheme-CFbBP1Js.d.mts",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/esm/signer-B127taDR.d.mts",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/esm/storage-BFpn16ZW.d.mts",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/esm/storage-BlE8v9vt.d.mts",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/esm/types-B4ib_1f_.d.mts",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/esm/types-BBC1mC8d.d.mts",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/esm/upto/client/index.d.mts",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/esm/upto/client/index.mjs",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/esm/upto/client/index.mjs.map",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/esm/upto/facilitator/index.d.mts",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/esm/upto/facilitator/index.mjs",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/esm/upto/facilitator/index.mjs.map",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/esm/upto/server/index.d.mts",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/esm/upto/server/index.mjs",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/esm/upto/server/index.mjs.map",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/esm/v1/index.d.mts",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/esm/v1/index.mjs",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/dist/esm/v1/index.mjs.map",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-evm/package/package.json",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-fetch-2.22.0.tgz",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-fetch/package/README.md",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-fetch/package/dist/cjs/index.d.ts",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-fetch/package/dist/cjs/index.js",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-fetch/package/dist/cjs/index.js.map",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-fetch/package/dist/esm/index.d.mts",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-fetch/package/dist/esm/index.mjs",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-fetch/package/dist/esm/index.mjs.map",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402-pkgs/x402-fetch/package/package.json",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402list-services-full.json",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402list-services-nolimit.json",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402list-services-p2.json",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402list-services.json",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/x402list-stats.json",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/commerce-recon/2026-08-19/analyze_logs.sh",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/commerce-recon/2026-08-19/fixtures/empty.log",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/commerce-recon/2026-08-19/fixtures/single.log",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/commerce-recon/2026-08-19/fixtures/tie.log",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/commerce-recon/2026-08-19/fixtures/top10.log",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/commerce-recon/2026-08-19/free_apis.json",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/commerce-recon/2026-08-19/scraping_libs.json",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/x402-live/2026-08-20T08-09-36-515Z-x402-live-validation.json",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/x402-live/2026-08-20T08-10-56-083Z-x402-live-validation.json",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/x402-live/2026-08-20T08-13-53-537Z-x402-live-validation.json",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/x402-live/2026-08-20T08-20-37-962Z-x402-live-validation.json",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/reports/2026-08-19-b1-claim-submit-outcome.md",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/reports/2026-08-19-b1-id-implementation-boundary.md",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/reports/2026-08-19-b1-id-implementation-report.md",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/reports/2026-08-19-b1-s1-implementation-boundary.md",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/reports/2026-08-19-b1-sign-execution-boundary.md",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/reports/2026-08-19-bountybook-dispute-readiness.md",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/reports/2026-08-19-bountybook-second-submit-400-diagnosis.md",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/reports/2026-08-19-commerce-deep-inspection-mode-a.md",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/reports/2026-08-19-commerce-recon-mode-a.md",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/reports/2026-08-20-agent-bounties-b2-feasibility.md",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/reports/2026-08-20-agent-bounties-compatible-target-scan.md",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/reports/2026-08-20-agent-bounties-inventory-state-readiness.md",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/reports/2026-08-20-agent-bounties-keeper-relay-readiness.md",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/reports/2026-08-20-agent-bounties-live-opportunity-scan.md",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/reports/2026-08-20-agent-bounties-phase-a-claim.md",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/reports/2026-08-20-agent402-earning-opportunity-analysis.md",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/reports/2026-08-20-agent402-first-service-readiness.md",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/reports/2026-08-20-agent402-paid-demand-validation.md",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/reports/2026-08-20-b1-second-observation-receipt.md",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "receipts/proofs",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/reports/2026-08-20-bountybook-code-run-eventbus-readiness.md",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/reports/2026-08-20-bountybook-success-path-investigation.md",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/reports/2026-08-20-bountybook-verified-code-run-candidates.md",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/reports/2026-08-20-hermes-dedicated-x402-spend-wallet-design.md",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/reports/2026-08-20-hermes-wallet-usdc-provenance-and-budget.md",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/reports/2026-08-20-hermes-x402-production-wallet-readiness.md",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/reports/2026-08-20-hermes-x402-spend-wallet-sepolia-validation.md",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/scripts/run-b1-id-auth.mjs",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "active source/config",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/tools/hermes-commerce-control/receipts/implementation/hermes-commerce-control/2026-08-19T12-53-33-629Z-b1-id-live-auth/receipt.json",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "receipts/proofs",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/tools/hermes-commerce-control/receipts/implementation/hermes-commerce-control/2026-08-19T12-54-19-086Z-b1-id-live-auth/receipt.json",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "receipts/proofs",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/tools/hermes-commerce-control/receipts/implementation/hermes-commerce-control/2026-08-19T13-13-07-631Z-b1-id-live-auth/receipt.json",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "receipts/proofs",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/tools/hermes-commerce-control/receipts/implementation/hermes-commerce-control/2026-08-19T13-15-54-151Z-b1-id-live-auth/receipt.json",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "receipts/proofs",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/tools/hermes-commerce-control/receipts/implementation/hermes-commerce-control/2026-08-19T13-52-49-877Z-b1-claim-submit/receipt.json",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "receipts/proofs",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/tools/hermes-commerce-control/receipts/implementation/hermes-commerce-control/2026-08-19T14-00-19-095Z-b1-claim-submit/receipt.json",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "receipts/proofs",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/tools/hermes-commerce-control/receipts/implementation/hermes-commerce-control/2026-08-19T15-46-53-684Z-b1-claim-submit/receipt.json",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "receipts/proofs",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/tools/hermes-commerce-control/receipts/implementation/hermes-commerce-control/2026-08-19T15-47-14-197Z-b1-id-live-auth/receipt.json",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "receipts/proofs",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/tools/hermes-commerce-control/receipts/implementation/hermes-commerce-control/2026-08-19T15-53-19-688Z-b1-claim-submit/receipt.json",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "receipts/proofs",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/tools/hermes-commerce-control/receipts/implementation/hermes-commerce-control/2026-08-19T17-11-36-690Z-b1-claim-submit/receipt.json",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "receipts/proofs",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/tools/hermes-commerce-control/receipts/implementation/hermes-commerce-control/2026-08-19T17-12-03-225Z-b1-id-live-auth/receipt.json",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "receipts/proofs",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/tools/hermes-commerce-control/receipts/implementation/hermes-commerce-control/2026-08-19T17-12-41-260Z-b1-claim-submit/receipt.json",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "receipts/proofs",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/tools/hermes-commerce-control/receipts/implementation/hermes-commerce-control/2026-08-19T23-46-10-529Z-b1-claim-submit/receipt.json",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "receipts/proofs",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/tools/hermes-commerce-control/receipts/implementation/hermes-commerce-control/2026-08-19T23-48-57-404Z-b1-claim-submit/receipt.json",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "receipts/proofs",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/tools/hermes-commerce-control/receipts/implementation/hermes-commerce-control/2026-08-19T23-53-11-784Z-b1-claim-submit/receipt.json",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "receipts/proofs",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/tools/hermes-commerce-control/receipts/implementation/hermes-commerce-control/2026-08-19T23-53-48-643Z-b1-claim-submit/receipt.json",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "receipts/proofs",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/tools/hermes-commerce-control/receipts/implementation/hermes-commerce-control/2026-08-19T23-54-18-544Z-b1-claim-submit/receipt.json",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "receipts/proofs",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/tools/hermes-commerce-control/receipts/implementation/hermes-commerce-control/2026-08-20T00-20-34-206Z-b1-claim-submit/receipt.json",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "receipts/proofs",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/tools/hermes-commerce-control/receipts/implementation/hermes-commerce-control/2026-08-20T00-26-24-723Z-b1-id-live-auth/receipt.json",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "receipts/proofs",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/tools/hermes-commerce-control/receipts/implementation/hermes-commerce-control/2026-08-20T00-30-13-185Z-b1-claim-submit/receipt.json",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "receipts/proofs",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/tools/hermes-commerce-control/scripts/observe-agent-bounties-live.mjs",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "active source/config",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/tools/hermes-commerce-control/scripts/provenance-binary.mjs",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "active source/config",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/tools/hermes-commerce-control/scripts/provenance-control.mjs",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "active source/config",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/tools/hermes-commerce-control/scripts/provenance-decode-txs.mjs",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "active source/config",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/tools/hermes-commerce-control/scripts/provenance-errprobe.mjs",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "active source/config",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/tools/hermes-commerce-control/scripts/provenance-find-window.mjs",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "active source/config",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/tools/hermes-commerce-control/scripts/provenance-find-window2.mjs",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "active source/config",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/tools/hermes-commerce-control/scripts/provenance-fresh-balances.mjs",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "active source/config",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/tools/hermes-commerce-control/scripts/provenance-full-history.mjs",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "active source/config",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/tools/hermes-commerce-control/scripts/provenance-owner.mjs",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "active source/config",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/tools/hermes-commerce-control/scripts/provenance-rpcprobe.mjs",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "active source/config",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/tools/hermes-commerce-control/scripts/provenance-rpcprobe2.mjs",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "active source/config",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/tools/hermes-commerce-control/scripts/provenance-scan-inbound.mjs",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "active source/config",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/tools/hermes-commerce-control/scripts/provenance-tenderly-history.mjs",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "active source/config",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/tools/hermes-commerce-control/scripts/provenance-transfers.mjs",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "active source/config",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/tools/hermes-commerce-control/scripts/provenance-usdc-reads.mjs",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "active source/config",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/tools/hermes-commerce-control/scripts/run-b1-id-auth.mjs",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "active source/config",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/tools/hermes-commerce-control/scripts/run-b1-scoped-submit.ts",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "active source/config",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/tools/hermes-commerce-control/scripts/stage2-relay-proof-prep.mjs",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "receipts/proofs",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/tools/hermes-commerce-control/scripts/sweep-ab-claimable.mjs",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "active source/config",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/tools/hermes-commerce-control/scripts/sweep-ab-full.mjs",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "active source/config",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/tools/hermes-commerce-control/scripts/x402-test-create-eoa.mjs",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "active source/config",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/tools/hermes-commerce-control/scripts/x402-test-live-validation.mjs",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "active source/config",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/tools/hermes-commerce-control/scripts/x402-test-probe-minter.mjs",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "active source/config",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/tools/hermes-commerce-control/scripts/x402-test-probe-usdc.mjs",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "active source/config",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/tools/hermes-commerce-control/src/adapters/bountybook/protocol.ts",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "active source/config",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/tools/hermes-commerce-control/src/execution/scoped-bountybook.ts",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "active source/config",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/tools/hermes-commerce-control/src/identity/bountybook-auth.ts",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "active source/config",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/tools/hermes-commerce-control/src/identity/identity.ts",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "active source/config",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/tools/hermes-commerce-control/src/identity/secret-storage.ts",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "credentials/private config",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/tools/hermes-commerce-control/src/identity/state.ts",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "active source/config",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/tools/hermes-commerce-control/src/policy/bountybook-auth-policy.ts",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "active source/config",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/tools/hermes-commerce-control/test/bountybook-auth.test.ts",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "active source/config",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/tools/hermes-commerce-control/test/scoped-bountybook-self-claim.test.ts",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "active source/config",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/tools/hermes-commerce-control/test/scoped-bountybook.test.ts",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "active source/config",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/.local/share/ubuntu-multiagent/worktrees/task16-revenue-router/tmp/bountybook-artifacts/733d4731-7e60-4bb8-9233-ba3771c779d3/.validate/test_urls.txt",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "unknown",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/.local/share/ubuntu-multiagent/worktrees/task16-revenue-router/tmp/bountybook-artifacts/733d4731-7e60-4bb8-9233-ba3771c779d3/.validate/urlcheck",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "unknown",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/.local/share/ubuntu-multiagent/worktrees/task16-revenue-router/tmp/bountybook-artifacts/733d4731-7e60-4bb8-9233-ba3771c779d3/.validate/urlcheck.go",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "unknown",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/.local/share/ubuntu-multiagent/worktrees/task16-revenue-router/tmp/bountybook-artifacts/733d4731-7e60-4bb8-9233-ba3771c779d3/run_exact_validator.sh",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "unknown",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/.local/share/ubuntu-multiagent/worktrees/task16-revenue-router/tmp/bountybook-artifacts/733d4731-7e60-4bb8-9233-ba3771c779d3/test_exact_validator.sh",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "unknown",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/.local/share/ubuntu-multiagent/worktrees/task16-revenue-router/tmp/bountybook-artifacts/733d4731-7e60-4bb8-9233-ba3771c779d3/test_scenarios.txt",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "unknown",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/.local/share/ubuntu-multiagent/worktrees/task16-revenue-router/tmp/bountybook-artifacts/733d4731-7e60-4bb8-9233-ba3771c779d3/urlcheck",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "unknown",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/.local/share/ubuntu-multiagent/worktrees/task16-revenue-router/tmp/bountybook-artifacts/733d4731-7e60-4bb8-9233-ba3771c779d3/urlcheck.go",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "unknown",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/.local/share/ubuntu-multiagent/worktrees/task16-revenue-router/tmp/create-keystore.sh",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "unknown",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/.local/share/ubuntu-multiagent/worktrees/task16-revenue-router/tools/hermes-commerce-control/atelier-readme-setup-example.md",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "active source/config",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/projects/agent-commerce-hub/research/raw/agent402/2026-08-20T00:00:00Z/tollbooth-src/tollbooth/package-lock.json",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "research/evidence",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/.hermes/commerce-control/bountybook-b1-scoped-consumed/wrk_62688520409a59ef0e886e22399dcd43.json",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "active source/config",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/.hermes/commerce-control/bountybook-b1-scoped-consumed/wrk_c25d83acbb0a4629f3b1e88f8fb335b0.json",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "active source/config",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/.hermes/commerce-control/commerce-control-cli.sh",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "unknown",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/.hermes/commerce-control/commerce-control-mcp.sh",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "unknown",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/.hermes/commerce-control/install.log",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "unknown",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/.hermes/commerce-control/opportunities.jsonl",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "unknown",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/.hermes/commerce-control/opportunity-evaluations.jsonl",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "unknown",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/.hermes/commerce-control/receipts/atelier-registration-attempt-1.json",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "receipts/proofs",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/.hermes/commerce-control/receipts/atelier-service-create-attempt-1.json",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "receipts/proofs",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/.hermes/commerce-control/receipts/atelier-service-create-attempt-2.json",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "receipts/proofs",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/.hermes/commerce-control/receipts/atelier-service-create-attempt-3.json",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "receipts/proofs",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/.hermes/commerce-control/receipts/bountybook-dispute-733d4731-7e60-4bb8-9233-ba3771c779d3.used",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "receipts/proofs",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/.hermes/commerce-control/run/atelier-access.log",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "unknown",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/.hermes/commerce-control/run/bountybook-signer.log",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "unknown",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/.hermes/commerce-control/secrets/atelier-agent-auth.keystore.json",
+      "type": "file",
+      "contains_secret": true,
+      "classification": "credentials/private config",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/.hermes/commerce-control/secrets/atelier-solana-wallet.keystore.json",
+      "type": "file",
+      "contains_secret": true,
+      "classification": "credentials/private config",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/.hermes/commerce-control/secrets/bountybook-auth.keystore.json",
+      "type": "file",
+      "contains_secret": true,
+      "classification": "credentials/private config",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/.hermes/commerce-control/secrets/bountybook-auth.token.json",
+      "type": "file",
+      "contains_secret": true,
+      "classification": "credentials/private config",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/.hermes/commerce-control/secrets/quarantine/bountybook-auth.identity.json",
+      "type": "file",
+      "contains_secret": true,
+      "classification": "credentials/private config",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/.hermes/commerce-control/state/atelier-readme-service.json",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "runtime state",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/.hermes/commerce-control/state/state.db-shm",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "runtime state",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/.hermes/commerce-control/state/state.db-wal",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "runtime state",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/.hermes/commerce-control/state.db-shm",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "unknown",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/.hermes/commerce-control/state.db-wal",
+      "type": "file",
+      "contains_secret": false,
+      "classification": "unknown",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/.hermes/commerce-control/test-secrets/x402-spend-test-eoa.json",
+      "type": "file",
+      "contains_secret": true,
+      "classification": "credentials/private config",
+      "future_disposition": "preserve_for_later_organization_phase"
+    },
+    {
+      "original_path": "/data/data/com.termux/files/home/.hermes/config.yaml",
+      "type": "file",
+      "contains_secret": true,
+      "classification": "credentials/private config",
+      "future_disposition": "preserve_for_later_organization_phase"
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+node_modules
+npm-debug.log
+.env
+.git
+.gitignore
+*.md
+receipts
+handoffs
+Dockerfile
+.dockerignore
+.docker
+
+# Public seller image boundary: repository-only operator/test material is never
+# sent to the Docker build context or copied into the deployed seller image.
+scripts/
+test/
+docs/
+src/discovery/
+src/payments/agent402-buyer-policy.mjs
+src/payments/financial-store.mjs
+src/payments/ledger.mjs
+src/payments/reconciliation.mjs

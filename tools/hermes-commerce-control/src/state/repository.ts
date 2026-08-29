@@ -1,11 +1,4 @@
-/**
- * Typed persistence for canonical commerce state.
- *
- * Writes are idempotent by canonical ID so that a re-run of discovery updates a
- * service rather than duplicating it, and replaying an operation ID does not
- * duplicate a receipt. Source observations accumulate under one canonical
- * service so cross-source agreement is preserved rather than flattened.
- */
+/** Typed persistence for canonical commerce state. */
 import { canonicalJson } from "../core/ids.js";
 import type {
   EvidenceRecord,
@@ -17,6 +10,7 @@ import type {
   WorkCandidate,
 } from "../core/models.js";
 import { parseServiceCandidate, parseWorkCandidate } from "../core/schemas.js";
+import { sanitize, sanitizeText } from "../evidence/sanitize.js";
 import type { PolicyDecision } from "../policy/decisions.js";
 import { withTransaction, type StateDatabase } from "./sqlite.js";
 
@@ -59,13 +53,18 @@ export interface ExportRecord {
 }
 
 const bool = (v: boolean): number => (v ? 1 : 0);
+const safeJson = (value: unknown): string => canonicalJson(sanitize(value));
+const safeText = (value: string): string => sanitizeText(value);
+const safeOptionalText = (value: string | undefined): string | null =>
+  value === undefined ? null : safeText(value);
+const safeNullableText = (value: string | null): string | null =>
+  value === null ? null : safeText(value);
 
 export class CommerceRepository {
   public constructor(private readonly db: StateDatabase) {}
 
-  // ---------------------------------------------------------------- services
-
   public saveService(service: ServiceCandidate): void {
+    const safeService = parseServiceCandidate(sanitize(service));
     withTransaction(this.db, () => {
       this.db
         .prepare(
@@ -83,19 +82,19 @@ export class CommerceRepository {
              snapshot = excluded.snapshot`,
         )
         .run(
-          service.id,
-          service.name,
-          service.resourceUrl,
-          service.method,
-          service.protocol,
-          service.network ?? null,
-          service.payTo ?? null,
-          service.price?.atomic ?? null,
-          service.price?.decimal ?? null,
-          service.price?.currency ?? null,
-          service.health,
-          service.observedAt,
-          canonicalJson(service),
+          safeService.id,
+          safeService.name,
+          safeService.resourceUrl,
+          safeService.method,
+          safeService.protocol,
+          safeService.network ?? null,
+          safeService.payTo ?? null,
+          safeService.price?.atomic ?? null,
+          safeService.price?.decimal ?? null,
+          safeService.price?.currency ?? null,
+          safeService.health,
+          safeService.observedAt,
+          canonicalJson(safeService),
         );
 
       const insertObs = this.db.prepare(
@@ -105,9 +104,9 @@ export class CommerceRepository {
            observed_at = excluded.observed_at,
            source_url = excluded.source_url`,
       );
-      for (const obs of service.sources) {
+      for (const obs of safeService.sources) {
         insertObs.run(
-          service.id,
+          safeService.id,
           obs.source,
           obs.externalId,
           obs.observedAt,
@@ -121,15 +120,14 @@ export class CommerceRepository {
     const row = this.db.prepare("SELECT snapshot FROM services WHERE id = ?").get(id) as
       | { snapshot: string }
       | undefined;
-    if (row === undefined) return null;
-    return parseServiceCandidate(JSON.parse(row.snapshot));
+    return row === undefined ? null : parseServiceCandidate(JSON.parse(row.snapshot));
   }
 
   public listServices(limit = 500): ServiceCandidate[] {
     const rows = this.db
       .prepare("SELECT snapshot FROM services ORDER BY observed_at DESC, id ASC LIMIT ?")
       .all(limit) as Array<{ snapshot: string }>;
-    return rows.map((r) => parseServiceCandidate(JSON.parse(r.snapshot)));
+    return rows.map((row) => parseServiceCandidate(JSON.parse(row.snapshot)));
   }
 
   public listServiceObservations(serviceId: string): SourceObservation[] {
@@ -144,17 +142,16 @@ export class CommerceRepository {
       observed_at: string;
       source_url: string | null;
     }>;
-    return rows.map((r) => ({
-      source: r.source as PlatformId,
-      externalId: r.external_id,
-      observedAt: r.observed_at,
-      sourceUrl: r.source_url ?? undefined,
+    return rows.map((row) => ({
+      source: row.source as PlatformId,
+      externalId: row.external_id,
+      observedAt: row.observed_at,
+      sourceUrl: row.source_url ?? undefined,
     }));
   }
 
-  // ------------------------------------------------------------------- work
-
   public saveWork(work: WorkCandidate): void {
+    const safeWork = parseWorkCandidate(sanitize(work));
     withTransaction(this.db, () => {
       this.db
         .prepare(
@@ -174,20 +171,20 @@ export class CommerceRepository {
              snapshot = excluded.snapshot`,
         )
         .run(
-          work.id,
-          work.source,
-          work.externalId,
-          work.title,
-          work.reward.amount,
-          work.reward.asset,
-          work.reward.network ?? null,
-          work.funding.state,
-          work.funding.evidence,
-          work.verification.type,
-          work.status,
-          work.deadline ?? null,
-          work.observedAt,
-          canonicalJson(work),
+          safeWork.id,
+          safeWork.source,
+          safeWork.externalId,
+          safeWork.title,
+          safeWork.reward.amount,
+          safeWork.reward.asset,
+          safeWork.reward.network ?? null,
+          safeWork.funding.state,
+          safeWork.funding.evidence,
+          safeWork.verification.type,
+          safeWork.status,
+          safeWork.deadline ?? null,
+          safeWork.observedAt,
+          canonicalJson(safeWork),
         );
 
       this.db
@@ -196,7 +193,7 @@ export class CommerceRepository {
            VALUES (?, ?, ?, ?)
            ON CONFLICT (work_id, source, external_id, observed_at) DO NOTHING`,
         )
-        .run(work.id, work.source, work.externalId, work.observedAt);
+        .run(safeWork.id, safeWork.source, safeWork.externalId, safeWork.observedAt);
     });
   }
 
@@ -204,18 +201,15 @@ export class CommerceRepository {
     const row = this.db.prepare("SELECT snapshot FROM work_items WHERE id = ?").get(id) as
       | { snapshot: string }
       | undefined;
-    if (row === undefined) return null;
-    return parseWorkCandidate(JSON.parse(row.snapshot));
+    return row === undefined ? null : parseWorkCandidate(JSON.parse(row.snapshot));
   }
 
   public listWork(limit = 500): WorkCandidate[] {
     const rows = this.db
       .prepare("SELECT snapshot FROM work_items ORDER BY observed_at DESC, id ASC LIMIT ?")
       .all(limit) as Array<{ snapshot: string }>;
-    return rows.map((r) => parseWorkCandidate(JSON.parse(r.snapshot)));
+    return rows.map((row) => parseWorkCandidate(JSON.parse(row.snapshot)));
   }
-
-  // ------------------------------------------------------------------ quotes
 
   public saveQuote(quote: Quote): void {
     this.db
@@ -229,16 +223,14 @@ export class CommerceRepository {
         quote.serviceId,
         quote.platform,
         quote.quotedAt,
-        quote.price?.atomic ?? null,
-        quote.price?.decimal ?? null,
-        quote.price?.currency ?? null,
-        quote.network ?? null,
+        safeOptionalText(quote.price?.atomic),
+        safeOptionalText(quote.price?.decimal),
+        safeOptionalText(quote.price?.currency),
+        safeOptionalText(quote.network),
         bool(false),
-        canonicalJson(quote),
+        safeJson(quote),
       );
   }
-
-  // ----------------------------------------------------------------- probes
 
   public saveProbe(probe: ProbeResult): void {
     this.db
@@ -251,17 +243,15 @@ export class CommerceRepository {
         probe.status,
         probe.checkedAt,
         probe.latencyMs ?? null,
-        probe.detail ?? null,
-        probe.errorCode ?? null,
+        safeOptionalText(probe.detail),
+        safeOptionalText(probe.errorCode),
       );
   }
 
   public listProbes(platform?: PlatformId, limit = 100): ProbeResult[] {
     const rows = (
       platform === undefined
-        ? this.db
-            .prepare("SELECT * FROM probes ORDER BY checked_at DESC LIMIT ?")
-            .all(limit)
+        ? this.db.prepare("SELECT * FROM probes ORDER BY checked_at DESC LIMIT ?").all(limit)
         : this.db
             .prepare("SELECT * FROM probes WHERE platform = ? ORDER BY checked_at DESC LIMIT ?")
             .all(platform, limit)
@@ -273,17 +263,15 @@ export class CommerceRepository {
       detail: string | null;
       error_code: string | null;
     }>;
-    return rows.map((r) => ({
-      platform: r.platform as PlatformId,
-      status: r.status as ProbeResult["status"],
-      checkedAt: r.checked_at,
-      latencyMs: r.latency_ms ?? undefined,
-      detail: r.detail ?? undefined,
-      errorCode: r.error_code ?? undefined,
+    return rows.map((row) => ({
+      platform: row.platform as PlatformId,
+      status: row.status as ProbeResult["status"],
+      checkedAt: row.checked_at,
+      latencyMs: row.latency_ms ?? undefined,
+      detail: row.detail ?? undefined,
+      errorCode: row.error_code ?? undefined,
     }));
   }
-
-  // --------------------------------------------------------------- evidence
 
   public saveEvidence(record: EvidenceRecord): void {
     this.db
@@ -294,18 +282,16 @@ export class CommerceRepository {
       )
       .run(
         record.platform,
-        record.fact,
-        record.value,
+        safeText(record.fact),
+        safeText(record.value),
         record.classification,
-        record.sourceType,
-        record.sourceRef,
+        safeText(record.sourceType),
+        safeText(record.sourceRef),
         record.capturedAt,
         record.hash,
-        record.rawPath ?? null,
+        safeOptionalText(record.rawPath),
       );
   }
-
-  // -------------------------------------------------------- policy + intents
 
   public savePolicyDecision(decision: PolicyDecision): void {
     this.db
@@ -315,15 +301,15 @@ export class CommerceRepository {
          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .run(
-        decision.operation,
+        safeText(decision.operation),
         decision.class,
         decision.decision,
-        decision.rule,
-        decision.reason,
-        decision.requiredActivation,
+        safeText(decision.rule),
+        safeNullableText(decision.reason),
+        safeNullableText(decision.requiredActivation),
         decision.mode,
         decision.evaluatedAt,
-        decision.detail,
+        safeText(decision.detail),
       );
   }
 
@@ -338,14 +324,14 @@ export class CommerceRepository {
       )
       .run(
         intent.id,
-        intent.kind,
-        intent.platform,
-        intent.targetId,
+        safeText(intent.kind),
+        safeText(intent.platform),
+        safeText(intent.targetId),
         intent.createdAt,
         intent.hash,
-        canonicalJson(intent.body),
-        intent.decisionRule,
-        intent.decisionOutcome,
+        safeJson(intent.body),
+        safeText(intent.decisionRule),
+        safeText(intent.decisionOutcome),
         bool(intent.financialActionExecuted),
         bool(intent.externalMutationExecuted),
       );
@@ -355,22 +341,20 @@ export class CommerceRepository {
     const rows = this.db
       .prepare("SELECT * FROM intents ORDER BY created_at DESC LIMIT ?")
       .all(limit) as Array<Record<string, unknown>>;
-    return rows.map((r) => ({
-      id: String(r.id),
-      kind: String(r.kind),
-      platform: String(r.platform),
-      targetId: String(r.target_id),
-      createdAt: String(r.created_at),
-      hash: String(r.hash),
-      body: JSON.parse(String(r.body)),
-      decisionRule: String(r.decision_rule),
-      decisionOutcome: String(r.decision_outcome),
-      financialActionExecuted: Number(r.financial_action_executed) === 1,
-      externalMutationExecuted: Number(r.external_mutation_executed) === 1,
+    return rows.map((row) => ({
+      id: String(row.id),
+      kind: String(row.kind),
+      platform: String(row.platform),
+      targetId: String(row.target_id),
+      createdAt: String(row.created_at),
+      hash: String(row.hash),
+      body: JSON.parse(String(row.body)),
+      decisionRule: String(row.decision_rule),
+      decisionOutcome: String(row.decision_outcome),
+      financialActionExecuted: Number(row.financial_action_executed) === 1,
+      externalMutationExecuted: Number(row.external_mutation_executed) === 1,
     }));
   }
-
-  // ------------------------------------------------------------- operations
 
   public saveOperation(op: OperationRecord): void {
     this.db
@@ -388,7 +372,7 @@ export class CommerceRepository {
       )
       .run(
         op.id,
-        op.type,
+        safeText(op.type),
         op.startedAt,
         op.endedAt ?? null,
         op.mode,
@@ -398,42 +382,48 @@ export class CommerceRepository {
         op.resultCount ?? 0,
         bool(op.financialActionExecuted),
         bool(op.externalMutationExecuted),
-        op.evidencePaths === undefined ? null : canonicalJson(op.evidencePaths),
-        op.errors === undefined ? null : canonicalJson(op.errors),
+        op.evidencePaths === undefined ? null : safeJson(op.evidencePaths),
+        op.errors === undefined ? null : safeJson(op.errors),
       );
   }
 
   public getOperation(id: string): OperationRecord | null {
-    const r = this.db.prepare("SELECT * FROM operations WHERE id = ?").get(id) as
+    const row = this.db.prepare("SELECT * FROM operations WHERE id = ?").get(id) as
       | Record<string, unknown>
       | undefined;
-    if (r === undefined) return null;
+    if (row === undefined) return null;
     return {
-      id: String(r.id),
-      type: String(r.type),
-      startedAt: String(r.started_at),
-      endedAt: r.ended_at === null ? undefined : String(r.ended_at),
+      id: String(row.id),
+      type: String(row.type),
+      startedAt: String(row.started_at),
+      endedAt: row.ended_at === null ? undefined : String(row.ended_at),
       mode: "A",
-      sourcesRequested: Number(r.sources_requested),
-      sourcesSucceeded: Number(r.sources_succeeded),
-      sourcesFailed: Number(r.sources_failed),
-      resultCount: Number(r.result_count),
-      financialActionExecuted: Number(r.financial_action_executed) === 1,
-      externalMutationExecuted: Number(r.external_mutation_executed) === 1,
+      sourcesRequested: Number(row.sources_requested),
+      sourcesSucceeded: Number(row.sources_succeeded),
+      sourcesFailed: Number(row.sources_failed),
+      resultCount: Number(row.result_count),
+      financialActionExecuted: Number(row.financial_action_executed) === 1,
+      externalMutationExecuted: Number(row.external_mutation_executed) === 1,
       evidencePaths:
-        r.evidence_paths === null ? undefined : (JSON.parse(String(r.evidence_paths)) as string[]),
-      errors: r.errors === null ? undefined : (JSON.parse(String(r.errors)) as string[]),
+        row.evidence_paths === null
+          ? undefined
+          : (JSON.parse(String(row.evidence_paths)) as string[]),
+      errors: row.errors === null ? undefined : (JSON.parse(String(row.errors)) as string[]),
     };
   }
-
-  // ---------------------------------------------------------------- exports
 
   public saveExport(record: ExportRecord): void {
     this.db
       .prepare(
         `INSERT INTO exports (path, kind, sha256, bytes, exported_at) VALUES (?, ?, ?, ?, ?)`,
       )
-      .run(record.path, record.kind, record.sha256, record.bytes, record.exportedAt);
+      .run(
+        safeText(record.path),
+        safeText(record.kind),
+        record.sha256,
+        record.bytes,
+        record.exportedAt,
+      );
   }
 
   public upsertSource(platform: PlatformId, enabled: boolean, baseUrl: string, status?: string): void {
@@ -447,6 +437,12 @@ export class CommerceRepository {
            last_status = excluded.last_status,
            last_seen = excluded.last_seen`,
       )
-      .run(platform, bool(enabled), baseUrl, status ?? null, new Date().toISOString());
+      .run(
+        platform,
+        bool(enabled),
+        safeText(baseUrl),
+        safeOptionalText(status),
+        new Date().toISOString(),
+      );
   }
 }
