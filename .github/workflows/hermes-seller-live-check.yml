@@ -23,9 +23,9 @@ jobs:
         with:
           node-version: '24'
           cache: npm
-          cache-dependency-path: products/drafts/data-quality-profiler/package-lock.json
+          cache-dependency-path: products/published/data-quality-profiler/package-lock.json
       - name: Install and run deterministic seller suite
-        working-directory: products/drafts/data-quality-profiler
+        working-directory: products/published/data-quality-profiler
         run: |
           npm ci
           npm test
