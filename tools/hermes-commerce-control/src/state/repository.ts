@@ -17,6 +17,7 @@ import type {
   WorkCandidate,
 } from "../core/models.js";
 import { parseServiceCandidate, parseWorkCandidate } from "../core/schemas.js";
+import { sanitize, sanitizeText } from "../evidence/sanitize.js";
 import type { PolicyDecision } from "../policy/decisions.js";
 import { withTransaction, type StateDatabase } from "./sqlite.js";
 
@@ -59,6 +60,10 @@ export interface ExportRecord {
 }
 
 const bool = (v: boolean): number => (v ? 1 : 0);
+const safeJson = (value: unknown): string => canonicalJson(sanitize(value));
+const safeText = (value: string): string => sanitizeText(value);
+const safeOptionalText = (value: string | undefined): string | null =>
+  value === undefined ? null : safeText(value);
 
 export class CommerceRepository {
   public constructor(private readonly db: StateDatabase) {}
@@ -66,6 +71,7 @@ export class CommerceRepository {
   // ---------------------------------------------------------------- services
 
   public saveService(service: ServiceCandidate): void {
+    const safeService = parseServiceCandidate(sanitize(service));
     withTransaction(this.db, () => {
       this.db
         .prepare(
@@ -83,19 +89,19 @@ export class CommerceRepository {
              snapshot = excluded.snapshot`,
         )
         .run(
-          service.id,
-          service.name,
-          service.resourceUrl,
-          service.method,
-          service.protocol,
-          service.network ?? null,
-          service.payTo ?? null,
-          service.price?.atomic ?? null,
-          service.price?.decimal ?? null,
-          service.price?.currency ?? null,
-          service.health,
-          service.observedAt,
-          canonicalJson(service),
+          safeService.id,
+          safeService.name,
+          safeService.resourceUrl,
+          safeService.method,
+          safeService.protocol,
+          safeService.network ?? null,
+          safeService.payTo ?? null,
+          safeService.price?.atomic ?? null,
+          safeService.price?.decimal ?? null,
+          safeService.price?.currency ?? null,
+          safeService.health,
+          safeService.observedAt,
+          canonicalJson(safeService),
         );
 
       const insertObs = this.db.prepare(
@@ -105,9 +111,9 @@ export class CommerceRepository {
            observed_at = excluded.observed_at,
            source_url = excluded.source_url`,
       );
-      for (const obs of service.sources) {
+      for (const obs of safeService.sources) {
         insertObs.run(
-          service.id,
+          safeService.id,
           obs.source,
           obs.externalId,
           obs.observedAt,
@@ -155,6 +161,7 @@ export class CommerceRepository {
   // ------------------------------------------------------------------- work
 
   public saveWork(work: WorkCandidate): void {
+    const safeWork = parseWorkCandidate(sanitize(work));
     withTransaction(this.db, () => {
       this.db
         .prepare(
@@ -174,20 +181,20 @@ export class CommerceRepository {
              snapshot = excluded.snapshot`,
         )
         .run(
-          work.id,
-          work.source,
-          work.externalId,
-          work.title,
-          work.reward.amount,
-          work.reward.asset,
-          work.reward.network ?? null,
-          work.funding.state,
-          work.funding.evidence,
-          work.verification.type,
-          work.status,
-          work.deadline ?? null,
-          work.observedAt,
-          canonicalJson(work),
+          safeWork.id,
+          safeWork.source,
+          safeWork.externalId,
+          safeWork.title,
+          safeWork.reward.amount,
+          safeWork.reward.asset,
+          safeWork.reward.network ?? null,
+          safeWork.funding.state,
+          safeWork.funding.evidence,
+          safeWork.verification.type,
+          safeWork.status,
+          safeWork.deadline ?? null,
+          safeWork.observedAt,
+          canonicalJson(safeWork),
         );
 
       this.db
@@ -196,7 +203,7 @@ export class CommerceRepository {
            VALUES (?, ?, ?, ?)
            ON CONFLICT (work_id, source, external_id, observed_at) DO NOTHING`,
         )
-        .run(work.id, work.source, work.externalId, work.observedAt);
+        .run(safeWork.id, safeWork.source, safeWork.externalId, safeWork.observedAt);
     });
   }
 
@@ -229,12 +236,12 @@ export class CommerceRepository {
         quote.serviceId,
         quote.platform,
         quote.quotedAt,
-        quote.price?.atomic ?? null,
-        quote.price?.decimal ?? null,
-        quote.price?.currency ?? null,
-        quote.network ?? null,
+        quote.price?.atomic === undefined ? null : safeText(quote.price.atomic),
+        quote.price?.decimal === undefined ? null : safeText(quote.price.decimal),
+        quote.price?.currency === undefined ? null : safeText(quote.price.currency),
+        safeOptionalText(quote.network),
         bool(false),
-        canonicalJson(quote),
+        safeJson(quote),
       );
   }
 
@@ -251,8 +258,8 @@ export class CommerceRepository {
         probe.status,
         probe.checkedAt,
         probe.latencyMs ?? null,
-        probe.detail ?? null,
-        probe.errorCode ?? null,
+        safeOptionalText(probe.detail),
+        safeOptionalText(probe.errorCode),
       );
   }
 
@@ -294,14 +301,14 @@ export class CommerceRepository {
       )
       .run(
         record.platform,
-        record.fact,
-        record.value,
+        safeText(record.fact),
+        safeText(record.value),
         record.classification,
-        record.sourceType,
-        record.sourceRef,
+        safeText(record.sourceType),
+        safeText(record.sourceRef),
         record.capturedAt,
         record.hash,
-        record.rawPath ?? null,
+        safeOptionalText(record.rawPath),
       );
   }
 
@@ -315,15 +322,15 @@ export class CommerceRepository {
          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .run(
-        decision.operation,
+        safeText(decision.operation),
         decision.class,
         decision.decision,
-        decision.rule,
-        decision.reason,
-        decision.requiredActivation,
+        safeText(decision.rule),
+        safeText(decision.reason),
+        safeText(decision.requiredActivation),
         decision.mode,
         decision.evaluatedAt,
-        decision.detail,
+        safeText(decision.detail),
       );
   }
 
@@ -338,14 +345,14 @@ export class CommerceRepository {
       )
       .run(
         intent.id,
-        intent.kind,
-        intent.platform,
-        intent.targetId,
+        safeText(intent.kind),
+        safeText(intent.platform),
+        safeText(intent.targetId),
         intent.createdAt,
         intent.hash,
-        canonicalJson(intent.body),
-        intent.decisionRule,
-        intent.decisionOutcome,
+        safeJson(intent.body),
+        safeText(intent.decisionRule),
+        safeText(intent.decisionOutcome),
         bool(intent.financialActionExecuted),
         bool(intent.externalMutationExecuted),
       );
@@ -388,7 +395,7 @@ export class CommerceRepository {
       )
       .run(
         op.id,
-        op.type,
+        safeText(op.type),
         op.startedAt,
         op.endedAt ?? null,
         op.mode,
@@ -398,8 +405,8 @@ export class CommerceRepository {
         op.resultCount ?? 0,
         bool(op.financialActionExecuted),
         bool(op.externalMutationExecuted),
-        op.evidencePaths === undefined ? null : canonicalJson(op.evidencePaths),
-        op.errors === undefined ? null : canonicalJson(op.errors),
+        op.evidencePaths === undefined ? null : safeJson(op.evidencePaths),
+        op.errors === undefined ? null : safeJson(op.errors),
       );
   }
 
@@ -433,7 +440,7 @@ export class CommerceRepository {
       .prepare(
         `INSERT INTO exports (path, kind, sha256, bytes, exported_at) VALUES (?, ?, ?, ?, ?)`,
       )
-      .run(record.path, record.kind, record.sha256, record.bytes, record.exportedAt);
+      .run(safeText(record.path), safeText(record.kind), record.sha256, record.bytes, record.exportedAt);
   }
 
   public upsertSource(platform: PlatformId, enabled: boolean, baseUrl: string, status?: string): void {
@@ -447,6 +454,6 @@ export class CommerceRepository {
            last_status = excluded.last_status,
            last_seen = excluded.last_seen`,
       )
-      .run(platform, bool(enabled), baseUrl, status ?? null, new Date().toISOString());
+      .run(platform, bool(enabled), safeText(baseUrl), status === undefined ? null : safeText(status), new Date().toISOString());
   }
 }
