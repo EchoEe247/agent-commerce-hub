@@ -10,25 +10,38 @@ Last current-state update: **2026-08-29**.
 - **Canonical main protection:** enabled; pull requests are required with strict `workflow-policy`, `seller`, and `commerce-control` checks, admins enforced, force-push/deletion disabled.
 - **Production deployment branch:** `feat/hermes-commerce-control-plane`.
 - **Latest completed implementation batch:** P1 Root Landing Extraction Batch 15, code validated at `797ea54dcf888036dea50ebc7a16a0f78a99fe78` through PR #94.
-- **Latest production-staging alignment:** draft PR #89 is the sole current production candidate and is refreshed whenever canonical `main` advances.
+- **Latest production promotion:** PR #95 merged the validated canonical candidate into the protected production branch as `3c501ee37bd3472afe1736213cc493dc254911a8`; Render Blueprint sync was then manually reviewed and applied.
 
 Batch 6C aligned canonical state into `main` through PR #81. Batch 7 was then validated at `378fdcec5240076c20381b3310ad7fbdb018eae9`, merged through PR #82, and completed its GitHub administration at `main` merge commit `db344147e8ed490f486a6aa86f4b19a3e1d675bf`. Ten already-archived obsolete branch refs were removed while preservation refs were retained.
 
 Batch 8 centralized seller pricing and merged through PR #84. Batch 9 bounded public upstream response bodies before parsing, validated at `f9d465fa0986fb6f9a902acfae2a3fb2a57a2576`, and merged through PR #86 as `dcaa00adb88e3ed62207a870be95128d500a4edb`. Batch 10 adds explicit static holiday-rule provenance and corrects Brazil Carnival national-scope classification. Batch 11 replaced stale/conflicted production staging with a dedicated reconciliation branch whose candidate tree is canonical `main` while the unchanged production head remains in its ancestry. Batch 12 minimizes the public seller Docker artifact so repository-only buyer, reconciliation, financial-store, discovery, admin, test, and documentation material is not shipped with the seller process. Batch 13 removes direct GitHub-expression interpolation from shell commands and makes that a repository-enforced workflow policy. Batch 14 removes the testnet signer's dependency on direct writeback to whichever protected/default branch launched the workflow. Batch 15 reimplements the useful human-readable root landing from stale PR #63 on the canonical published seller without merging obsolete draft-path history.
 
-The production branch remains separately protected with the same required checks and remains at `bc6b1a80aa4f71a7db68c35c07c54bbae7e69ef9`.
+The production branch remains separately protected with the same required checks and is now at `3c501ee37bd3472afe1736213cc493dc254911a8`, the merge commit from production-promotion PR #95.
 
 ## Deployment boundary
 
 Render auto-deploys from `feat/hermes-commerce-control-plane`, not from `main`. Repository hardening merged into `main` does **not** deploy production.
 
-PR **#89** is the sole current production-promotion candidate. It is OPEN/DRAFT/UNMERGED on `promote/main-through-batch-10` and targets the protected Render-linked production branch. Merging #89 is a live production deployment event and requires explicit production authorization.
+PR **#89** was closed unmerged only because the GitHub connector could not clear its draft state. Its identical validated head was reopened as PR **#95**, explicitly authorized, and merged into `feat/hermes-commerce-control-plane` as `3c501ee37bd3472afe1736213cc493dc254911a8`.
 
-The direct `main` → production attempt in PR #88 was closed unmerged after GitHub confirmed a real dirty history conflict. The older Batch-6B-only PR #79 was also closed unmerged as stale. Neither changed production.
+The Git merge did not itself apply the pending Render Blueprint migration. The Blueprint was reviewed separately and manually synced. Render deployment `dep-da9fhedg1s2s73a930n0` completed from the PR #95 merge commit with trigger `blueprint_sync` and reached `live` at `2026-08-29T15:21:12.959916Z`.
 
-The promotion branch uses explicit reconciliation commits: production remains an ancestor while the candidate file tree is taken from validated canonical `main`. If `main` advances before deployment, refresh and revalidate the promotion branch before any merge rather than treating an older green check as current.
+The live service root is now `products/published/data-quality-profiler`, and the Blueprint-managed `X402_FACILITATOR_MODE=xpay` setting is applied. Validated implementation through Batch 15 is therefore **production-deployed**.
 
-The repository candidate `render.yaml` uses `products/published/data-quality-profiler`; that candidate root is not proof that the live Render service has moved. Validated implementation through Batch 15 remains **not production-deployed**.
+`main` remains separate from production. Future production changes still require a fresh validated promotion path and explicit production authorization; a merge to `main` alone is not a production deployment.
+
+## Post-deploy verification
+
+The production deployment was verified through Render immediately after Blueprint sync:
+
+- service `hermes-counterparty-api` is `live` on deploy `dep-da9fhedg1s2s73a930n0`;
+- the live root directory is `products/published/data-quality-profiler`;
+- external unpaid probes reached multiple paid POST routes on the new instance and received the expected HTTP `402` payment challenge;
+- observed post-deploy probes included `/v1/package-maintenance-snapshot`, `/v1/schema-drift`, `/v1/counterparty-availability`, `/v1/dependency-vulnerability-check`, and `/v1/company-domain-intelligence`;
+- no `payment_succeeded:true` event was observed in the post-deploy window through `2026-08-29T15:28:04Z`, so the deployment verification did not manufacture or claim a paid sale;
+- Agent402's marketplace snapshot listed `Hermes Agent Commerce API` as healthy with 14 tools / 13 paid tools, while its displayed chain label was still unresolved. That marketplace field is transient discovery state, not production network configuration.
+
+No new live-money purchase or signing action was performed for this deployment verification.
 
 ## Closed validation batches
 
@@ -79,7 +92,7 @@ The previously drifting defaults are now explicitly aligned:
 
 The Batch 8 pricing-consistency suite proves all thirteen defaults and route-specific environment overrides match between resolved config, `/.well-known/x402`, and OpenAPI; it also verifies the payment plugin consumes every canonical price config key. The existing Distribution Readiness CI path filter already covers the entire published seller tree, so changes to the canonical price source automatically run distribution contracts and the full seller suite.
 
-Published repository lifecycle **does not mean deployed**. Production remains on the older protected deployment branch until #89 is deliberately authorized and merged.
+The canonical published seller is now also the live Render seller root. Repository publication and production deployment remain separate concepts for future changes, but the Batch 15 validated baseline has completed both stages.
 
 ## Public root landing
 
@@ -91,7 +104,7 @@ The landing page links to `/openapi.json`, `/llms.txt`, `/.well-known/x402`, and
 
 Batch 12 makes the repository package and the public Docker artifact intentionally different scopes without moving or deleting financial/operator source needed by CI and controlled operations.
 
-The Render candidate uses the seller Dockerfile, which installs production dependencies and copies only `src/` into the image. `.dockerignore` excludes repository-only `scripts/`, `test/`, and `docs/`, buyer discovery under `src/discovery/`, and the private buyer-policy, financial-store, ledger, and reconciliation modules under `src/payments/`.
+The live Render deployment uses the seller Dockerfile, which installs production dependencies and copies only `src/` into the image. `.dockerignore` excludes repository-only `scripts/`, `test/`, and `docs/`, buyer discovery under `src/discovery/`, and the private buyer-policy, financial-store, ledger, and reconciliation modules under `src/payments/`.
 
 The public server import-graph regression starts at `src/server.mjs`, recursively follows local static and dynamic imports, requires `src/payments/x402-plugin.mjs` to remain reachable for seller payment enforcement, and rejects any reachability into the excluded buyer/discovery/private-financial modules. The Docker-boundary regression also rejects whole-context, scripts, or test copies. Private tooling remains in Git for CI/admin use but is outside the public seller build context and image.
 
@@ -157,15 +170,15 @@ The former active-looking tracked snapshots remain preserved by exact Git blob i
 Deliberately retained open PRs:
 
 - **#8** — deferred the402 provider adapter; do not merge stale implementation wholesale. If revived, rebase/reimplement and add replay protection.
-- **#89** — current production-promotion candidate; OPEN/DRAFT/UNMERGED. Do not merge without explicit production authorization and current Render inspection.
 
 Superseded or replaced PRs:
 
 - **#63** — stale draft-path root landing; useful semantics reimplemented on canonical seller by Batch 15 / PR #94; close unmerged.
 - **#79** — CLOSED/UNMERGED; stale Batch-6B-only production candidate.
 - **#88** — CLOSED/UNMERGED; direct-main candidate with confirmed dirty history conflict.
+- **#89** — CLOSED/UNMERGED; validated production candidate superseded only by the connector draft-state workaround and replaced by PR #95.
 
-PR **#82** is merged and closed as Batch 7. Draft PRs **#83** and **#85** were validated but closed unmerged solely because the ChatGPT GitHub connector could not clear their draft flags; their identical validated branches were merged through non-draft PRs **#84** and **#86** respectively. PR **#87** merged Batch 10 into protected `main`. PR **#91** merged Batch 12. PR **#92** merged Batch 13. PR **#93** merged Batch 14. PR **#94** is the Batch 15 protected-main merge path.
+PR **#82** is merged and closed as Batch 7. Draft PRs **#83** and **#85** were validated but closed unmerged solely because the ChatGPT GitHub connector could not clear their draft flags; their identical validated branches were merged through non-draft PRs **#84** and **#86** respectively. PR **#87** merged Batch 10 into protected `main`. PR **#91** merged Batch 12. PR **#92** merged Batch 13. PR **#93** merged Batch 14. PR **#94** merged Batch 15 into protected `main`. PR **#95** then promoted that validated canonical tree to the protected production branch; the subsequent manual Blueprint sync deployed it live.
 
 ## Archive policy
 
@@ -176,7 +189,7 @@ PR **#82** is merged and closed as Batch 7. Draft PRs **#83** and **#85** were v
 1. Read `state/CURRENT.json` and this document before older status, handoff, plan, receipt, or research files.
 2. A filename containing `latest` is not automatically current; Commerce Control may no longer generate `*-latest.json` outputs.
 3. A closed validation batch or `products/published/` path is not automatically deployed.
-4. Merging #89 is a production deployment event; do not use it merely for validation or repository cleanup. Refresh/revalidate its promotion branch if `main` has advanced.
+4. `main` and the Render-linked production branch remain separate change-control boundaries. For any future production change, create and validate a fresh promotion path, obtain explicit production authorization, then separately review any pending Render Blueprint mutation before applying it.
 5. All seller default-price changes must update the canonical `SELLER_PRICE_DEFAULTS` / `SELLER_PRICE_CATALOG` authority and pass the pricing-consistency suite.
 6. Counterparty holiday output is advisory static-rule data, not a live authoritative calendar; retain provenance and limitations if the holiday implementation changes.
 7. Public seller Docker changes must preserve the Batch 12 boundary: seller payment enforcement may ship, but buyer/discovery/private financial/operator modules must remain outside the public server import graph and Docker artifact.
