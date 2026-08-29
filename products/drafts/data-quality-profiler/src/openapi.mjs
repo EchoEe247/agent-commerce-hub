@@ -13,7 +13,7 @@ export function buildOpenApiDocument(config) {
 
   company.operationId = "companyDomainIntelligenceEnrichment";
   company.summary = "Company domain intelligence: research and enrich a business domain with public web and infrastructure signals";
-  company.description = "Use this paid operation to research a company, enrich a business, investigate a domain, or qualify a lead after trying the bounded free preview at /v1/company-domain-intelligence/preview. Returns normalized domain identity, public DNS A/AAAA records, MX/SPF/DMARC signals, RDAP registration metadata, website reachability and identity metadata, selected social/contact links, HSTS/CSP presence, and source provenance. Public-domain input only; IP literals, special-use hostnames, and private/non-routable resolved targets are rejected.";
+  company.description = "Use this paid operation to research a company, enrich a business, investigate a domain, or qualify a lead after trying the free preview at /v1/company-domain-intelligence/preview. The free preview is bounded and DNS-only. Returns normalized domain identity, public DNS A/AAAA records, MX/SPF/DMARC signals, RDAP registration metadata, website reachability and identity metadata, selected social/contact links, HSTS/CSP presence, and source provenance. Public-domain input only; IP literals, special-use hostnames, and private/non-routable resolved targets are rejected.";
 
   document.paths[PREVIEW_PATH] = {
     post: {
