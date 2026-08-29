@@ -9,7 +9,7 @@ Last current-state update: **2026-08-29**.
 - **Canonical/default repository branch:** `main`.
 - **Canonical main protection:** enabled; pull requests are required with strict `workflow-policy`, `seller`, and `commerce-control` checks, admins enforced, force-push/deletion disabled.
 - **Production deployment branch:** `feat/hermes-commerce-control-plane`.
-- **Latest completed implementation batch:** P1 Seller Pricing Source Batch 8, validated through PR #83.
+- **Latest completed implementation batch:** P1 Seller Pricing Source Batch 8, validated for merge through PR #84.
 
 Batch 6C aligned canonical state into `main` through PR #81. Batch 7 was then validated at `378fdcec5240076c20381b3310ad7fbdb018eae9`, merged through PR #82, and completed its GitHub administration at `main` merge commit `db344147e8ed490f486a6aa86f4b19a3e1d675bf`. Ten already-archived obsolete branch refs were removed while preservation refs were retained.
 
@@ -36,7 +36,7 @@ The repository candidate `render.yaml` uses `products/published/data-quality-pro
 | P1 Seller Lifecycle Batch 6B | CLOSED | `c9512348567459be3164f2413d4e187a7bed7501` |
 | P1 Repository Alignment Batch 6C | CLOSED | PR #81 aligned canonical state into `main` without production deploy |
 | P1 Commerce Control Durability Batch 7 | CLOSED | `378fdcec5240076c20381b3310ad7fbdb018eae9`, PR #82, merged to `main` as `db344147e8ed490f486a6aa86f4b19a3e1d675bf` |
-| P1 Seller Pricing Source Batch 8 | CLOSED | code validated at `85918d271c107881d8cd9a7781370f4e1742a42e`, PR #83 |
+| P1 Seller Pricing Source Batch 8 | CLOSED | code validated at `85918d271c107881d8cd9a7781370f4e1742a42e`, merge PR #84 |
 
 ## Financial state
 
@@ -99,7 +99,7 @@ Deliberately retained older PRs:
 - **#63** — useful root landing page; extract/rebase onto the canonical seller later.
 - **#79** — production-promotion candidate; OPEN/DRAFT/UNMERGED.
 
-PR **#82** is merged and closed as Batch 7. PR **#83** is the Batch 8 seller-pricing consistency change targeting protected `main`; it does not target the Render-linked production branch.
+PR **#82** is merged and closed as Batch 7. Draft PR **#83** was validated but closed unmerged solely because the ChatGPT GitHub connector could not clear its draft flag; the identical branch is carried by non-draft PR **#84** for the protected-main merge. Neither PR targets the Render-linked production branch.
 
 ## Archive policy
 
