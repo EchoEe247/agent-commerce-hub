@@ -1,30 +1,35 @@
 # Current State
 
-> **Canonical operational truth:** this document and `state/CURRENT.json` are the only repository-level current-state sources. Historical receipts, `*-latest` research snapshots, plans, handoffs, and anything under `Unknown/Archived/` are evidence, not authority, unless this document explicitly points to them.
+> **Canonical operational truth:** this document and `state/CURRENT.json` are the repository-level current-state sources. Historical receipts, plans, handoffs, `*-latest` snapshots, and `Unknown/Archived/` material are evidence, not authority, unless explicitly referenced here.
 
 Last canonicalization update: **2026-08-29**.
 
 ## Repository roles
 
-- **GitHub** is the shared source/evidence and change-control surface. It is not a secret store or wallet.
-- **Production branch:** `feat/hermes-commerce-control-plane`.
-- **GitHub default branch:** `main` (alignment is intentionally deferred to Batch 6C).
-- **Latest independently validated baseline:** `chore/p1-canonical-state-batch-6a` at `54674d29ffb6fed9614ea6ef56b1520d16a8ec47`.
-- **Current canonicalization branch:** `chore/p1-seller-lifecycle-batch-6b`.
+- **Canonical/default repository branch:** `main` after the Batch 6C history-preserving alignment merge.
+- **Production deployment branch:** `feat/hermes-commerce-control-plane`.
+- **Validated Batch 6B baseline:** `c9512348567459be3164f2413d4e187a7bed7501`.
+- **Batch 6C alignment branch:** `chore/p1-repository-alignment-batch-6c`.
 
-The production branch is protected and requires a pull request with strict passing `workflow-policy`, `seller`, and `commerce-control` checks. Admins are included; force-push and branch deletion are disabled.
+Before Batch 6C, `main` was stale at `fb1574abcad25f68c59d9589ae1701d43e3107cc`. That exact pre-alignment head is preserved by ref `archive/batch-6c-main-before-alignment-fb1574a`. Batch 6C aligns `main` by normal PR/merge rather than force-resetting history.
+
+The production branch remains separately protected with required `workflow-policy`, `seller`, and `commerce-control` checks, admins enforced, and force-push/deletion disabled.
 
 ## Deployment boundary
 
-Render is configured to auto-deploy from `feat/hermes-commerce-control-plane`. Therefore **merging a promotion PR into that branch is a production deployment event**.
+Render auto-deploys from `feat/hermes-commerce-control-plane`, not from `main`. Therefore aligning canonical repository state into `main` **does not deploy production**.
 
-The P0/P1 hardening through Batch 5 and Canonical-State Batch 6A are staged and validated but have **not** been merged into the production branch. Do not interpret a closed validation batch, a `products/published/` path, or a draft promotion PR as proof that its code is already live.
+PR **#79** remains the production-promotion candidate. It stays OPEN/DRAFT/UNMERGED until an explicit production deployment is authorized. Merging #79 into the production branch is the deployment event.
 
-Batch 6B changes the repository-declared Render `rootDir` to the canonical published seller path so the future production promotion can move source and deployment configuration atomically. No live Render setting is changed during Batch 6B validation.
+The repository candidate `render.yaml` uses:
 
-## Closed hardening baseline
+`products/published/data-quality-profiler`
 
-| Batch | State | Authoritative validated head |
+That candidate root is not proof that the live Render service has moved.
+
+## Closed validation batches
+
+| Batch | State | Validated head |
 |---|---|---|
 | P0 Security Batch 1 | CLOSED | `fd61b87914a33ba37daf745724a812abe02d9d2c` |
 | P1 Financial Safety Batch 2 | CLOSED | `0aa39b5da62221b0a22a6a280ac177da1a0ba2da` |
@@ -32,96 +37,77 @@ Batch 6B changes the repository-declared Render `rootDir` to the canonical publi
 | P1 Production Change-Control Batch 4 | CLOSED | `f0f9503a4b01cff98003de9b06f4f77db2ce2fdb` |
 | P1 Preview Resource-Abuse Batch 5 | CLOSED | `ab06f198904ff67e3d4b518d8c177af460a2c8ca` |
 | P1 Canonical-State Batch 6A | CLOSED | `54674d29ffb6fed9614ea6ef56b1520d16a8ec47` |
+| P1 Seller Lifecycle Batch 6B | CLOSED | `c9512348567459be3164f2413d4e187a7bed7501` |
 
-Key properties of that validated baseline include:
-
-- public Actions buyer cannot execute production purchases;
-- paid-result material is not published as a public Actions artifact;
-- company-domain network traversal has SSRF/rebinding protections;
-- production payment configuration fails closed;
-- mainnet/testnet financial histories are physically separated;
-- authoritative runtime financial state uses local SQLite with reservation/CAS and conservative reconciliation;
-- signed authorization material is excluded from tracked audit exports;
-- production branch change control is protected by required CI checks;
-- the free company-domain preview is DNS-only, bounded, cached, de-duplicated, and rate-limited;
-- repository current-state authority is `docs/CURRENT_STATE.md` plus `state/CURRENT.json`, with stale operational status moved to the archive.
+Validated properties include fail-closed production payment configuration, physically separated mainnet/testnet financial histories, local SQLite transactional authority, conservative reconciliation, private signed authorization material excluded from tracked audit exports, production branch change control, bounded free preview, explicit current-state authority, and the seller lifecycle move to the published path.
 
 ## Financial state
 
-Tracked JSON ledgers are **audit snapshots**, not the transactional runtime database.
+Tracked JSON ledgers are audit snapshots, not the transactional runtime database.
 
-Canonical tracked ledger paths:
+- Mainnet: `state/commerce-control/ledgers/mainnet-budget-ledger.json`, blob `9a9e87dce730cc3fddcbdcf8926b12d53c6046ab`.
+- Testnet: `state/commerce-control/ledgers/testnet-budget-ledger.json`, blob `0632862d26c600634068b61669db8de11faa8dad`.
+- Mainnet validated totals: initial `2380000`, spent `10000`, remaining `2370000` atomic USDC.
 
-- mainnet: `state/commerce-control/ledgers/mainnet-budget-ledger.json`
-- testnet: `state/commerce-control/ledgers/testnet-budget-ledger.json`
-
-Validated blob identities:
-
-- mainnet: `9a9e87dce730cc3fddcbdcf8926b12d53c6046ab`
-- testnet: `0632862d26c600634068b61669db8de11faa8dad`
-
-Mainnet validated audit totals:
-
-- initial budget: `2380000` atomic USDC
-- spent: `10000`
-- remaining: `2370000`
-
-The authoritative mainnet SQLite runtime database is local/gitignored and must never be committed. Do not initialize, replace, export, or reconcile it merely to update repository documentation.
+The authoritative mainnet SQLite database remains local/gitignored and must not be initialized, replaced, exported, or reconciled merely for repository cleanup.
 
 ## Seller lifecycle
 
-The canonical seller path in the Batch 6B repository candidate is:
+Canonical seller source:
 
 `products/published/data-quality-profiler/`
 
-Batch 6B moves the seller tree from the historical `products/drafts/data-quality-profiler/` path **without changing seller file contents as part of the tree move**. Active GitHub workflows, the Commerce Control readiness inspector, tests, and `render.yaml` are updated coherently to the published path.
+Batch 6B moved the seller tree byte-for-byte from `products/drafts/data-quality-profiler/`; active workflows, financial CI, distribution CI, Commerce Control readiness inspection, and repository Render configuration now use the published path. Historical documents may still mention the old path as point-in-time evidence.
 
-The old `products/drafts/data-quality-profiler/` path is retired for active source. Historical receipts/plans may still mention it as point-in-time evidence.
-
-This lifecycle move is **staged, not deployed** until an authorized promotion is merged into the protected production branch. The seller exposes thirteen paid x402 POST operations plus one free bounded company-domain preview.
+Published repository lifecycle **does not mean deployed**. Production remains on the older protected deployment branch until #79 is deliberately merged.
 
 ## Commerce Control
 
-`tools/hermes-commerce-control/` remains the Commerce Control package. Its product-readiness inspector follows the canonical published seller path in Batch 6B.
+`tools/hermes-commerce-control/` remains the Commerce Control package. Its seller-readiness inspector uses the canonical published seller path.
 
-Legacy generated files remain **non-authoritative snapshots**:
+Legacy generated snapshots remain non-authoritative:
 
 - `research/normalized/commerce-control/services-latest.json`
 - `research/normalized/commerce-control/work-latest.json`
 - `analytics/commerce-control/source-health-latest.json`
 - `analytics/commerce-control/status-latest.json`
 
-Batch 6A moved the legacy status exporter out of the retired authoritative-looking path `state/commerce-control/STATUS.json`; the exporter can no longer recreate that retired state path. The remaining `*-latest` namespace cleanup is deferred to the later Commerce Control durability batch.
+Inter-process JSONL locking/atomic claims, sanitizer/storage invariants, and remaining legacy-export namespace cleanup are deferred to the next Commerce Control durability work.
 
-## Staged pull requests
+## PR cleanup
 
-- **PR #76** — Batch 4 promotion subset; OPEN/DRAFT/UNMERGED. Do not merge. Superseded by later staged candidates; disposition deferred to Batch 6C.
-- **PR #77** — Batch 5 promotion subset; OPEN/DRAFT/UNMERGED. Do not merge. Superseded by later staged candidates; disposition deferred to Batch 6C.
-- **PR #78** — Batch 6A promotion subset; OPEN/DRAFT/UNMERGED. Do not merge. Superseded by PR #79; disposition deferred to Batch 6C.
-- **PR #79** — Batch 6B seller-lifecycle candidate; OPEN/DRAFT/UNMERGED. This is the newest complete staged candidate. Do not merge while Batch 6 canonicalization continues.
+Batch 6C preserved terminal identities in:
 
-Production-target validation PRs remain draft/unmerged until the canonicalization sequence is complete and a deliberate production deployment is authorized.
+`Unknown/Archived/branches/2026-08-29-batch-6c-pr-branch-index.md`
+
+Closed unmerged as temporary, historical, divergent, or superseded:
+
+`#1, #2, #33, #34, #35, #64, #76, #77, #78`
+
+Deliberately retained:
+
+- **#8** — deferred the402 provider adapter; do not merge stale implementation wholesale. If revived, rebase/reimplement and add replay protection.
+- **#63** — useful root landing page; extract/rebase onto canonical seller later.
+- **#79** — current production-promotion candidate; OPEN/DRAFT/UNMERGED.
+
+Obsolete branch-ref deletion is mechanical follow-up after preservation; it is not authority and must never erase the archived terminal SHA record.
 
 ## Archive policy
 
-`Unknown/Archived/` is historical evidence only. No active runtime may treat it as configuration or current state.
+`Unknown/Archived/` is historical evidence only. No active runtime may treat it as configuration or current state. Never place raw credentials or secrets in the repository archive.
 
-During Batch 6A, stale operational status and retired seller-live `latest` material were preserved there by exact Git blob identity before being removed from active current-state paths.
+## Current sequence
 
-Never place raw credentials or secrets in the repository archive.
-
-## Current cleanup sequence
-
-1. **Batch 6A — canonical state + stale operational truth archive** — CLOSED at `54674d29ffb6fed9614ea6ef56b1520d16a8ec47`
-2. **Batch 6B — seller lifecycle move out of `drafts` + coherent path updates** — CURRENT / PR #79
-3. **Batch 6C — branch/PR cleanup + default/canonical branch alignment**
-4. **Later Commerce Control durability** — JSONL inter-process locking/claim safety, sanitizer/storage invariant, and remaining legacy export namespace cleanup
+1. Batch 6A — canonical state/stale operational truth archive — CLOSED.
+2. Batch 6B — seller lifecycle move/path rewiring — CLOSED.
+3. Batch 6C — PR cleanup + history-preserving default/canonical `main` alignment — CURRENT until the alignment PR is merged.
+4. Next coherent implementation: Commerce Control durability — JSONL multiwriter locking/atomic claims, sanitizer/storage invariant, legacy export namespace cleanup.
 
 ## Rules for future agents
 
-1. Read `state/CURRENT.json` and this document before using older status, receipt, handoff, plan, or research material.
-2. A file named `latest` is not automatically current.
-3. A closed batch or a path under `products/published/` is not automatically deployed.
-4. Do not merge a production-target PR merely to validate it; production PRs trigger Render deployment when merged.
-5. Preserve uncertain historical material before moving/removing it.
+1. Read `state/CURRENT.json` and this document before older status, handoff, plan, receipt, or research files.
+2. A filename containing `latest` is not automatically current.
+3. A closed validation batch or `products/published/` path is not automatically deployed.
+4. Merging #79 is a production deployment event; do not use it merely for validation or repository cleanup.
+5. Preserve uncertain historical material before removing it.
 6. Never commit secrets, private paid results, local SQLite/WAL/SHM files, or generated `node_modules`.
