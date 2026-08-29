@@ -4,10 +4,12 @@ import { domainToASCII } from "node:url";
 import { COMPANY_DOMAIN_PREVIEW_MARKER } from "./company-domain-preview-guard.mjs";
 import { isPublicIp } from "./ssrf-address.mjs";
 import { createSafeWebsiteFetch, createHttpsTransport } from "./safe-website-fetch.mjs";
+import { readResponseTextBounded } from "./bounded-response.mjs";
 
 export { createSafeWebsiteFetch, createHttpsTransport };
 
 const RDAP_BASE = "https://rdap.org/domain/";
+const RDAP_MAX_BYTES = 2 * 1024 * 1024;
 const BLOCKED_SUFFIXES = [".local", ".internal", ".test", ".invalid", ".example", ".onion", ".localhost", ".home", ".lan"];
 const MAX_WEBSITE_REDIRECTS = 4;
 const MAX_WEBSITE_BYTES = 512 * 1024;
@@ -319,7 +321,9 @@ async function fetchRdap(domain, fetchImpl) {
       signal: AbortSignal.timeout(6000),
     });
     if (!response?.ok) return null;
-    return await response.json();
+    const text = await readResponseTextBounded(response, RDAP_MAX_BYTES);
+    const value = JSON.parse(text);
+    return value && typeof value === "object" && !Array.isArray(value) ? value : null;
   } catch {
     return null;
   }
