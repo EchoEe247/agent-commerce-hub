@@ -6,12 +6,12 @@ on:
       - fix/p1-financial-durability-batch-3
       - fix/p1-production-change-control-batch-4
     paths:
-      - 'products/drafts/data-quality-profiler/src/payments/**'
-      - 'products/drafts/data-quality-profiler/scripts/agent402-production-buyer.mjs'
-      - 'products/drafts/data-quality-profiler/scripts/signer-init.mjs'
-      - 'products/drafts/data-quality-profiler/scripts/financial-store-admin.mjs'
-      - 'products/drafts/data-quality-profiler/test/p1-financial-*.test.mjs'
-      - 'products/drafts/data-quality-profiler/package.json'
+      - 'products/published/data-quality-profiler/src/payments/**'
+      - 'products/published/data-quality-profiler/scripts/agent402-production-buyer.mjs'
+      - 'products/published/data-quality-profiler/scripts/signer-init.mjs'
+      - 'products/published/data-quality-profiler/scripts/financial-store-admin.mjs'
+      - 'products/published/data-quality-profiler/test/p1-financial-*.test.mjs'
+      - 'products/published/data-quality-profiler/package.json'
       - '.github/workflows/hermes-x402-signer.yml'
       - '.github/workflows/p1-financial-durability-ci.yml'
   pull_request:
@@ -19,12 +19,12 @@ on:
       - feat/hermes-commerce-control-plane
       - main
     paths:
-      - 'products/drafts/data-quality-profiler/src/payments/**'
-      - 'products/drafts/data-quality-profiler/scripts/agent402-production-buyer.mjs'
-      - 'products/drafts/data-quality-profiler/scripts/signer-init.mjs'
-      - 'products/drafts/data-quality-profiler/scripts/financial-store-admin.mjs'
-      - 'products/drafts/data-quality-profiler/test/p1-financial-*.test.mjs'
-      - 'products/drafts/data-quality-profiler/package.json'
+      - 'products/published/data-quality-profiler/src/payments/**'
+      - 'products/published/data-quality-profiler/scripts/agent402-production-buyer.mjs'
+      - 'products/published/data-quality-profiler/scripts/signer-init.mjs'
+      - 'products/published/data-quality-profiler/scripts/financial-store-admin.mjs'
+      - 'products/published/data-quality-profiler/test/p1-financial-*.test.mjs'
+      - 'products/published/data-quality-profiler/package.json'
       - '.github/workflows/hermes-x402-signer.yml'
       - '.github/workflows/p1-financial-durability-ci.yml'
   workflow_dispatch:
@@ -45,12 +45,12 @@ jobs:
         with:
           node-version: '24'
           cache: npm
-          cache-dependency-path: products/drafts/data-quality-profiler/package-lock.json
+          cache-dependency-path: products/published/data-quality-profiler/package-lock.json
       - name: Install seller dependencies
-        working-directory: products/drafts/data-quality-profiler
+        working-directory: products/published/data-quality-profiler
         run: npm ci
       - name: Targeted P1 financial safety and durability tests
-        working-directory: products/drafts/data-quality-profiler
+        working-directory: products/published/data-quality-profiler
         run: |
           node --test \
             test/p1-financial-safety.test.mjs \
@@ -58,7 +58,7 @@ jobs:
             test/p1-financial-runtime-wiring.test.mjs \
             test/p1-financial-corrections.test.mjs
       - name: Full seller test suite
-        working-directory: products/drafts/data-quality-profiler
+        working-directory: products/published/data-quality-profiler
         run: npm test
       - name: Canonical financial audit snapshots remain untouched by tests
         run: |
