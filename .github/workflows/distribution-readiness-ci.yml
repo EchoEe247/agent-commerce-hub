@@ -6,7 +6,7 @@ on:
       - feat/hermes-commerce-control-plane
       - main
     paths:
-      - 'products/drafts/data-quality-profiler/**'
+      - 'products/published/data-quality-profiler/**'
       - '.github/workflows/distribution-readiness-ci.yml'
   workflow_dispatch:
 
@@ -26,20 +26,20 @@ jobs:
         with:
           node-version: '24'
           cache: npm
-          cache-dependency-path: products/drafts/data-quality-profiler/package-lock.json
+          cache-dependency-path: products/published/data-quality-profiler/package-lock.json
       - name: Install dependencies
-        working-directory: products/drafts/data-quality-profiler
+        working-directory: products/published/data-quality-profiler
         run: npm ci
       - name: Distribution readiness contracts
-        working-directory: products/drafts/data-quality-profiler
+        working-directory: products/published/data-quality-profiler
         run: node --test test/distribution-readiness.test.mjs
       - name: Production-profile readiness CLI
-        working-directory: products/drafts/data-quality-profiler
+        working-directory: products/published/data-quality-profiler
         env:
           X402_FACILITATOR_URL: https://facilitator.xpay.sh
         run: |
           npm run --silent check:distribution-readiness > /tmp/distribution-readiness.json
           node -e 'const fs=require("node:fs"); const r=JSON.parse(fs.readFileSync("/tmp/distribution-readiness.json","utf8")); if (r.technical_status !== "ready" || r.paid_operation_count !== 13 || r.facilitator.classification !== "xpay") process.exit(1);'
       - name: Full profiler suite
-        working-directory: products/drafts/data-quality-profiler
+        working-directory: products/published/data-quality-profiler
         run: npm test
