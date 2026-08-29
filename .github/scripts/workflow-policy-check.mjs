@@ -85,6 +85,20 @@ if (/^\s*push:\s*$/m.test(live)) {
   errors.push("hermes-seller-live-check.yml: live smoke must not run automatically on push");
 }
 
+const signer = fs.readFileSync(path.join(WORKFLOW_DIR, "hermes-x402-signer.yml"), "utf8");
+if (/github\.ref_name/.test(signer)) {
+  errors.push("hermes-x402-signer.yml: testnet audit writeback must not target the selected/default workflow branch");
+}
+if (!/AUDIT_BRANCH:\s*testnet-audit\/run-\$\{\{\s*github\.run_id\s*\}\}-\$\{\{\s*github\.run_attempt\s*\}\}/.test(signer)) {
+  errors.push("hermes-x402-signer.yml: testnet audit writeback must use a run-scoped testnet-audit branch");
+}
+if (!/HEAD:refs\/heads\/\$\{AUDIT_BRANCH\}/.test(signer)) {
+  errors.push("hermes-x402-signer.yml: testnet audit snapshot must push only to AUDIT_BRANCH");
+}
+if (/git[^\n]*push[^\n]*--force|--force[^\n]*git[^\n]*push/i.test(signer)) {
+  errors.push("hermes-x402-signer.yml: force-pushing testnet audit snapshots is forbidden");
+}
+
 if (errors.length) {
   console.error("WORKFLOW_POLICY=FAIL");
   for (const error of errors) console.error(`- ${error}`);
