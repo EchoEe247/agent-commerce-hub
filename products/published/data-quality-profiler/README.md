@@ -1,39 +1,58 @@
-# Data Quality Profiler
+# Hermes Agent Commerce API / Data Quality Profiler
 
-Machine-readable dataset health profiling for autonomous pipelines.
+Agent-ready paid utilities for data quality, software/package intelligence, company research, sanctions screening, SEC data, and counterparty availability. The service is implemented as a standalone Node.js 24 Fastify application and exposes machine-readable OpenAPI, x402 discovery metadata, and agent guidance.
 
-A small standalone Node.js (Fastify) service that accepts a JSON or CSV dataset,
-enforces hard structural limits, determines a deterministic schema fingerprint,
-computes a transparent quality score, and returns a machine-consumable report.
+This directory is the canonical published seller source. For the exact current deployment commit and Render state, use the repository authorities `docs/CURRENT_STATE.md` and `state/CURRENT.json` rather than this package README.
 
-## Quick start (local development)
+## Quick start: local unpaid development
 
 Requires Node.js 24.
 
 ```bash
 npm ci
 npm test
-X402_ENABLED=false npm start
-curl -s http://127.0.0.1:4021/health
+X402_PAYMENT_MODE=local-unpaid X402_ENABLED=false npm start
+curl -fsS http://127.0.0.1:4021/health
 ```
 
-`npm start` defaults to unpaid local development mode. The payment boundary is
-disabled when `X402_ENABLED=false`, so `/v1/profile` is reachable without an
-x402 header.
+Local unpaid operation is an **explicit opt-in**. If `X402_PAYMENT_MODE` is omitted, configuration resolves fail-closed to production mode and requires a complete paid configuration. This prevents a missing environment variable from accidentally exposing paid routes for free.
 
-## Endpoints
+## Public discovery surfaces
 
-### `GET /health`
+These routes are payment-free:
 
-Returns service identity and version. Always payment-free.
+- `GET /` — static human-readable discovery landing page
+- `GET /health` — service identity/version
+- `GET /openapi.json` — OpenAPI 3.1 operation catalog
+- `GET /llms.txt` — agent-facing discovery guidance
+- `GET /.well-known/x402` — seller/tool/payment manifest
+- `POST /v1/company-domain-intelligence/preview` — bounded free acquisition preview
 
-```json
-{ "ok": true, "service": "data-quality-profiler", "version": "0.1.0" }
-```
+## Paid x402 operations
 
-### `POST /v1/profile`
+Canonical default prices are defined only in `src/config.mjs` through `SELLER_PRICE_DEFAULTS` and `SELLER_PRICE_CATALOG`. Discovery surfaces and the payment plugin derive from that authority.
 
-Accepts a dataset as JSON:
+| Operation | Default price |
+| --- | ---: |
+| `POST /v1/profile` | $0.02 |
+| `POST /v1/counterparty-availability` | $0.03 |
+| `POST /v1/entity-sanctions-screen` | $0.02 |
+| `POST /v1/company-domain-intelligence` | $0.02 |
+| `POST /v1/sec-company-snapshot` | $0.02 |
+| `POST /v1/dependency-vulnerability-check` | $0.005 |
+| `POST /v1/package-maintenance-snapshot` | $0.005 |
+| `POST /v1/duplicate-audit` | $0.005 |
+| `POST /v1/quality-gate` | $0.01 |
+| `POST /v1/schema-drift` | $0.015 |
+| `POST /v1/data-contract-check` | $0.015 |
+| `POST /v1/clean-normalize` | $0.02 |
+| `POST /v1/repair-plan` | $0.02 |
+
+An unpaid request to a paid route in production should receive HTTP `402` with the x402 challenge metadata. Do not use a live-money purchase merely as a routine smoke test; the repository has read-only discovery/402 validation paths for that purpose.
+
+## Core data-quality input
+
+`POST /v1/profile` accepts JSON records:
 
 ```json
 {
@@ -45,7 +64,7 @@ Accepts a dataset as JSON:
 }
 ```
 
-or CSV content as a string:
+or CSV content:
 
 ```json
 {
@@ -54,30 +73,19 @@ or CSV content as a string:
 }
 ```
 
-Example unpaid request:
+In explicit local-unpaid mode, a development request can be made directly:
 
 ```bash
-curl -s -X POST http://127.0.0.1:4021/v1/profile \
+curl -sS -X POST http://127.0.0.1:4021/v1/profile \
   -H 'Content-Type: application/json' \
   -d '{"format":"json","records":[{"id":1,"email":"a@example.com","age":22},{"id":2,"email":null,"age":"23"}]}'
 ```
 
-Expected key output fields:
+The response includes a deterministic quality score, schema fingerprint, missing-value/duplicate/type-conflict analysis, field inference, warnings, and processing metadata.
 
-```json
-{
-  "schema_version": "1.0",
-  "request_id": "prof_...",
-  "quality_score": 85,
-  "score_breakdown": { "missing_data": -17, "duplicates": 0, "type_conflicts": -25, "malformed_records": 0, "constant_fields": 0, "identifier_integrity": 0 },
-  "dataset": { "record_count": 2, "field_count": 3, "duplicate_rows": 0, "schema_fingerprint": "sha256:..." },
-  "fields": { "id": { "inferred_type": "integer", ... } },
-  "warnings": [ { "code": "MISSING_VALUES", "count": 1 } ],
-  "processing_ms": 7
-}
-```
+## Structural limits
 
-## Limits
+The dataset profiler enforces bounded input/processing limits, including:
 
 - maximum request body: **1 MiB**
 - maximum records: **1,000**
@@ -85,43 +93,51 @@ Expected key output fields:
 - maximum nesting depth: **8**
 - processing timeout: **5 seconds**
 
-Exceeding a limit returns a structured error with a stable HTTP status
-(`413`, `408`, `400`, or `415`).
+External data integrations also use explicit pre-parse response-size bounds. See `docs/CURRENT_STATE.md` for the current upstream-boundary guarantees.
 
-## Payment boundary (x402 v2, Base Sepolia testnet)
+## Payment configuration
 
-The service can enforce an x402 v2 payment boundary on `/v1/profile`. This is
-**testnet-envelope-only** and disabled by default. Configuration is via
-environment variables (see `.env.example`):
+Important variables include:
 
-| Variable                | Example                                   | Meaning                                    |
-|-------------------------|-------------------------------------------|--------------------------------------------|
-| `X402_ENABLED`          | `false`                                   | Enable/disable the payment boundary        |
-| `X402_NETWORK`          | `eip155:84532`                            | Base Sepolia (testnet)                     |
-| `X402_PRICE`            | `$0.02`                                   | Listed price per report                    |
-| `X402_PAY_TO`           | `0x000...0001` (example only)             | Receiving address                          |
-| `X402_FACILITATOR_URL`  | `https://x402.org/facilitator`            | x402 facilitator                           |
-| `ALLOW_MAINNET`         | `false`                                   | Base mainnet stays fail-closed             |
+| Variable | Purpose |
+| --- | --- |
+| `X402_PAYMENT_MODE` | `local-unpaid` for explicit local development or `production` for paid operation; unset is fail-closed production |
+| `X402_ENABLED` | Must be `true` for production payment mode |
+| `X402_NETWORK` | Supported Base CAIP-2 network, e.g. `eip155:84532` or authorized mainnet `eip155:8453` |
+| `ALLOW_MAINNET` | Must be `true` before Base mainnet is accepted |
+| `X402_PAY_TO` | Valid EVM receiving address required in production |
+| `X402_FACILITATOR_MODE` | `xpay` or `cdp` |
+| `X402_FACILITATOR_URL` | xPay facilitator URL when using xPay |
+| `CDP_API_KEY_ID` / `CDP_API_KEY_SECRET` | Required only for CDP facilitator mode |
 
-No real wallet secret or seed is required for development. `ALLOW_MAINNET`
-must remain `false`; the implementation refuses Base mainnet
-(`eip155:8453`) unless it is set.
+The checked-in `.env.example` is deliberately non-secret and configured for explicit local-unpaid development. Production secrets/credentials belong only in secure runtime configuration.
+
+The current live production deployment uses Base mainnet x402 and the xPay facilitator; exact live deployment facts are maintained in `docs/CURRENT_STATE.md` / `state/CURRENT.json` so this package document does not become a second operational source of truth.
 
 ## Container
 
+For local container testing, supply an explicit local-unpaid environment:
+
 ```bash
 docker build -t data-quality-profiler:test .
-docker run --rm -d --name dqp-test -p 4021:4021 data-quality-profiler:test
+docker run --rm -d --name dqp-test -p 4021:4021 \
+  -e X402_PAYMENT_MODE=local-unpaid \
+  -e X402_ENABLED=false \
+  data-quality-profiler:test
 curl -fsS http://127.0.0.1:4021/health
 docker stop dqp-test
 ```
 
 ## Project layout
 
-- `src/app.mjs` — Fastify app, routes, structured error handling
-- `src/server.mjs` — entrypoint wiring config, payment plugin, listener
-- `src/config.mjs` — fail-closed environment configuration
-- `src/dataset/` — normalization, limits, inference, profiling, scoring, fingerprint
-- `src/payments/` — x402 v2 payment boundary
-- `src/logging.mjs` — privacy-safe operational logging (no payloads)
-- `test/` — Node test runner suite
+- `src/app.mjs` — Fastify routes, discovery surfaces, service operations
+- `src/server.mjs` — configuration/payment wiring, root landing registration, listener
+- `src/config.mjs` — fail-closed payment/network configuration and canonical pricing
+- `src/payments/x402-plugin.mjs` — public seller x402 enforcement
+- `src/commerce-telemetry.mjs` — structured commerce request telemetry
+- `src/dataset/` — normalization, limits, inference, profiling, scoring, fingerprinting, data-quality operations
+- `src/discovery/` — repository-side buyer-discovery tooling; excluded from the public seller Docker artifact
+- `scripts/` — operator/CI tooling; excluded from the public seller Docker artifact
+- `test/` — full regression suite; excluded from the public seller Docker artifact
+
+The public Docker image intentionally contains the seller runtime rather than repository-only buyer, operator, test, or private financial tooling. See `docs/CURRENT_STATE.md` for the deployment-boundary invariant.
