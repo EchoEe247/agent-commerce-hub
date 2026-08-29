@@ -27,14 +27,14 @@
     "batch_10_merge_commit": "91a9ac7c112a455835270066e72567a02e123cdb"
   },
   "validated_baseline": {
-    "branch": "fix/p1-testnet-signer-writeback-batch-14",
-    "implementation_through_batch": 14,
-    "latest_batch": "p1_testnet_signer_writeback_batch_14",
-    "latest_code_head": "c1c4778cd04a6dd77f35f1cd8fd3cf7a7a9d0378",
-    "latest_pull_request": 93,
+    "branch": "fix/p1-root-landing-extraction-batch-15",
+    "implementation_through_batch": 15,
+    "latest_batch": "p1_root_landing_extraction_batch_15",
+    "latest_code_head": "797ea54dcf888036dea50ebc7a16a0f78a99fe78",
+    "latest_pull_request": 94,
     "state": "validated_not_production_deployed",
     "production_change_control_ci": "pass",
-    "financial_durability_ci": "pass"
+    "distribution_readiness_ci": "pass"
   },
   "hardening_batches": [
     {"name":"p0_security_batch_1","state":"closed","head":"fd61b87914a33ba37daf745724a812abe02d9d2c"},
@@ -52,7 +52,8 @@
     {"name":"p1_production_candidate_alignment_batch_11","state":"closed","production_candidate_pr":89,"production_branch_unchanged":true},
     {"name":"p1_public_private_runtime_boundary_batch_12","state":"closed","validated_code_head":"53b1c500af48257cd524f674367041640ec0850a","pull_request":91,"production_branch_unchanged":true},
     {"name":"p1_workflow_shell_interpolation_batch_13","state":"closed","validated_code_head":"5e1d0ce3e7d6a790acfaf3409ca67c82185a4ce0","pull_request":92,"production_branch_unchanged":true},
-    {"name":"p1_testnet_signer_writeback_batch_14","state":"closed","validated_code_head":"c1c4778cd04a6dd77f35f1cd8fd3cf7a7a9d0378","pull_request":93,"production_branch_unchanged":true}
+    {"name":"p1_testnet_signer_writeback_batch_14","state":"closed","validated_code_head":"c1c4778cd04a6dd77f35f1cd8fd3cf7a7a9d0378","pull_request":93,"production_branch_unchanged":true},
+    {"name":"p1_root_landing_extraction_batch_15","state":"closed","validated_code_head":"797ea54dcf888036dea50ebc7a16a0f78a99fe78","pull_request":94,"replaces_stale_pr":63,"production_branch_unchanged":true}
   ],
   "deployment": {
     "provider": "render",
@@ -64,7 +65,7 @@
     "production_promotion_merged": false,
     "candidate_reconciles_production_and_main": true,
     "candidate_requires_refresh_if_main_advances": true,
-    "validated_implementation_through_batch": 14,
+    "validated_implementation_through_batch": 15,
     "validated_implementation_deployed": false,
     "candidate_root_dir": "products/published/data-quality-profiler",
     "candidate_root_dir_deployed": false,
@@ -97,6 +98,16 @@
     "old_active_path_retired": true,
     "paid_x402_operations": 13,
     "free_preview": "/v1/company-domain-intelligence/preview",
+    "root_landing": {
+      "path": "/",
+      "module": "products/published/data-quality-profiler/src/root-landing.mjs",
+      "registered_from": "products/published/data-quality-profiler/src/server.mjs",
+      "read_only_static": true,
+      "request_derived_html": false,
+      "response_bound_bytes": 16384,
+      "discovery_links": ["/openapi.json", "/llms.txt", "/.well-known/x402", "/health"],
+      "replaces_stale_pr": 63
+    },
     "pricing_authority": "products/published/data-quality-profiler/src/config.mjs#SELLER_PRICE_DEFAULTS+SELLER_PRICE_CATALOG",
     "pricing_catalog_operation_count": 13,
     "pricing_route_env_config_mapping_canonical": true,
@@ -169,7 +180,8 @@
     "closed_unmerged_batch_6c": [1,2,33,34,35,64,76,77,78,80],
     "closed_unmerged_connector_workarounds": [83,85],
     "closed_unmerged_superseded_production_candidates": [79,88],
-    "deferred_open": [8,63],
+    "closed_unmerged_replaced": [63],
+    "deferred_open": [8],
     "production_candidate": 89,
     "production_candidate_state": "open_draft_unmerged",
     "production_candidate_branch": "promote/main-through-batch-10",
@@ -181,6 +193,7 @@
     "public_private_runtime_boundary_pr": 91,
     "workflow_shell_interpolation_pr": 92,
     "testnet_signer_writeback_pr": 93,
+    "root_landing_extraction_pr": 94,
     "preservation_index": "Unknown/Archived/branches/2026-08-29-batch-6c-pr-branch-index.md"
   },
   "repository_cleanup": {
@@ -188,8 +201,8 @@
     "preservation_refs_retained": true
   },
   "current_sequence": {
-    "completed": ["6a", "6b", "6c", "7", "8", "9", "10", "11", "12", "13", "14"],
-    "current_batch": "p1_testnet_signer_writeback_batch_14",
+    "completed": ["6a", "6b", "6c", "7", "8", "9", "10", "11", "12", "13", "14", "15"],
+    "current_batch": "p1_root_landing_extraction_batch_15",
     "state": "closed",
     "next": ["remaining_operational_hardening", "controlled_production_promotion_when_authorized"]
   }
