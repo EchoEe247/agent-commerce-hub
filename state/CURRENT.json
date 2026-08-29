@@ -27,7 +27,7 @@
   "validated_baseline": {
     "branch": "fix/p1-seller-pricing-source-batch-8",
     "code_head": "85918d271c107881d8cd9a7781370f4e1742a42e",
-    "pull_request": 83,
+    "pull_request": 84,
     "state": "validated_not_production_deployed",
     "distribution_readiness_ci": "pass",
     "production_change_control_ci": "pass"
@@ -42,7 +42,7 @@
     {"name":"p1_seller_lifecycle_batch_6b","state":"closed","head":"c9512348567459be3164f2413d4e187a7bed7501"},
     {"name":"p1_repository_alignment_batch_6c","state":"closed","alignment_pr":81},
     {"name":"p1_commerce_control_durability_batch_7","state":"closed","validated_head":"378fdcec5240076c20381b3310ad7fbdb018eae9","pull_request":82,"merge_commit":"db344147e8ed490f486a6aa86f4b19a3e1d675bf"},
-    {"name":"p1_seller_pricing_source_batch_8","state":"closed","validated_code_head":"85918d271c107881d8cd9a7781370f4e1742a42e","pull_request":83}
+    {"name":"p1_seller_pricing_source_batch_8","state":"closed","validated_code_head":"85918d271c107881d8cd9a7781370f4e1742a42e","pull_request":84}
   ],
   "deployment": {
     "provider": "render",
@@ -109,12 +109,13 @@
   },
   "pull_requests": {
     "closed_unmerged_batch_6c": [1,2,33,34,35,64,76,77,78,80],
+    "closed_unmerged_batch_8_connector_workaround": [83],
     "deferred_open": [8,63],
     "production_candidate": 79,
     "production_candidate_state": "open_draft_unmerged",
     "alignment_pr": 81,
     "commerce_control_durability_pr": 82,
-    "seller_pricing_source_pr": 83,
+    "seller_pricing_source_pr": 84,
     "preservation_index": "Unknown/Archived/branches/2026-08-29-batch-6c-pr-branch-index.md"
   },
   "repository_cleanup": {
