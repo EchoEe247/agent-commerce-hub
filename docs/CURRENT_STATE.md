@@ -6,20 +6,19 @@ Last canonicalization update: **2026-08-29**.
 
 ## Repository roles
 
-- **Canonical/default repository branch:** `main` after Batch 6C PR #81 merges.
+- **Canonical/default repository branch:** `main`, aligned by Batch 6C PR #81.
 - **Production deployment branch:** `feat/hermes-commerce-control-plane`.
 - **Validated Batch 6B baseline:** `c9512348567459be3164f2413d4e187a7bed7501`.
-- **Batch 6C alignment branch:** `chore/p1-main-snapshot-alignment-6c`.
 
 Before Batch 6C, `main` was stale at `fb1574abcad25f68c59d9589ae1701d43e3107cc`. That exact head is preserved by `archive/batch-6c-main-before-alignment-fb1574a`.
 
-The first alignment PR (#80) exposed conflicts in the two legacy `main`-only signer/buyer workflow commits. Those workflow versions are superseded by the hardened canonical workflows. Rather than force-resetting `main`, Batch 6C keeps the old `main` head as ancestry and applies the validated canonical tree as a snapshot commit. PR #81 is the clean alignment PR.
+The first alignment PR (#80) exposed conflicts in the two legacy `main`-only signer/buyer workflow commits. Those versions were already superseded by the hardened canonical workflows. Rather than force-resetting `main`, Batch 6C kept the old `main` head as ancestry and applied the validated canonical tree as a snapshot. PR #81 is the final alignment merge.
 
 The production branch remains separately protected with required `workflow-policy`, `seller`, and `commerce-control` checks, admins enforced, and force-push/deletion disabled.
 
 ## Deployment boundary
 
-Render auto-deploys from `feat/hermes-commerce-control-plane`, not from `main`. Merging PR #81 into `main` **does not deploy production**.
+Render auto-deploys from `feat/hermes-commerce-control-plane`, not from `main`. Batch 6C alignment into `main` **does not deploy production**.
 
 PR **#79** remains the production-promotion candidate. It stays OPEN/DRAFT/UNMERGED until an explicit production deployment is authorized. Merging #79 into the production branch is the deployment event.
 
@@ -27,7 +26,7 @@ The repository candidate `render.yaml` uses `products/published/data-quality-pro
 
 ## Closed validation batches
 
-| Batch | State | Validated head |
+| Batch | State | Validated head / action |
 |---|---|---|
 | P0 Security Batch 1 | CLOSED | `fd61b87914a33ba37daf745724a812abe02d9d2c` |
 | P1 Financial Safety Batch 2 | CLOSED | `0aa39b5da62221b0a22a6a280ac177da1a0ba2da` |
@@ -36,6 +35,7 @@ The repository candidate `render.yaml` uses `products/published/data-quality-pro
 | P1 Preview Resource-Abuse Batch 5 | CLOSED | `ab06f198904ff67e3d4b518d8c177af460a2c8ca` |
 | P1 Canonical-State Batch 6A | CLOSED | `54674d29ffb6fed9614ea6ef56b1520d16a8ec47` |
 | P1 Seller Lifecycle Batch 6B | CLOSED | `c9512348567459be3164f2413d4e187a7bed7501` |
+| P1 Repository Alignment Batch 6C | CLOSED | PR #81 aligns canonical state into `main` without production deploy |
 
 Validated properties include fail-closed production payment configuration, physically separated mainnet/testnet financial histories, local SQLite transactional authority, conservative reconciliation, private signed authorization material excluded from tracked audit exports, protected production change control, bounded free preview, explicit current-state authority, and the seller lifecycle move to the published path.
 
@@ -85,7 +85,8 @@ Deliberately retained:
 - **#8** — deferred the402 provider adapter; do not merge stale implementation wholesale. If revived, rebase/reimplement and add replay protection.
 - **#63** — useful root landing page; extract/rebase onto canonical seller later.
 - **#79** — current production-promotion candidate; OPEN/DRAFT/UNMERGED.
-- **#81** — Batch 6C default/canonical `main` alignment PR; safe to merge after its repository checks pass because its base is `main`, not the Render production branch.
+
+PR **#81** is the Batch 6C canonical `main` alignment merge. It does not target the Render-linked production branch and therefore is not a production deployment.
 
 Obsolete branch-ref deletion is mechanical follow-up after preservation; it must never erase the archived terminal SHA record.
 
@@ -97,7 +98,7 @@ Obsolete branch-ref deletion is mechanical follow-up after preservation; it must
 
 1. Batch 6A — canonical state/stale operational truth archive — CLOSED.
 2. Batch 6B — seller lifecycle move/path rewiring — CLOSED.
-3. Batch 6C — PR cleanup + default/canonical `main` alignment — CURRENT through PR #81; no production deployment.
+3. Batch 6C — PR cleanup + default/canonical `main` alignment — CLOSED through PR #81; no production deployment.
 4. Next coherent implementation: Commerce Control durability — JSONL multiwriter locking/atomic claims, sanitizer/storage invariant, legacy export namespace cleanup.
 
 ## Rules for future agents
