@@ -18,16 +18,17 @@
     "force_push_allowed": false,
     "branch_deletion_allowed": false,
     "default_branch_alignment": "complete_via_pr_81_history_preserving_snapshot",
+    "main_protection_pending_admin_cleanup": true,
     "pre_alignment_main_head": "fb1574abcad25f68c59d9589ae1701d43e3107cc",
     "pre_alignment_main_preservation_ref": "archive/batch-6c-main-before-alignment-fb1574a"
   },
   "validated_baseline": {
-    "branch": "chore/p1-seller-lifecycle-batch-6b",
-    "head": "c9512348567459be3164f2413d4e187a7bed7501",
-    "state": "validated_not_deployed",
+    "branch": "fix/p1-commerce-control-durability-batch-7",
+    "code_head": "fcb576a485e3629dd739d1f8760bfa5ec5e724fd",
+    "pull_request": 82,
+    "state": "validated_not_production_deployed",
     "seller_tests": 306,
-    "financial_targeted_tests": 82,
-    "commerce_control_tests": 489
+    "commerce_control_tests": 494
   },
   "hardening_batches": [
     {"name":"p0_security_batch_1","state":"closed","head":"fd61b87914a33ba37daf745724a812abe02d9d2c"},
@@ -37,7 +38,8 @@
     {"name":"p1_preview_resource_abuse_batch_5","state":"closed","head":"ab06f198904ff67e3d4b518d8c177af460a2c8ca"},
     {"name":"p1_canonical_state_batch_6a","state":"closed","head":"54674d29ffb6fed9614ea6ef56b1520d16a8ec47"},
     {"name":"p1_seller_lifecycle_batch_6b","state":"closed","head":"c9512348567459be3164f2413d4e187a7bed7501"},
-    {"name":"p1_repository_alignment_batch_6c","state":"closed","alignment_pr":81}
+    {"name":"p1_repository_alignment_batch_6c","state":"closed","alignment_pr":81},
+    {"name":"p1_commerce_control_durability_batch_7","state":"closed","validated_code_head":"fcb576a485e3629dd739d1f8760bfa5ec5e724fd","pull_request":82}
   ],
   "deployment": {
     "provider": "render",
@@ -45,10 +47,10 @@
     "production_branch_head": "bc6b1a80aa4f71a7db68c35c07c54bbae7e69ef9",
     "production_promotion_pr": 79,
     "production_promotion_merged": false,
-    "validated_batches_through_6b_deployed": false,
+    "validated_batches_through_7_deployed": false,
     "candidate_root_dir": "products/published/data-quality-profiler",
     "candidate_root_dir_deployed": false,
-    "rule": "Merging PR #79 into the protected production branch is a production deployment event. Batch 6C PR #81 aligns main only and does not deploy Render."
+    "rule": "Merging PR #79 into the protected production branch is a production deployment event. Main-target hardening PRs such as #82 do not deploy Render."
   },
   "financial": {
     "transactional_authority": "local_gitignored_sqlite",
@@ -68,16 +70,31 @@
   "commerce_control": {
     "path": "tools/hermes-commerce-control/",
     "seller_readiness_path": "products/published/data-quality-profiler",
+    "jsonl_multiwriter_locking": true,
+    "evaluation_claim_before_model_call": true,
+    "evaluation_claim_lease_ms": 1800000,
+    "verification_resolution_multiwriter_locking": true,
+    "sqlite_sanitize_before_persist": true,
     "legacy_latest_snapshots_authoritative": false,
+    "legacy_latest_active_paths_retired": true,
     "legacy_export_paths": [
-      "research/normalized/commerce-control/services-latest.json",
-      "research/normalized/commerce-control/work-latest.json",
-      "analytics/commerce-control/source-health-latest.json",
-      "analytics/commerce-control/status-latest.json"
+      "analytics/commerce-control/legacy/services-snapshot.json",
+      "analytics/commerce-control/legacy/work-snapshot.json",
+      "analytics/commerce-control/legacy/source-health-snapshot.json",
+      "analytics/commerce-control/legacy/status-snapshot.json"
     ],
+    "legacy_export_paths_authoritative": false,
+    "legacy_export_forbids_state_namespace": true,
+    "legacy_export_forbids_latest_filenames": true,
+    "retired_snapshot_archive": "Unknown/Archived/legacy-commerce-exports/2026-08-29/",
+    "retired_snapshot_blobs": {
+      "services-latest.json": "74eac508a8c54e1e0e50101b9d817051c3a12765",
+      "work-latest.json": "963facec4a4cf93fa8aa43c904190f07b00e1e24",
+      "source-health-latest.json": "f2969d7242a0ce9b5b03702f9ca1f6c44be403cc"
+    },
     "retired_status_path": "state/commerce-control/STATUS.json",
     "retired_status_path_regenerated": false,
-    "legacy_export_namespace_cleanup": "deferred_later_durability_batch"
+    "legacy_export_namespace_cleanup": "closed_batch_7"
   },
   "pull_requests": {
     "closed_unmerged_batch_6c": [1,2,33,34,35,64,76,77,78,80],
@@ -86,14 +103,16 @@
     "production_candidate_state": "open_draft_unmerged",
     "alignment_pr": 81,
     "alignment_pr_role": "merged_to_canonical_main_no_production_deploy",
+    "commerce_control_durability_pr": 82,
     "preservation_index": "Unknown/Archived/branches/2026-08-29-batch-6c-pr-branch-index.md"
   },
-  "canonicalization": {
-    "batch": "6c",
+  "current_sequence": {
+    "completed": ["6a", "6b", "6c", "7"],
+    "current_batch": "p1_commerce_control_durability_batch_7",
     "state": "closed",
-    "canonical_branch": "main",
-    "alignment_pull_request": 81,
-    "completed": ["6a", "6b", "6c"],
-    "next": ["commerce_control_durability"]
+    "next": [
+      "github_admin_main_protection_and_obsolete_ref_cleanup",
+      "remaining_operational_hardening"
+    ]
   }
 }

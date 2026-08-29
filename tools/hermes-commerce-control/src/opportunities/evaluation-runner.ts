@@ -2,6 +2,7 @@ import { parseOpportunityEvaluation, type OpportunityEvaluator } from "./evaluat
 import type { PreparedOpportunityEvaluation } from "./evaluation-queue.js";
 import {
   evaluationResultKey,
+  type OpportunityEvaluationClaim,
   type OpportunityEvaluationResultStore,
   type PersistedOpportunityEvaluation,
 } from "./evaluation-results.js";
@@ -24,7 +25,7 @@ export interface OpportunityEvaluationRunSkipped {
   readonly requestId: string;
   readonly opportunityId: string;
   readonly evaluatorId: string;
-  readonly reason: "already_evaluated";
+  readonly reason: "already_evaluated" | "claimed_elsewhere";
 }
 
 export interface OpportunityEvaluationRunFailed {
@@ -66,6 +67,25 @@ export async function runPreparedOpportunityEvaluations(
       continue;
     }
 
+    let claim: OpportunityEvaluationClaim | undefined;
+    if (store.claim !== undefined) {
+      const attempt = await store.claim(item.requestId, evaluator.id);
+      if (attempt.status !== "acquired") {
+        if (attempt.status === "already_evaluated") seen.add(key);
+        results.push(
+          Object.freeze({
+            status: "skipped" as const,
+            requestId: item.requestId,
+            opportunityId: item.opportunityId,
+            evaluatorId: evaluator.id,
+            reason: attempt.status,
+          }),
+        );
+        continue;
+      }
+      claim = attempt.claim;
+    }
+
     try {
       const raw = await evaluator.evaluate(item.packet);
       const evaluation = parseOpportunityEvaluation(raw);
@@ -99,6 +119,10 @@ export async function runPreparedOpportunityEvaluations(
         }),
       );
       if (!continueOnError) break;
+    } finally {
+      if (claim !== undefined && store.releaseClaim !== undefined) {
+        await store.releaseClaim(claim);
+      }
     }
   }
 

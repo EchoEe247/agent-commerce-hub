@@ -2,6 +2,7 @@ import { appendFile, mkdir, readFile, truncate } from "node:fs/promises";
 import { dirname } from "node:path";
 import { z } from "zod";
 import { canonicalHash, canonicalJson } from "../core/ids.js";
+import { withFileLock } from "./file-lock.js";
 
 export const VERIFICATION_RESOLUTION_OUTCOMES = ["satisfied", "failed"] as const;
 export type VerificationResolutionOutcome = (typeof VERIFICATION_RESOLUTION_OUTCOMES)[number];
@@ -171,8 +172,13 @@ export class JsonlOpportunityVerificationResolutionStore implements OpportunityV
     const parsed = persistedResolutionSchema.parse(record);
     assertEvidenceSemantics(parsed);
     await mkdir(dirname(this.#path), { recursive: true });
-    await this.#repairTailBeforeAppend();
-    await appendFile(this.#path, `${canonicalJson(parsed)}\n`, { encoding: "utf8", mode: 0o600 });
+
+    await withFileLock(this.#path, async () => {
+      await this.#repairTailBeforeAppend();
+      const rows = await this.#readAll();
+      if (rows.some((row) => row.resolutionId === parsed.resolutionId)) return;
+      await appendFile(this.#path, `${canonicalJson(parsed)}\n`, { encoding: "utf8", mode: 0o600 });
+    });
   }
 
   async list(limit?: number): Promise<readonly OpportunityVerificationResolution[]> {

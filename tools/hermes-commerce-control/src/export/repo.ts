@@ -1,24 +1,17 @@
 /**
  * Repository exporters.
  *
- * Turns persisted canonical state into the reviewable artifacts the plan commits
- * to. Three properties are load-bearing:
+ * Turns persisted canonical state into reviewable, explicitly non-authoritative
+ * legacy analytics snapshots. Three properties are load-bearing:
  *
  *  1. Deterministic bytes. Keys are sorted at every depth and the payload is
- *     pretty-printed, so re-exporting unchanged state produces an identical file
- *     and a diff shows real change rather than key reordering.
+ *     pretty-printed, so re-exporting unchanged state produces an identical file.
  *  2. Sanitized content. Every payload passes through the canonical sanitizer
- *     before serialization, so an attacker-controlled marketplace description
- *     cannot smuggle a credential into a committed file.
+ *     before serialization.
  *  3. Real checksums. Each artifact reports its actual SHA-256 and byte count.
- *     A prose substitute for a hash is never written.
  *
- * Note on digests: the canonical sanitizer redacts any bare 64-hex string,
- * because that shape is also an unprefixed EVM private key. Locally computed
- * SHA-256 digests share that shape and are the provenance anchor a reviewer
- * needs, so digests under a known digest key are restored after sanitization.
- * Nothing else is restored, and a 64-hex value under any other key stays
- * redacted.
+ * These outputs deliberately avoid `state/` and `*-latest` names. Repository
+ * current-state authority lives only in docs/CURRENT_STATE.md + state/CURRENT.json.
  */
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -40,10 +33,10 @@ export interface ExportArtifact {
 }
 
 export const EXPORT_PATHS = Object.freeze({
-  services: "research/normalized/commerce-control/services-latest.json",
-  work: "research/normalized/commerce-control/work-latest.json",
-  sourceHealth: "analytics/commerce-control/source-health-latest.json",
-  status: "analytics/commerce-control/status-latest.json",
+  services: "analytics/commerce-control/legacy/services-snapshot.json",
+  work: "analytics/commerce-control/legacy/work-snapshot.json",
+  sourceHealth: "analytics/commerce-control/legacy/source-health-snapshot.json",
+  status: "analytics/commerce-control/legacy/status-snapshot.json",
 });
 
 /** Keys whose 64-hex values are locally computed digests, not secrets. */
@@ -56,14 +49,6 @@ const DIGEST_KEYS: ReadonlySet<string> = new Set([
 
 const DIGEST_VALUE = /^[0-9a-f]{64}$/;
 
-/**
- * Value shapes that must never reach a committed file.
- *
- * This is the unambiguous subset of the canonical secret-value patterns. The
- * bare-64-hex pattern is deliberately absent: the sanitizer has already redacted
- * every bare 64-hex value except restored digest fields, so including it here
- * would only ever fire on our own checksums.
- */
 const EXPORT_FORBIDDEN_VALUES: readonly RegExp[] = Object.freeze([
   /\b(?:bearer|basic)\s+[A-Za-z0-9._~+/=-]{8,}/i,
   /\beyJ[A-Za-z0-9_-]{6,}\.[A-Za-z0-9_-]{6,}\.[A-Za-z0-9_-]{4,}/,
@@ -111,6 +96,13 @@ export function stableJson(value: unknown): string {
 }
 
 function assertExportable(relativePath: string, text: string): void {
+  if (relativePath.startsWith("state/") || /(?:^|\/)[^/]+-latest\.json$/i.test(relativePath)) {
+    throw new CommerceError(
+      "STATE_ERROR",
+      `refusing authoritative-looking legacy export path ${relativePath}`,
+      { path: relativePath },
+    );
+  }
   for (const pattern of EXPORT_FORBIDDEN_VALUES) {
     if (pattern.test(text)) {
       throw new CommerceError(
@@ -152,10 +144,8 @@ export interface ExportInput {
   readonly exportedAt: string;
 }
 
-/** A generous cap: the local catalogue is phone-sized, not warehouse-sized. */
 const LIST_LIMIT = 10_000;
 
-/** Latest probe per platform, or null when a platform was never probed. */
 function latestProbes(repo: CommerceRepository): Map<PlatformId, ProbeResult | null> {
   const map = new Map<PlatformId, ProbeResult | null>();
   for (const platform of PLATFORM_IDS) {
@@ -165,12 +155,7 @@ function latestProbes(repo: CommerceRepository): Map<PlatformId, ProbeResult | n
   return map;
 }
 
-/**
- * Writes every canonical repository output and returns the artifact manifest.
- *
- * Recording each artifact in the `exports` table gives a later receipt a
- * verifiable checksum trail without re-reading the files.
- */
+/** Writes every non-authoritative legacy analytics output. */
 export function exportRepositoryOutputs(input: ExportInput): ExportArtifact[] {
   const { config, repo, exportedAt } = input;
   const services = repo.listServices(LIST_LIMIT);
@@ -183,6 +168,7 @@ export function exportRepositoryOutputs(input: ExportInput): ExportArtifact[] {
     version: APP_VERSION,
     mode: APP_MODE,
     generatedAt: exportedAt,
+    authority: false,
     financialActionExecuted: false,
     externalMutationExecuted: false,
   };

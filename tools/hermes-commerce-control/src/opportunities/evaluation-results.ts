@@ -1,12 +1,14 @@
-import { appendFile, mkdir, readFile, truncate } from "node:fs/promises";
-import { dirname } from "node:path";
+import { randomUUID } from "node:crypto";
+import { appendFile, mkdir, open, readFile, stat, truncate, unlink } from "node:fs/promises";
+import { dirname, join } from "node:path";
 import { z } from "zod";
-import { canonicalJson } from "../core/ids.js";
+import { canonicalHash, canonicalJson } from "../core/ids.js";
 import {
   opportunityEvaluationSchema,
   parseOpportunityEvaluation,
   type OpportunityEvaluation,
 } from "./evaluation.js";
+import { withFileLock } from "./file-lock.js";
 
 const persistedEvaluationSchema = z
   .object({
@@ -29,15 +31,45 @@ export interface PersistedOpportunityEvaluation {
   readonly evaluation: OpportunityEvaluation;
 }
 
+export interface OpportunityEvaluationClaim {
+  readonly key: string;
+  readonly token: string;
+}
+
+export type OpportunityEvaluationClaimAttempt =
+  | { readonly status: "acquired"; readonly claim: OpportunityEvaluationClaim }
+  | { readonly status: "already_evaluated" }
+  | { readonly status: "claimed_elsewhere" };
+
 export interface OpportunityEvaluationResultStore {
   seenKeys(): Promise<ReadonlySet<string>>;
+  claim?(
+    requestId: string,
+    evaluatorId: string,
+  ): Promise<OpportunityEvaluationClaimAttempt>;
+  releaseClaim?(claim: OpportunityEvaluationClaim): Promise<void>;
   append(record: PersistedOpportunityEvaluation): Promise<void>;
   /** Omit limit to read every valid persisted result. */
   list(limit?: number): Promise<readonly PersistedOpportunityEvaluation[]>;
 }
 
+export interface JsonlOpportunityEvaluationResultStoreOptions {
+  readonly claimLeaseMs?: number | undefined;
+}
+
+const DEFAULT_CLAIM_LEASE_MS = 30 * 60 * 1_000;
+
 export function evaluationResultKey(requestId: string, evaluatorId: string): string {
   return `${requestId}\u0000${evaluatorId}`;
+}
+
+function errno(error: unknown): string | undefined {
+  return (error as NodeJS.ErrnoException | undefined)?.code;
+}
+
+function boundedPositive(value: number | undefined, fallback: number): number {
+  if (value === undefined || !Number.isFinite(value) || value <= 0) return fallback;
+  return Math.max(1, Math.trunc(value));
 }
 
 function evaluatedAtMillis(value: string): number {
@@ -70,14 +102,79 @@ function parsePersistedRecord(value: unknown): PersistedOpportunityEvaluation | 
 
 export class JsonlOpportunityEvaluationResultStore implements OpportunityEvaluationResultStore {
   readonly #path: string;
+  readonly #claimLeaseMs: number;
 
-  constructor(path: string) {
+  constructor(path: string, options: JsonlOpportunityEvaluationResultStoreOptions = {}) {
     this.#path = path;
+    this.#claimLeaseMs = boundedPositive(options.claimLeaseMs, DEFAULT_CLAIM_LEASE_MS);
   }
 
   async seenKeys(): Promise<ReadonlySet<string>> {
     const rows = await this.#readAll();
     return new Set(rows.map((row) => evaluationResultKey(row.requestId, row.evaluatorId)));
+  }
+
+  async claim(requestId: string, evaluatorId: string): Promise<OpportunityEvaluationClaimAttempt> {
+    const key = evaluationResultKey(requestId, evaluatorId);
+    await mkdir(dirname(this.#path), { recursive: true });
+
+    return withFileLock(this.#path, async () => {
+      await this.#repairTailBeforeAppend();
+      const rows = await this.#readAll();
+      if (rows.some((row) => evaluationResultKey(row.requestId, row.evaluatorId) === key)) {
+        return Object.freeze({ status: "already_evaluated" as const });
+      }
+
+      const claimsDir = `${this.#path}.claims`;
+      await mkdir(claimsDir, { recursive: true, mode: 0o700 });
+      const claimPath = this.#claimPath(key);
+
+      for (let attempt = 0; attempt < 2; attempt += 1) {
+        const token = `${process.pid}:${Date.now()}:${randomUUID()}`;
+        try {
+          const handle = await open(claimPath, "wx", 0o600);
+          try {
+            await handle.writeFile(
+              `${canonicalJson({ key, token, claimedAt: new Date().toISOString() })}\n`,
+              "utf8",
+            );
+          } finally {
+            await handle.close();
+          }
+          return Object.freeze({
+            status: "acquired" as const,
+            claim: Object.freeze({ key, token }),
+          });
+        } catch (error) {
+          if (errno(error) !== "EEXIST") throw error;
+          try {
+            const info = await stat(claimPath);
+            if (Date.now() - info.mtimeMs > this.#claimLeaseMs) {
+              await unlink(claimPath);
+              continue;
+            }
+          } catch (statError) {
+            if (errno(statError) === "ENOENT") continue;
+            throw statError;
+          }
+          return Object.freeze({ status: "claimed_elsewhere" as const });
+        }
+      }
+
+      return Object.freeze({ status: "claimed_elsewhere" as const });
+    });
+  }
+
+  async releaseClaim(claim: OpportunityEvaluationClaim): Promise<void> {
+    await withFileLock(this.#path, async () => {
+      const claimPath = this.#claimPath(claim.key);
+      try {
+        const parsed = JSON.parse(await readFile(claimPath, "utf8")) as { token?: unknown };
+        if (parsed.token === claim.token) await unlink(claimPath);
+      } catch (error) {
+        if (errno(error) !== "ENOENT") throw error;
+      }
+    });
   }
 
   async append(record: PersistedOpportunityEvaluation): Promise<void> {
@@ -87,8 +184,14 @@ export class JsonlOpportunityEvaluationResultStore implements OpportunityEvaluat
       evaluation: parseOpportunityEvaluation(shape.evaluation),
     };
     await mkdir(dirname(this.#path), { recursive: true });
-    await this.#repairTailBeforeAppend();
-    await appendFile(this.#path, `${canonicalJson(parsed)}\n`, { encoding: "utf8", mode: 0o600 });
+
+    await withFileLock(this.#path, async () => {
+      await this.#repairTailBeforeAppend();
+      const key = evaluationResultKey(parsed.requestId, parsed.evaluatorId);
+      const rows = await this.#readAll();
+      if (rows.some((row) => evaluationResultKey(row.requestId, row.evaluatorId) === key)) return;
+      await appendFile(this.#path, `${canonicalJson(parsed)}\n`, { encoding: "utf8", mode: 0o600 });
+    });
   }
 
   async list(limit?: number): Promise<readonly PersistedOpportunityEvaluation[]> {
@@ -96,6 +199,10 @@ export class JsonlOpportunityEvaluationResultStore implements OpportunityEvaluat
     if (limit === undefined) return Object.freeze(rows);
     const bounded = Number.isFinite(limit) ? Math.max(0, Math.trunc(limit)) : 0;
     return Object.freeze(rows.slice(0, bounded));
+  }
+
+  #claimPath(key: string): string {
+    return join(`${this.#path}.claims`, `${canonicalHash({ key }).slice(0, 48)}.claim`);
   }
 
   async #repairTailBeforeAppend(): Promise<void> {
