@@ -7,11 +7,11 @@
  * metadata from the payment plugin, and verification status from the newest
  * receipt on disk. If the product changes, this readiness report changes with it.
  *
- * The pipeline stops at preparation. It does not move the product out of
- * products/drafts/, does not register it anywhere, and reports
- * publicationAllowed:false with publicationExecuted:false regardless of how
- * ready the product is. Promotion is a repository lifecycle decision and
- * publication is a Stage B1 action; neither is granted by this assessment.
+ * The pipeline inspects the canonical published product tree. It does not
+ * register it anywhere, and reports publicationAllowed:false with
+ * publicationExecuted:false regardless of how ready the product is. Promotion
+ * is a repository lifecycle decision and publication is a Stage B1 action;
+ * neither is granted by this assessment.
  */
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
@@ -19,7 +19,7 @@ import { hashCanonical } from "../evidence/hashing.js";
 import { sanitize } from "../evidence/sanitize.js";
 
 export const PRODUCT_NAME = "data-quality-profiler";
-export const PRODUCT_RELATIVE_PATH = "products/drafts/data-quality-profiler";
+export const PRODUCT_RELATIVE_PATH = "products/published/data-quality-profiler";
 
 export interface TargetReadiness {
   readonly prepared: boolean;
