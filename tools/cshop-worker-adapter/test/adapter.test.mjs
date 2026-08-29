@@ -37,7 +37,28 @@ test('client always sends the explicit session and optional bearer token', async
   assert.equal(body.params.protocolVersion, '2025-06-18');
 });
 
-test('commerce job rejects path traversal before C-Shop sees it', () => {
+test('client is loopback-only unless remote use is explicit and authenticated', () => {
+  assert.throws(
+    () => new CShopClient({ baseUrl: 'https://renderer.example/mcp', sessionId: 'commerce-job-remote' }),
+    /remote C-Shop endpoints are disabled/,
+  );
+  assert.throws(
+    () => new CShopClient({
+      baseUrl: 'https://renderer.example/mcp',
+      allowRemote: true,
+      sessionId: 'commerce-job-remote',
+    }),
+    /require a bearer token/,
+  );
+  assert.doesNotThrow(() => new CShopClient({
+    baseUrl: 'https://renderer.example/mcp',
+    allowRemote: true,
+    token: 'remote-token',
+    sessionId: 'commerce-job-remote',
+  }));
+});
+
+test('commerce job rejects path traversal and unsupported fields before C-Shop sees them', () => {
   assert.throws(
     () => normalizeProductGraphicsJob({ title: 'Safe title', asset: '../secret.png' }),
     /workspace filename/,
@@ -46,9 +67,13 @@ test('commerce job rejects path traversal before C-Shop sees it', () => {
     () => normalizeProductGraphicsJob({ title: 'Safe title', output: 'nested/out.png' }),
     /workspace filename/,
   );
+  assert.throws(
+    () => normalizeProductGraphicsJob({ title: 'Safe title', script: 'style noir' }),
+    /unsupported product graphics job field: script/,
+  );
 });
 
-test('product graphics workflow uses measured placement and never emits style or arbitrary script input', async () => {
+test('product graphics workflow uses measured placement and emits only its constrained script', async () => {
   const requests = [];
   const fetchImpl = async (_url, init) => {
     const body = JSON.parse(init.body);
@@ -85,7 +110,6 @@ test('product graphics workflow uses measured placement and never emits style or
     price: '$9.99',
     asset: 'coffee.jpg',
     output: 'coffee-card.png',
-    script: 'style noir\nexport pwned.png',
   });
 
   assert.equal(result.output, 'coffee-card.png');
@@ -98,7 +122,6 @@ test('product graphics workflow uses measured placement and never emits style or
   assert.match(emitted, /open "coffee\.jpg"/);
   assert.match(emitted, /measure text "Coffee"/);
   assert.match(emitted, /export "coffee-card\.png"/);
-  assert.doesNotMatch(emitted, /style noir/);
-  assert.doesNotMatch(emitted, /pwned\.png/);
+  assert.doesNotMatch(emitted, /\bstyle\b/);
   assert.ok(requests.every((request) => request.jsonrpc === '2.0'));
 });
