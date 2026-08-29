@@ -1,0 +1,132 @@
+{
+  "schema_version": 1,
+  "project": "agent-commerce-hub",
+  "generated_at": "2026-08-29",
+  "authority": {
+    "human_readable": "docs/CURRENT_STATE.md",
+    "machine_readable": "state/CURRENT.json",
+    "rule": "These files are the repository-level current-state authority. Historical receipts, plans, handoffs, *-latest research snapshots, and Unknown/Archived material are non-authoritative unless explicitly referenced."
+  },
+  "repository": {
+    "default_branch": "main",
+    "production_branch": "feat/hermes-commerce-control-plane",
+    "production_branch_protected": true,
+    "required_status_checks": [
+      "workflow-policy",
+      "seller",
+      "commerce-control"
+    ],
+    "strict_status_checks": true,
+    "admins_enforced": true,
+    "force_push_allowed": false,
+    "branch_deletion_allowed": false,
+    "default_branch_alignment": "deferred_batch_6c"
+  },
+  "validated_baseline": {
+    "branch": "fix/p1-preview-abuse-batch-5",
+    "head": "ab06f198904ff67e3d4b518d8c177af460a2c8ca",
+    "state": "validated_not_deployed",
+    "seller_tests": 306,
+    "financial_targeted_tests": 82,
+    "commerce_control_tests": 489
+  },
+  "hardening_batches": [
+    {
+      "name": "p0_security_batch_1",
+      "state": "closed",
+      "head": "fd61b87914a33ba37daf745724a812abe02d9d2c"
+    },
+    {
+      "name": "p1_financial_safety_batch_2",
+      "state": "closed",
+      "head": "0aa39b5da62221b0a22a6a280ac177da1a0ba2da"
+    },
+    {
+      "name": "p1_financial_durability_batch_3",
+      "state": "closed",
+      "head": "e4ccc000f4ff09fb1e89f04655467ee8c9c9bba9"
+    },
+    {
+      "name": "p1_production_change_control_batch_4",
+      "state": "closed",
+      "head": "f0f9503a4b01cff98003de9b06f4f77db2ce2fdb"
+    },
+    {
+      "name": "p1_preview_resource_abuse_batch_5",
+      "state": "closed",
+      "head": "ab06f198904ff67e3d4b518d8c177af460a2c8ca"
+    }
+  ],
+  "deployment": {
+    "provider": "render",
+    "auto_deploy_branch": "feat/hermes-commerce-control-plane",
+    "closed_batches_through_5_merged_to_production": false,
+    "closed_batches_through_5_deployed": false,
+    "rule": "Merging a promotion PR into the production branch is a production deployment event."
+  },
+  "financial": {
+    "transactional_authority": "local_gitignored_sqlite",
+    "tracked_json_role": "audit_snapshot",
+    "mainnet_ledger": {
+      "path": "state/commerce-control/ledgers/mainnet-budget-ledger.json",
+      "blob_sha": "9a9e87dce730cc3fddcbdcf8926b12d53c6046ab",
+      "network": "eip155:8453",
+      "asset": "USDC",
+      "initial_budget": 2380000,
+      "spent_budget": 10000,
+      "remaining_budget": 2370000
+    },
+    "testnet_ledger": {
+      "path": "state/commerce-control/ledgers/testnet-budget-ledger.json",
+      "blob_sha": "0632862d26c600634068b61669db8de11faa8dad",
+      "network": "eip155:84532",
+      "asset": "USDC"
+    }
+  },
+  "seller": {
+    "path": "products/drafts/data-quality-profiler/",
+    "lifecycle_path_state": "historical_name_pending_batch_6b_move",
+    "paid_x402_operations": 13,
+    "free_preview": "/v1/company-domain-intelligence/preview",
+    "free_preview_policy": {
+      "dns_only": true,
+      "rate_limit_requests": 20,
+      "rate_limit_window_ms": 60000,
+      "cache_ttl_ms": 600000,
+      "cache_max_entries": 1024,
+      "dns_timeout_ms": 1500
+    }
+  },
+  "commerce_control": {
+    "path": "tools/hermes-commerce-control/",
+    "legacy_latest_snapshots_authoritative": false,
+    "legacy_export_namespace_cleanup": "deferred_later_durability_batch"
+  },
+  "staged_pull_requests": [
+    {
+      "number": 76,
+      "state": "open_draft_unmerged",
+      "head": "fix/p1-production-change-control-batch-4",
+      "head_sha": "f0f9503a4b01cff98003de9b06f4f77db2ce2fdb",
+      "base": "feat/hermes-commerce-control-plane",
+      "disposition": "do_not_merge_subset_disposition_batch_6c"
+    },
+    {
+      "number": 77,
+      "state": "open_draft_unmerged",
+      "head": "fix/p1-preview-abuse-batch-5",
+      "head_sha": "ab06f198904ff67e3d4b518d8c177af460a2c8ca",
+      "base": "feat/hermes-commerce-control-plane",
+      "disposition": "do_not_merge_pending_canonicalization"
+    }
+  ],
+  "canonicalization": {
+    "branch": "chore/p1-canonical-state-batch-6a",
+    "batch": "6a",
+    "next": [
+      "batch_6b_seller_lifecycle_move",
+      "batch_6c_branch_pr_default_alignment",
+      "commerce_control_durability"
+    ]
+  }
+}
