@@ -100,6 +100,14 @@
   "commerce_control": {
     "path": "tools/hermes-commerce-control/",
     "legacy_latest_snapshots_authoritative": false,
+    "legacy_export_paths": [
+      "research/normalized/commerce-control/services-latest.json",
+      "research/normalized/commerce-control/work-latest.json",
+      "analytics/commerce-control/source-health-latest.json",
+      "analytics/commerce-control/status-latest.json"
+    ],
+    "retired_status_path": "state/commerce-control/STATUS.json",
+    "retired_status_path_regenerated": false,
     "legacy_export_namespace_cleanup": "deferred_later_durability_batch"
   },
   "staged_pull_requests": [
