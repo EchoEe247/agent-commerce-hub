@@ -36,33 +36,43 @@ The public seller under `products/published/` does not import this package.
 
 ## Security decisions in this first slice
 
-- C-Shop is expected to bind to loopback for local validation.
+- Loopback C-Shop endpoints are the default and expected mode.
+- A non-loopback endpoint is rejected unless code explicitly constructs `CShopClient` with `allowRemote: true` **and** supplies a bearer token.
 - Every adapter client sends an explicit `Mcp-Session-Id`; it never relies on missing-session behavior.
-- A bearer token can be supplied with `CSHOP_TOKEN`, but loopback-only operation is the initial target.
-- The commerce job does not accept a raw C-Shop script.
+- A bearer token can be supplied with `CSHOP_TOKEN` for loopback use as well.
+- The commerce job does not accept a raw C-Shop script. Unknown job fields are rejected rather than silently ignored.
 - The commerce job does not emit `style` commands in this first slice.
 - Asset and output names are simple workspace filenames only; path components and `..` are rejected before a request reaches C-Shop.
 - Output is limited to PNG/JPEG for the first workflow.
 - Returned MCP preview images are for inspection only; the exported full-size file is the deliverable.
 
-These restrictions are intentional while the previously identified style-path sandbox behavior and server/session details are validated against the pinned runtime.
+## Pinned-source findings already established
+
+Static inspection of the pinned C-Shop source established three details that the native smoke run should confirm rather than rediscover:
+
+1. **Explicit sessions are required for persistence.** When `Mcp-Session-Id` is missing or invalid, C-Shop generates a fresh session id for that request. Because that happens per request, a multi-call workflow cannot rely on omitted-session behavior. This adapter always sends one explicit session id.
+2. **Public metadata is broader than the protected MCP endpoint.** `GET /` and `GET /health` do not pass through bearer-token checks. `/health` reports the workspace and active session metadata. This is acceptable for the current loopback-only worker boundary, but it is one reason remote operation is opt-in rather than automatic.
+3. **Style lookup has a different filesystem surface.** C-Shop style discovery searches the workspace and style directories beside the executable, while the served runner otherwise carries a `Sandbox` for script-named paths. The commerce adapter therefore keeps `style` unreachable in this first slice.
+
+These are upstream characteristics, not reasons to fork C-Shop yet. A fork/change is justified only if a real required workflow cannot stay inside this bounded contract.
 
 ## Unit tests
 
-Requires Node.js 24 or newer, matching the repository's current local tooling direction.
+Requires Node.js 24 or newer for the supported local environment. The current dependency-free code path has also been exercised successfully under Node 22, but the package requirement is intentionally not weakened by that incidental compatibility.
 
 ```bash
 cd tools/cshop-worker-adapter
 npm test
 ```
 
-The tests are dependency-free and cover:
+The tests cover:
 
 1. explicit session and bearer-token headers;
-2. path traversal rejection;
-3. measured title/price placement;
-4. raw `script` input not crossing the job boundary;
-5. no `style` command being emitted by the product workflow.
+2. loopback-by-default and authenticated explicit remote opt-in;
+3. path traversal rejection;
+4. rejection of raw/unknown job fields such as `script`;
+5. measured title/price placement;
+6. no `style` command being emitted by the product workflow.
 
 ## Live smoke test
 
@@ -100,7 +110,7 @@ This remains an internal tool until all of the following are true:
 
 1. the pinned C-Shop runtime builds locally;
 2. its full relevant test suite is green or environment-specific exclusions are explicitly evidenced;
-3. the earlier sandbox/style, session, and public metadata findings are reproduced and resolved or bounded;
+3. the pinned-source session/metadata/style findings are confirmed under the native runtime and remain bounded by this adapter;
 4. this adapter's unit tests pass;
 5. the live smoke job produces the expected exported file and preview;
 6. a second full validation is clean after any concrete fixes.
