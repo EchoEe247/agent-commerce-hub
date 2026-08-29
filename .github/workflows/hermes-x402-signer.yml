@@ -54,9 +54,11 @@ jobs:
         run: npm ci
       - name: Initialize authoritative testnet financial store from audit snapshot
         working-directory: products/published/data-quality-profiler
+        env:
+          TESTNET_DB_PATH: ${{ runner.temp }}/testnet-budget.sqlite
         run: |
           node scripts/financial-store-admin.mjs init-testnet \
-            --db "${{ runner.temp }}/testnet-budget.sqlite"
+            --db "$TESTNET_DB_PATH"
       - name: Execute signer and live testnet purchase
         working-directory: products/published/data-quality-profiler
         env:
@@ -71,14 +73,18 @@ jobs:
         run: node scripts/github-actions-signer.mjs
       - name: Export validated audit snapshot from authoritative store
         working-directory: products/published/data-quality-profiler
+        env:
+          TESTNET_DB_PATH: ${{ runner.temp }}/testnet-budget.sqlite
         run: |
           node scripts/financial-store-admin.mjs export-testnet \
-            --db "${{ runner.temp }}/testnet-budget.sqlite"
+            --db "$TESTNET_DB_PATH"
       - name: Commit and push testnet audit snapshot
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
           BRANCH_NAME: ${{ github.ref_name }}
+          PURCHASE_ID: ${{ inputs.purchaseId }}
+          REPOSITORY: ${{ github.repository }}
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
@@ -88,7 +94,7 @@ jobs:
             echo "No audit snapshot change to commit."
             exit 0
           fi
-          git commit -m "chore: update testnet financial audit snapshot for ${{ inputs.purchaseId }}"
+          git commit -m "chore: update testnet financial audit snapshot for $PURCHASE_ID"
           auth=$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)
           git -c http.https://github.com/.extraheader="AUTHORIZATION: basic $auth" \
-            push "https://github.com/${{ github.repository }}.git" "HEAD:${BRANCH_NAME}"
+            push "https://github.com/${REPOSITORY}.git" "HEAD:${BRANCH_NAME}"
