@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { installCompanyDomainPreviewGuard } from "./company-domain-preview-guard.mjs";
 
 const MARKETPLACE_MARKERS = [
   ["agent402", "agent402"],
@@ -10,6 +11,11 @@ const MARKETPLACE_MARKERS = [
 ];
 
 export function installCommerceTelemetry(app, { logger = console, clock = { now: () => Date.now() } } = {}) {
+  // Preview protection is a request-level guard and is installed here alongside
+  // the other global /v1 request hooks so it runs before route handlers. The
+  // marker is non-enumerable and never becomes request telemetry or response data.
+  installCompanyDomainPreviewGuard(app, { clock });
+
   app.addHook("onRequest", async (request) => {
     const path = request.url.split("?")[0];
     if (!path.startsWith("/v1/")) return;
