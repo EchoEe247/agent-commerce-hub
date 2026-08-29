@@ -4,7 +4,7 @@ services:
     runtime: docker
     plan: free
     branch: feat/hermes-commerce-control-plane
-    rootDir: products/drafts/data-quality-profiler
+    rootDir: products/published/data-quality-profiler
     dockerfilePath: ./Dockerfile
     dockerContext: .
     healthCheckPath: /health
