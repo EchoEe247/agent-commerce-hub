@@ -78,11 +78,11 @@ jobs:
         run: |
           node scripts/financial-store-admin.mjs export-testnet \
             --db "$TESTNET_DB_PATH"
-      - name: Commit and push testnet audit snapshot
+      - name: Commit testnet audit snapshot to run-scoped branch
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
-          BRANCH_NAME: ${{ github.ref_name }}
+          AUDIT_BRANCH: testnet-audit/run-${{ github.run_id }}-${{ github.run_attempt }}
           PURCHASE_ID: ${{ inputs.purchaseId }}
           REPOSITORY: ${{ github.repository }}
         run: |
@@ -91,10 +91,11 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add state/commerce-control/ledgers/testnet-budget-ledger.json
           if git diff --cached --quiet; then
-            echo "No audit snapshot change to commit."
+            echo "No audit snapshot change to persist."
             exit 0
           fi
-          git commit -m "chore: update testnet financial audit snapshot for $PURCHASE_ID"
+          git commit -m "chore: record testnet financial audit snapshot for $PURCHASE_ID"
           auth=$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)
           git -c http.https://github.com/.extraheader="AUTHORIZATION: basic $auth" \
-            push "https://github.com/${REPOSITORY}.git" "HEAD:${BRANCH_NAME}"
+            push "https://github.com/${REPOSITORY}.git" "HEAD:refs/heads/${AUDIT_BRANCH}"
+          printf 'Testnet audit snapshot branch: `%s`\n' "$AUDIT_BRANCH" >> "$GITHUB_STEP_SUMMARY"
