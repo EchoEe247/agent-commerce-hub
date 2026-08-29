@@ -1,0 +1,138 @@
+{
+  "handoff_id": "chatgpt-cshop-worker-runtime-validation-2026-08-29",
+  "from": "chatgpt",
+  "to": "hermes",
+  "created_at": "2026-08-29T16:35:00Z",
+  "status": "ready",
+  "repository": "EchoEe247/agent-commerce-hub",
+  "source_branch": "feat/cshop-worker-adapter",
+  "source_base_main": "579bc7c43d5a7b8fc6283080e96f9c850f2dcb91",
+  "implementation_state": "unmerged_preproduction_branch",
+  "objective": "Run the complete local validation loop for the new private C-Shop worker adapter against the pinned standalone C-Shop runtime. Fix concrete adapter defects if found, rerun the full relevant validation, and return one evidence-backed PASS/FAIL receipt. Do not merge or deploy.",
+  "upstream": {
+    "repository": "https://github.com/stubbb/c-shop.git",
+    "commit": "f3b2033c07df92e8e72ff83a29955a2c10494d95",
+    "binary_package": "cshop-app",
+    "binary_name": "cshop",
+    "expected_mcp_url": "http://127.0.0.1:7333/mcp",
+    "expected_protocol": "2025-06-18"
+  },
+  "implementation_paths": [
+    "tools/cshop-worker-adapter/package.json",
+    "tools/cshop-worker-adapter/src/cshop-client.mjs",
+    "tools/cshop-worker-adapter/src/product-graphics-job.mjs",
+    "tools/cshop-worker-adapter/test/adapter.test.mjs",
+    "tools/cshop-worker-adapter/scripts/smoke.mjs",
+    "tools/cshop-worker-adapter/README.md"
+  ],
+  "security_boundary": [
+    "Keep C-Shop loopback-only for this validation. Do not expose port 7333 publicly.",
+    "Do not touch the protected production branch feat/hermes-commerce-control-plane.",
+    "Do not modify Render, seller payment configuration, ledgers, wallets, signing state, or live-value settings.",
+    "Do not merge this feature branch.",
+    "The commerce adapter must not accept arbitrary raw scripts and must not emit C-Shop style commands in this first slice.",
+    "Use an isolated disposable C-Shop workspace for runtime tests."
+  ],
+  "execution": [
+    {
+      "step": 1,
+      "name": "Synchronize the implementation branch",
+      "commands": [
+        "git fetch origin --prune",
+        "git checkout feat/cshop-worker-adapter",
+        "git pull --ff-only origin feat/cshop-worker-adapter",
+        "HUB_DIR=\"$(git rev-parse --show-toplevel)\"",
+        "git status --short",
+        "git rev-parse HEAD"
+      ],
+      "pass": "Working tree is clean and HEAD is the remote feature branch head."
+    },
+    {
+      "step": 2,
+      "name": "Run the complete adapter unit suite",
+      "commands": [
+        "cd \"$HUB_DIR/tools/cshop-worker-adapter\"",
+        "node --version",
+        "npm test"
+      ],
+      "pass": "All adapter tests pass under Node 24 or newer. If Node is older, use the existing project-supported Node 24 environment rather than weakening the package requirement."
+    },
+    {
+      "step": 3,
+      "name": "Prepare the pinned standalone C-Shop checkout",
+      "commands": [
+        "cd \"$(dirname \"$HUB_DIR\")\"",
+        "if [ ! -d c-shop/.git ]; then git clone https://github.com/stubbb/c-shop.git c-shop; fi",
+        "cd c-shop",
+        "git fetch origin --prune",
+        "git checkout --detach f3b2033c07df92e8e72ff83a29955a2c10494d95",
+        "test \"$(git rev-parse HEAD)\" = f3b2033c07df92e8e72ff83a29955a2c10494d95",
+        "rustc --version",
+        "cargo --version"
+      ],
+      "pass": "The checkout is exactly pinned. Record the Rust/Cargo versions. If the installed Rust is too old, use rustup/current stable locally; do not edit C-Shop just to accommodate an obsolete compiler."
+    },
+    {
+      "step": 4,
+      "name": "Build and run upstream tests",
+      "commands": [
+        "cd \"$(dirname \"$HUB_DIR\")/c-shop\"",
+        "cargo test --workspace",
+        "cargo build --release -p cshop-app"
+      ],
+      "pass": "Workspace tests and release build pass. If an environment-specific GPU/window test cannot run, preserve the exact command/error and distinguish an environment limitation from a code failure. Do not enter an architecture/replanning loop."
+    },
+    {
+      "step": 5,
+      "name": "Reproduce the three previously identified server questions",
+      "instructions": [
+        "Inspect and runtime-test the pinned source for style loading relative to the Sandbox. Specifically trace find_style/cmd_style and determine whether a served script can cause style loading to read outside the configured workspace. Use only disposable canary files. Report CONFIRMED, NOT_REPRODUCED, or FIXED_UPSTREAM_AT_PIN with exact evidence.",
+        "Test session behavior both with an explicit Mcp-Session-Id and with that header omitted. Confirm that explicit sessions retain one document across calls. Record exactly what no-header calls do; do not assume the earlier classification is still correct.",
+        "GET / and GET /health while loopback-bound and record which workspace/session metadata is exposed without authorization. Then classify the practical risk under the adapter's loopback-only boundary. Do not bind publicly for this test."
+      ],
+      "pass": "Each question has a reproducible result and evidence. The adapter itself must remain safe even if the upstream behavior is unchanged: explicit session IDs, no style commands, loopback-only runtime."
+    },
+    {
+      "step": 6,
+      "name": "Run a real end-to-end graphics smoke job",
+      "commands": [
+        "cd \"$(dirname \"$HUB_DIR\")/c-shop\"",
+        "CSHOP_WORKSPACE=\"$(mktemp -d)\"",
+        "CSHOP_LOG=\"$CSHOP_WORKSPACE/cshop.log\"",
+        "./target/release/cshop --serve --workspace \"$CSHOP_WORKSPACE\" >\"$CSHOP_LOG\" 2>&1 &",
+        "CSHOP_PID=$!",
+        "for i in $(seq 1 60); do curl -fsS http://127.0.0.1:7333/health >/dev/null && break; sleep 1; done",
+        "curl -fsS http://127.0.0.1:7333/health",
+        "cat >\"$CSHOP_WORKSPACE/job.json\" <<'JSON'\n{\n  \"title\": \"Agent Commerce\",\n  \"price\": \"$9.99\",\n  \"output\": \"cshop-commerce-smoke.png\",\n  \"width\": 1200,\n  \"height\": 1200\n}\nJSON",
+        "cd \"$HUB_DIR\"",
+        "CSHOP_URL=http://127.0.0.1:7333/mcp node tools/cshop-worker-adapter/scripts/smoke.mjs \"$CSHOP_WORKSPACE/job.json\"",
+        "test -s \"$CSHOP_WORKSPACE/cshop-commerce-smoke.png\"",
+        "file \"$CSHOP_WORKSPACE/cshop-commerce-smoke.png\" || true",
+        "kill \"$CSHOP_PID\" 2>/dev/null || true"
+      ],
+      "pass": "The adapter completes a real MCP job, the report contains zero failed C-Shop steps, a preview is returned, and the full-size exported image exists and is non-empty."
+    },
+    {
+      "step": 7,
+      "name": "Fix only concrete adapter failures and rerun everything",
+      "instructions": [
+        "If steps 2 or 6 expose an adapter defect, fix the complete coherent defect on feat/cshop-worker-adapter, then rerun the full adapter unit suite and the live smoke job.",
+        "If upstream C-Shop itself requires a code change, do not copy its source into agent-commerce-hub. Record the exact blocker and proposed separate-fork change instead.",
+        "Do not broaden scope into a public graphics API, product publication, Render deployment, or generalized graphics framework."
+      ],
+      "pass": "No known adapter failure remains after the final full validation."
+    },
+    {
+      "step": 8,
+      "name": "Return one closure receipt",
+      "instructions": [
+        "Write handoffs/hermes-to-chatgpt/cshop-worker-runtime-validation-2026-08-29.json on feat/cshop-worker-adapter.",
+        "Include: hub HEAD, C-Shop SHA, Node/Rust/Cargo versions, adapter test totals, cargo test totals, build result, the three server-question results with evidence, smoke report, output file size/type, any patches made, and a final CSHOP_WORKER_RUNTIME_VALIDATION=PASS or FAIL.",
+        "If code was changed, commit it together with the result and push feat/cshop-worker-adapter. Do not merge."
+      ],
+      "pass": "The result is self-contained enough for ChatGPT to fix a failure or close the validation without another discovery pass."
+    }
+  ],
+  "fallback": "If native C-Shop cannot start solely because the local environment lacks the graphics/Vulkan runtime, preserve the exact native failure and make one bounded attempt using C-Shop's own pinned Docker setup if Docker is already available. Do not install a large new virtualization stack solely for this validation. If neither path is available, return FAIL_ENVIRONMENT with the exact blocker rather than looping.",
+  "stop_condition": "Implementation complete + adapter tests pass + pinned C-Shop build/relevant tests pass (or explicitly bounded environment-only exclusions) + real MCP smoke export passes + three server questions are evidenced + no known adapter blocker = DONE."
+}
