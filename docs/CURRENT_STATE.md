@@ -9,12 +9,12 @@ Last current-state update: **2026-08-29**.
 - **Canonical/default repository branch:** `main`.
 - **Canonical main protection:** enabled; pull requests are required with strict `workflow-policy`, `seller`, and `commerce-control` checks, admins enforced, force-push/deletion disabled.
 - **Production deployment branch:** `feat/hermes-commerce-control-plane`.
-- **Latest completed implementation batch:** P1 Public/Private Runtime Boundary Batch 12, code validated at `53b1c500af48257cd524f674367041640ec0850a` through PR #91.
+- **Latest completed implementation batch:** P1 Workflow Shell Interpolation Batch 13, code validated at `5e1d0ce3e7d6a790acfaf3409ca67c82185a4ce0` through PR #92.
 - **Latest production-staging alignment:** P1 Production Candidate Alignment Batch 11, with draft PR #89 as the sole current production candidate.
 
 Batch 6C aligned canonical state into `main` through PR #81. Batch 7 was then validated at `378fdcec5240076c20381b3310ad7fbdb018eae9`, merged through PR #82, and completed its GitHub administration at `main` merge commit `db344147e8ed490f486a6aa86f4b19a3e1d675bf`. Ten already-archived obsolete branch refs were removed while preservation refs were retained.
 
-Batch 8 centralized seller pricing and merged through PR #84. Batch 9 bounded public upstream response bodies before parsing, validated at `f9d465fa0986fb6f9a902acfae2a3fb2a57a2576`, and merged through PR #86 as `dcaa00adb88e3ed62207a870be95128d500a4edb`. Batch 10 adds explicit static holiday-rule provenance and corrects Brazil Carnival national-scope classification. Batch 11 replaced stale/conflicted production staging with a dedicated reconciliation branch whose candidate tree is canonical `main` while the unchanged production head remains in its ancestry. Batch 12 minimizes the public seller Docker artifact so repository-only buyer, reconciliation, financial-store, discovery, admin, test, and documentation material is not shipped with the seller process.
+Batch 8 centralized seller pricing and merged through PR #84. Batch 9 bounded public upstream response bodies before parsing, validated at `f9d465fa0986fb6f9a902acfae2a3fb2a57a2576`, and merged through PR #86 as `dcaa00adb88e3ed62207a870be95128d500a4edb`. Batch 10 adds explicit static holiday-rule provenance and corrects Brazil Carnival national-scope classification. Batch 11 replaced stale/conflicted production staging with a dedicated reconciliation branch whose candidate tree is canonical `main` while the unchanged production head remains in its ancestry. Batch 12 minimizes the public seller Docker artifact so repository-only buyer, reconciliation, financial-store, discovery, admin, test, and documentation material is not shipped with the seller process. Batch 13 removes direct GitHub-expression interpolation from shell commands and makes that a repository-enforced workflow policy.
 
 The production branch remains separately protected with the same required checks and remains at `bc6b1a80aa4f71a7db68c35c07c54bbae7e69ef9`.
 
@@ -28,7 +28,7 @@ The direct `main` → production attempt in PR #88 was closed unmerged after Git
 
 The promotion branch uses an explicit reconciliation commit: production remains an ancestor while the candidate file tree is taken from validated canonical `main`. If `main` advances before deployment, refresh and revalidate the promotion branch before any merge rather than treating an older green check as current.
 
-The repository candidate `render.yaml` uses `products/published/data-quality-profiler`; that candidate root is not proof that the live Render service has moved. Validated implementation through Batch 12 remains **not production-deployed**.
+The repository candidate `render.yaml` uses `products/published/data-quality-profiler`; that candidate root is not proof that the live Render service has moved. Validated implementation through Batch 13 remains **not production-deployed**.
 
 ## Closed validation batches
 
@@ -48,6 +48,7 @@ The repository candidate `render.yaml` uses `products/published/data-quality-pro
 | P1 Holiday Provenance Batch 10 | CLOSED | code validated at `63a8d78a3c0db7d6de75e3f267647015af4cccec`, merge PR #87 |
 | P1 Production Candidate Alignment Batch 11 | CLOSED | draft PR #89; reconciliation candidate refreshed and validated at `e90ef474fc9796e3160998ff981808bfa412e1bf`; production unchanged |
 | P1 Public/Private Runtime Boundary Batch 12 | CLOSED | code validated at `53b1c500af48257cd524f674367041640ec0850a`, PR #91 |
+| P1 Workflow Shell Interpolation Batch 13 | CLOSED | code validated at `5e1d0ce3e7d6a790acfaf3409ca67c82185a4ce0`, PR #92 |
 
 ## Financial state
 
@@ -84,16 +85,15 @@ Published repository lifecycle **does not mean deployed**. Production remains on
 
 Batch 12 makes the repository package and the public Docker artifact intentionally different scopes without moving or deleting financial/operator source needed by CI and controlled operations.
 
-The Render candidate uses the seller Dockerfile, which installs production dependencies and copies only `src/` into the image. `.dockerignore` now additionally excludes:
-
-- repository-only `scripts/`, `test/`, and `docs/` trees;
-- buyer-discovery implementation under `src/discovery/`;
-- `src/payments/agent402-buyer-policy.mjs`;
-- `src/payments/financial-store.mjs`;
-- `src/payments/ledger.mjs`;
-- `src/payments/reconciliation.mjs`.
+The Render candidate uses the seller Dockerfile, which installs production dependencies and copies only `src/` into the image. `.dockerignore` excludes repository-only `scripts/`, `test/`, and `docs/`, buyer discovery under `src/discovery/`, and the private buyer-policy, financial-store, ledger, and reconciliation modules under `src/payments/`.
 
 The public server import-graph regression starts at `src/server.mjs`, recursively follows local static and dynamic imports, requires `src/payments/x402-plugin.mjs` to remain reachable for seller payment enforcement, and rejects any reachability into the excluded buyer/discovery/private-financial modules. The Docker-boundary regression also rejects whole-context, scripts, or test copies. Private tooling remains in Git for CI/admin use but is outside the public seller build context and image.
+
+## GitHub Actions shell safety
+
+Batch 13 closes direct expression interpolation in workflow shell commands. The testnet signer now passes workflow-dispatch input, repository/ref values, and runner-temporary paths through step `env:` before shell use; the arbitrary `purchaseId` is quoted as a shell variable rather than inserted into the command text before execution.
+
+`.github/scripts/workflow-policy-check.mjs` now scans every workflow `run:` line and multiline `run:` block and fails if it contains a direct `${{ ... }}` GitHub expression. Expressions remain valid in non-shell YAML contexts such as `env:`, `with:`, and concurrency definitions. This makes environment mediation a structural invariant instead of a one-off signer fix.
 
 ## Seller upstream resource bounds
 
@@ -151,7 +151,7 @@ Superseded production candidates:
 - **#79** — CLOSED/UNMERGED; stale Batch-6B-only candidate.
 - **#88** — CLOSED/UNMERGED; direct-main candidate with confirmed dirty history conflict.
 
-PR **#82** is merged and closed as Batch 7. Draft PRs **#83** and **#85** were validated but closed unmerged solely because the ChatGPT GitHub connector could not clear their draft flags; their identical validated branches were merged through non-draft PRs **#84** and **#86** respectively. PR **#87** merged Batch 10 into protected `main`. PR **#91** is the Batch 12 protected-main merge path.
+PR **#82** is merged and closed as Batch 7. Draft PRs **#83** and **#85** were validated but closed unmerged solely because the ChatGPT GitHub connector could not clear their draft flags; their identical validated branches were merged through non-draft PRs **#84** and **#86** respectively. PR **#87** merged Batch 10 into protected `main`. PR **#91** merged Batch 12. PR **#92** is the Batch 13 protected-main merge path.
 
 ## Archive policy
 
@@ -166,5 +166,6 @@ PR **#82** is merged and closed as Batch 7. Draft PRs **#83** and **#85** were v
 5. All seller default-price changes must update the canonical `SELLER_PRICE_DEFAULTS` / `SELLER_PRICE_CATALOG` authority and pass the pricing-consistency suite.
 6. Counterparty holiday output is advisory static-rule data, not a live authoritative calendar; retain provenance and limitations if the holiday implementation changes.
 7. Public seller Docker changes must preserve the Batch 12 boundary: seller payment enforcement may ship, but buyer/discovery/private financial/operator modules must remain outside the public server import graph and Docker artifact.
-8. Preserve uncertain historical material before removing it.
-9. Never commit secrets, private paid results, local SQLite/WAL/SHM files, or generated `node_modules`.
+8. GitHub expressions must not appear directly inside workflow `run:` commands or blocks; pass values through `env:` and quote shell variables.
+9. Preserve uncertain historical material before removing it.
+10. Never commit secrets, private paid results, local SQLite/WAL/SHM files, or generated `node_modules`.
