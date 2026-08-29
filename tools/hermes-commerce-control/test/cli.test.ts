@@ -37,7 +37,6 @@ interface Captured {
   readonly stderr: string;
 }
 
-/** Runs the CLI in-process, capturing both streams separately. */
 async function run(args: readonly string[], deps: CliDeps = {}): Promise<Captured> {
   let stdout = "";
   let stderr = "";
@@ -56,11 +55,9 @@ async function run(args: readonly string[], deps: CliDeps = {}): Promise<Capture
   return { code, stdout, stderr };
 }
 
-/** Asserts stdout holds exactly one JSON document and returns it. */
 function soleJson(captured: Captured): Record<string, unknown> {
   const trimmed = captured.stdout.trim();
   assert.notEqual(trimmed, "", "stdout was empty; expected one JSON document");
-  // A second document would make this throw, which is the point.
   const parsed: unknown = JSON.parse(trimmed);
   assert.equal(typeof parsed, "object");
   assert.notEqual(parsed, null);
@@ -80,8 +77,6 @@ function tempRoots(): { env: Record<string, string | undefined>; root: string; c
     },
   };
 }
-
-// ------------------------------------------------------------------ fixtures
 
 function fakeService(id: string, price: string) {
   return {
@@ -203,8 +198,6 @@ const brokenAdapter: CommerceAdapter = {
 
 const ALL: readonly CommerceAdapter[] = [serviceAdapter, workAdapter, brokenAdapter];
 
-// -------------------------------------------------------------- command list
-
 test("CLI: the canonical command surface is exactly the documented set", () => {
   assert.deepEqual(
     [...CLI_COMMANDS].sort(),
@@ -259,8 +252,6 @@ test("CLI: an unknown command in --json mode still yields one JSON document", as
   }
 });
 
-// -------------------------------------------------------------------- sources
-
 test("CLI: sources lists every platform with capabilities and no network access", async () => {
   const roots = tempRoots();
   try {
@@ -286,7 +277,6 @@ test("CLI: sources lists every platform with capabilities and no network access"
         "the402",
       ],
     );
-    // Capability surface must never advertise live execution.
     for (const source of sources) {
       const caps = source.capabilities as Record<string, unknown> | undefined;
       if (caps !== undefined) assert.equal(caps.liveExecution, false);
@@ -313,8 +303,6 @@ test("CLI: sources reflects a configuration disable", async () => {
     roots.cleanup();
   }
 });
-
-// --------------------------------------------------------------------- status
 
 test("CLI: status is local-only and proves Mode A with both gates false", async () => {
   const roots = tempRoots();
@@ -348,8 +336,6 @@ test("CLI: status in human mode writes readable text and no JSON to stdout", asy
   }
 });
 
-// ------------------------------------------------------------------- discover
-
 test("CLI: discover services ranks deterministically and isolates a broken source", async () => {
   const roots = tempRoots();
   try {
@@ -357,22 +343,19 @@ test("CLI: discover services ranks deterministically and isolates a broken sourc
       env: roots.env,
       adapters: ALL,
     });
-    // A single failing marketplace is a degraded report, not a command failure.
     assert.equal(out.code, 0);
     const doc = soleJson(out);
     const data = doc.data as Record<string, unknown>;
     const results = data.results as Array<Record<string, unknown>>;
     assert.equal(results.length, 2);
-    // Cheaper service ranks first, and scores are present and ordered.
     const scores = results.map((r) => r.score as number);
     assert.ok(scores[0] !== undefined && scores[1] !== undefined);
-    assert.ok((scores[0] as number) >= (scores[1] as number), "results must be ranked descending");
+    assert.ok((scores[0] as number) >= (scores[1] as number));
     const sources = data.sources as Record<string, Record<string, unknown>>;
     assert.equal(sources.cdp_bazaar?.status, "ok");
     assert.equal(sources.cdp_bazaar?.count, 2);
     assert.equal(sources.the402?.status, "unreachable");
-    assert.equal(data.degraded, true, "a failed source must be reported as degraded");
-    // Live purchase remains structurally impossible on every result.
+    assert.equal(data.degraded, true);
     for (const result of results) {
       const service = result.service as Record<string, unknown>;
       const actionability = service.actionability as Record<string, unknown>;
@@ -396,7 +379,7 @@ test("CLI: discover services is deterministic across repeated runs", async () =>
     });
     const a = soleJson(first).data as Record<string, unknown>;
     const b = soleJson(second).data as Record<string, unknown>;
-    assert.deepEqual(a.results, b.results, "ranking must not depend on run order");
+    assert.deepEqual(a.results, b.results);
   } finally {
     roots.cleanup();
   }
@@ -411,7 +394,7 @@ test("CLI: discover services honours a hard maximum price filter", async () => {
     );
     const data = soleJson(out).data as Record<string, unknown>;
     const results = data.results as Array<Record<string, unknown>>;
-    assert.equal(results.length, 1, "the $0.05 service must be filtered out, not merely ranked low");
+    assert.equal(results.length, 1);
   } finally {
     roots.cleanup();
   }
@@ -448,8 +431,6 @@ test("CLI: discovery persists results so status counts rise", async () => {
     roots.cleanup();
   }
 });
-
-// -------------------------------------------------------------------- inspect
 
 test("CLI: inspect resolves a platform:externalId target", async () => {
   const roots = tempRoots();
@@ -510,8 +491,6 @@ test("CLI: inspect requires a target argument", async () => {
   }
 });
 
-// ---------------------------------------------------------------------- quote
-
 test("CLI: a quote is never executable", async () => {
   const roots = tempRoots();
   try {
@@ -543,8 +522,6 @@ test("CLI: quote against an adapter that cannot quote is a typed refusal", async
   }
 });
 
-// -------------------------------------------------------------------- prepare
-
 test("CLI: prepare purchase succeeds with exit 0 and carries the policy block", async () => {
   const roots = tempRoots();
   try {
@@ -552,7 +529,6 @@ test("CLI: prepare purchase succeeds with exit 0 and carries the policy block", 
       env: roots.env,
       adapters: ALL,
     });
-    // The PREPARATION succeeded, so the process succeeded.
     assert.equal(out.code, 0);
     const doc = soleJson(out);
     assert.equal(doc.ok, true);
@@ -658,7 +634,7 @@ test("CLI: prepare publish data-quality-profiler never publishes", async () => {
     assert.equal(readiness.publicationAllowed, false);
     assert.equal(readiness.publicationExecuted, false);
     const intents = data.intents as Array<Record<string, unknown>>;
-    assert.ok(intents.length >= 1, "at least one target must be prepared");
+    assert.ok(intents.length >= 1);
     for (const intent of intents) {
       assert.equal(intent.kind, "publish");
       assert.equal(intent.registrationPerformed, false);
@@ -667,15 +643,12 @@ test("CLI: prepare publish data-quality-profiler never publishes", async () => {
       assert.equal(decision.decision, "block");
       assert.equal(decision.reason, "EXTERNAL_WRITE_DISABLED");
     }
-    // Target order must be deterministic.
     const platforms = intents.map((i) => i.platform);
     assert.deepEqual(platforms, [...platforms].sort());
   } finally {
     roots.cleanup();
   }
 });
-
-// ---------------------------------------------------------------------- probe
 
 test("CLI: probe reports per-adapter health and never fails on an outage", async () => {
   const roots = tempRoots();
@@ -688,7 +661,6 @@ test("CLI: probe reports per-adapter health and never fails on an outage", async
     const byPlatform = new Map(probes.map((p) => [p.platform, p]));
     assert.equal(byPlatform.get("cdp_bazaar")?.status, "ok");
     assert.equal(byPlatform.get("the402")?.status, "unreachable");
-    // Deterministic ordering by platform.
     assert.deepEqual(
       probes.map((p) => p.platform),
       [...probes.map((p) => p.platform as string)].sort(),
@@ -714,8 +686,6 @@ test("CLI: probe records a disabled adapter as disabled, not unreachable", async
   }
 });
 
-// --------------------------------------------------------------------- export
-
 test("CLI: export writes the canonical repository outputs with checksums", async () => {
   const roots = tempRoots();
   try {
@@ -729,15 +699,14 @@ test("CLI: export writes the canonical repository outputs with checksums", async
     const artifacts = data.artifacts as Array<Record<string, unknown>>;
     const paths = artifacts.map((a) => a.path as string);
     for (const expected of [
-      "research/normalized/commerce-control/services-latest.json",
-      "research/normalized/commerce-control/work-latest.json",
-      "analytics/commerce-control/source-health-latest.json",
-      "state/commerce-control/STATUS.json",
+      "analytics/commerce-control/legacy/services-snapshot.json",
+      "analytics/commerce-control/legacy/work-snapshot.json",
+      "analytics/commerce-control/legacy/source-health-snapshot.json",
+      "analytics/commerce-control/legacy/status-snapshot.json",
     ]) {
       assert.ok(paths.includes(expected), `missing export ${expected}`);
       assert.ok(existsSync(join(roots.env.COMMERCE_REPO_ROOT as string, expected)));
     }
-    // Every artifact carries a real checksum, never a prose substitute.
     for (const artifact of artifacts) {
       assert.match(artifact.sha256 as string, /^[0-9a-f]{64}$/);
       assert.ok((artifact.bytes as number) > 0);
@@ -754,8 +723,8 @@ test("CLI: exported files are valid JSON and contain no secret-like values", asy
     await run(["export", "--json"], { env: roots.env, adapters: ALL });
     const repoRoot = roots.env.COMMERCE_REPO_ROOT as string;
     for (const rel of [
-      "research/normalized/commerce-control/services-latest.json",
-      "state/commerce-control/STATUS.json",
+      "analytics/commerce-control/legacy/services-snapshot.json",
+      "analytics/commerce-control/legacy/status-snapshot.json",
     ]) {
       const text = readFileSync(join(repoRoot, rel), "utf8");
       JSON.parse(text);
@@ -777,8 +746,6 @@ test("CLI: exported files are valid JSON and contain no secret-like values", asy
     roots.cleanup();
   }
 });
-
-// --------------------------------------------------------------------- doctor
 
 test("CLI: doctor proves Mode A, both gates false, and no wallet secret", async () => {
   const roots = tempRoots();
@@ -819,20 +786,16 @@ test("CLI: doctor detects a wallet secret in the environment without echoing it"
       env: { ...roots.env, PIPRAIL_PRIVATE_KEY: "0xdeadbeefsupersecret" },
       adapters: ALL,
     });
-    // A present secret is a hard failure of the Mode-A hygiene contract.
     assert.equal(out.code, 1);
     const doc = soleJson(out);
     const data = doc.data as Record<string, unknown>;
     assert.equal(data.walletSecretPresent, true);
-    // The NAME may be reported; the VALUE never may be.
     assert.equal(out.stdout.includes("0xdeadbeefsupersecret"), false);
     assert.equal(out.stderr.includes("0xdeadbeefsupersecret"), false);
   } finally {
     roots.cleanup();
   }
 });
-
-// ------------------------------------------------------------ stream contract
 
 test("CLI: --json puts diagnostics on stderr and only the document on stdout", async () => {
   const roots = tempRoots();
@@ -841,7 +804,6 @@ test("CLI: --json puts diagnostics on stderr and only the document on stdout", a
       env: roots.env,
       adapters: ALL,
     });
-    // stdout parses cleanly as a single document even though a source failed.
     soleJson(out);
     assert.ok(out.stderr.length > 0, "verbose diagnostics must appear on stderr");
     assert.equal(out.stdout.trimEnd().includes("\n{"), false, "only one document allowed");

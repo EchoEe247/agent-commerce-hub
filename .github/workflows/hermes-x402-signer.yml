@@ -19,12 +19,15 @@ on:
         required: true
         default: "20000"
       network:
-        description: "Network (eip155:84532 or eip155:8453)"
+        description: "Network (testnet only: eip155:84532)"
         required: true
+        type: choice
+        options:
+          - eip155:84532
         default: "eip155:84532"
 
 permissions:
-  contents: write  # Required to commit budget-ledger.json updates
+  contents: read
 
 concurrency:
   group: x402-signing
@@ -33,21 +36,29 @@ concurrency:
 jobs:
   sign-and-settle:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: '24'
-
+          cache: npm
+          cache-dependency-path: products/published/data-quality-profiler/package-lock.json
       - name: Install dependencies in profiler
-        working-directory: products/drafts/data-quality-profiler
-        run: npm ci || npm install
-
-      - name: Execute Signer & Live Testnet Purchase
-        working-directory: products/drafts/data-quality-profiler
+        working-directory: products/published/data-quality-profiler
+        run: npm ci
+      - name: Initialize authoritative testnet financial store from audit snapshot
+        working-directory: products/published/data-quality-profiler
+        run: |
+          node scripts/financial-store-admin.mjs init-testnet \
+            --db "${{ runner.temp }}/testnet-budget.sqlite"
+      - name: Execute signer and live testnet purchase
+        working-directory: products/published/data-quality-profiler
         env:
           PLATFORM: ${{ inputs.platform }}
           PURCHASE_ID: ${{ inputs.purchaseId }}
@@ -55,14 +66,29 @@ jobs:
           EXPECTED_MAXIMUM_AMOUNT: ${{ inputs.expectedMaximumAmount }}
           NETWORK: ${{ inputs.network }}
           HERMES_COMMERCE_SPEND_TEST_PRIVATE_KEY: ${{ secrets.HERMES_COMMERCE_SPEND_TEST_PRIVATE_KEY }}
+          HERMES_FINANCIAL_DB_PATH: ${{ runner.temp }}/testnet-budget.sqlite
           WORKFLOW_DISPATCH_TIME: ${{ github.event.repository.pushed_at }}
+        run: node scripts/github-actions-signer.mjs
+      - name: Export validated audit snapshot from authoritative store
+        working-directory: products/published/data-quality-profiler
         run: |
-          node scripts/github-actions-signer.mjs
-
-      - name: Commit & Push Budget Ledger Updates
+          node scripts/financial-store-admin.mjs export-testnet \
+            --db "${{ runner.temp }}/testnet-budget.sqlite"
+      - name: Commit and push testnet audit snapshot
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BRANCH_NAME: ${{ github.ref_name }}
         run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add state/commerce-control/budget-ledger.json
-          git diff --quiet && git diff --staged --quiet || git commit -m "chore: update budget ledger for ${{ inputs.purchaseId }}"
-          git push origin HEAD:${{ github.ref_name }}
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add state/commerce-control/ledgers/testnet-budget-ledger.json
+          if git diff --cached --quiet; then
+            echo "No audit snapshot change to commit."
+            exit 0
+          fi
+          git commit -m "chore: update testnet financial audit snapshot for ${{ inputs.purchaseId }}"
+          auth=$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)
+          git -c http.https://github.com/.extraheader="AUTHORIZATION: basic $auth" \
+            push "https://github.com/${{ github.repository }}.git" "HEAD:${BRANCH_NAME}"

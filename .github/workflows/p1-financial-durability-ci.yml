@@ -1,0 +1,67 @@
+name: P1 Financial Durability CI
+
+on:
+  push:
+    branches:
+      - fix/p1-financial-durability-batch-3
+      - fix/p1-production-change-control-batch-4
+    paths:
+      - 'products/published/data-quality-profiler/src/payments/**'
+      - 'products/published/data-quality-profiler/scripts/agent402-production-buyer.mjs'
+      - 'products/published/data-quality-profiler/scripts/signer-init.mjs'
+      - 'products/published/data-quality-profiler/scripts/financial-store-admin.mjs'
+      - 'products/published/data-quality-profiler/test/p1-financial-*.test.mjs'
+      - 'products/published/data-quality-profiler/package.json'
+      - '.github/workflows/hermes-x402-signer.yml'
+      - '.github/workflows/p1-financial-durability-ci.yml'
+  pull_request:
+    branches:
+      - feat/hermes-commerce-control-plane
+      - main
+    paths:
+      - 'products/published/data-quality-profiler/src/payments/**'
+      - 'products/published/data-quality-profiler/scripts/agent402-production-buyer.mjs'
+      - 'products/published/data-quality-profiler/scripts/signer-init.mjs'
+      - 'products/published/data-quality-profiler/scripts/financial-store-admin.mjs'
+      - 'products/published/data-quality-profiler/test/p1-financial-*.test.mjs'
+      - 'products/published/data-quality-profiler/package.json'
+      - '.github/workflows/hermes-x402-signer.yml'
+      - '.github/workflows/p1-financial-durability-ci.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  full-financial-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: products/published/data-quality-profiler/package-lock.json
+      - name: Install seller dependencies
+        working-directory: products/published/data-quality-profiler
+        run: npm ci
+      - name: Targeted P1 financial safety and durability tests
+        working-directory: products/published/data-quality-profiler
+        run: |
+          node --test \
+            test/p1-financial-safety.test.mjs \
+            test/p1-financial-durability.test.mjs \
+            test/p1-financial-runtime-wiring.test.mjs \
+            test/p1-financial-corrections.test.mjs
+      - name: Full seller test suite
+        working-directory: products/published/data-quality-profiler
+        run: npm test
+      - name: Canonical financial audit snapshots remain untouched by tests
+        run: |
+          git diff --exit-code -- \
+            state/commerce-control/ledgers/mainnet-budget-ledger.json \
+            state/commerce-control/ledgers/testnet-budget-ledger.json

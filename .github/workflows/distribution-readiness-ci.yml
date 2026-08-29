@@ -4,14 +4,9 @@ on:
   pull_request:
     branches:
       - feat/hermes-commerce-control-plane
+      - main
     paths:
-      - 'products/drafts/data-quality-profiler/src/distribution-readiness.mjs'
-      - 'products/drafts/data-quality-profiler/src/openapi-base.mjs'
-      - 'products/drafts/data-quality-profiler/src/openapi.mjs'
-      - 'products/drafts/data-quality-profiler/src/llms-discovery.mjs'
-      - 'products/drafts/data-quality-profiler/scripts/distribution-readiness-check.mjs'
-      - 'products/drafts/data-quality-profiler/test/distribution-readiness.test.mjs'
-      - 'products/drafts/data-quality-profiler/package.json'
+      - 'products/published/data-quality-profiler/**'
       - '.github/workflows/distribution-readiness-ci.yml'
   workflow_dispatch:
 
@@ -22,28 +17,29 @@ jobs:
   tests:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: '24'
+          cache: npm
+          cache-dependency-path: products/published/data-quality-profiler/package-lock.json
       - name: Install dependencies
-        working-directory: products/drafts/data-quality-profiler
+        working-directory: products/published/data-quality-profiler
         run: npm ci
-      - name: Syntax check distribution runtime
-        working-directory: products/drafts/data-quality-profiler
-        run: |
-          node --check src/distribution-readiness.mjs
-          node --check scripts/distribution-readiness-check.mjs
       - name: Distribution readiness contracts
-        working-directory: products/drafts/data-quality-profiler
+        working-directory: products/published/data-quality-profiler
         run: node --test test/distribution-readiness.test.mjs
       - name: Production-profile readiness CLI
-        working-directory: products/drafts/data-quality-profiler
+        working-directory: products/published/data-quality-profiler
         env:
           X402_FACILITATOR_URL: https://facilitator.xpay.sh
         run: |
           npm run --silent check:distribution-readiness > /tmp/distribution-readiness.json
           node -e 'const fs=require("node:fs"); const r=JSON.parse(fs.readFileSync("/tmp/distribution-readiness.json","utf8")); if (r.technical_status !== "ready" || r.paid_operation_count !== 13 || r.facilitator.classification !== "xpay") process.exit(1);'
       - name: Full profiler suite
-        working-directory: products/drafts/data-quality-profiler
+        working-directory: products/published/data-quality-profiler
         run: npm test
