@@ -17,7 +17,7 @@
     "admins_enforced": true,
     "force_push_allowed": false,
     "branch_deletion_allowed": false,
-    "default_branch_alignment": "batch_6c_main_history_preserving_snapshot_merge",
+    "default_branch_alignment": "complete_via_pr_81_history_preserving_snapshot",
     "pre_alignment_main_head": "fb1574abcad25f68c59d9589ae1701d43e3107cc",
     "pre_alignment_main_preservation_ref": "archive/batch-6c-main-before-alignment-fb1574a"
   },
@@ -36,7 +36,8 @@
     {"name":"p1_production_change_control_batch_4","state":"closed","head":"f0f9503a4b01cff98003de9b06f4f77db2ce2fdb"},
     {"name":"p1_preview_resource_abuse_batch_5","state":"closed","head":"ab06f198904ff67e3d4b518d8c177af460a2c8ca"},
     {"name":"p1_canonical_state_batch_6a","state":"closed","head":"54674d29ffb6fed9614ea6ef56b1520d16a8ec47"},
-    {"name":"p1_seller_lifecycle_batch_6b","state":"closed","head":"c9512348567459be3164f2413d4e187a7bed7501"}
+    {"name":"p1_seller_lifecycle_batch_6b","state":"closed","head":"c9512348567459be3164f2413d4e187a7bed7501"},
+    {"name":"p1_repository_alignment_batch_6c","state":"closed","alignment_pr":81}
   ],
   "deployment": {
     "provider": "render",
@@ -47,7 +48,7 @@
     "validated_batches_through_6b_deployed": false,
     "candidate_root_dir": "products/published/data-quality-profiler",
     "candidate_root_dir_deployed": false,
-    "rule": "Merging PR #79 into the protected production branch is a production deployment event. Aligning the default main branch through PR #81 does not deploy Render."
+    "rule": "Merging PR #79 into the protected production branch is a production deployment event. Batch 6C PR #81 aligns main only and does not deploy Render."
   },
   "financial": {
     "transactional_authority": "local_gitignored_sqlite",
@@ -84,15 +85,15 @@
     "production_candidate": 79,
     "production_candidate_state": "open_draft_unmerged",
     "alignment_pr": 81,
+    "alignment_pr_role": "merged_to_canonical_main_no_production_deploy",
     "preservation_index": "Unknown/Archived/branches/2026-08-29-batch-6c-pr-branch-index.md"
   },
   "canonicalization": {
-    "branch": "chore/p1-main-snapshot-alignment-6c",
-    "alignment_target": "main",
-    "alignment_pull_request": 81,
     "batch": "6c",
-    "state": "alignment_candidate_no_production_deploy",
-    "completed": ["6a", "6b"],
+    "state": "closed",
+    "canonical_branch": "main",
+    "alignment_pull_request": 81,
+    "completed": ["6a", "6b", "6c"],
     "next": ["commerce_control_durability"]
   }
 }
