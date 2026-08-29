@@ -23,12 +23,14 @@
     "pre_alignment_main_preservation_ref": "archive/batch-6c-main-before-alignment-fb1574a",
     "batch_7_merge_commit": "db344147e8ed490f486a6aa86f4b19a3e1d675bf",
     "batch_7_admin_closeout": "complete",
-    "batch_9_merge_commit": "dcaa00adb88e3ed62207a870be95128d500a4edb"
+    "batch_9_merge_commit": "dcaa00adb88e3ed62207a870be95128d500a4edb",
+    "batch_10_merge_commit": "91a9ac7c112a455835270066e72567a02e123cdb"
   },
   "validated_baseline": {
-    "branch": "fix/p1-holiday-provenance-batch-10",
-    "code_head": "63a8d78a3c0db7d6de75e3f267647015af4cccec",
-    "pull_request": 87,
+    "branch": "main",
+    "implementation_through_batch": 10,
+    "batch_10_code_head": "63a8d78a3c0db7d6de75e3f267647015af4cccec",
+    "batch_10_pull_request": 87,
     "state": "validated_not_production_deployed",
     "distribution_readiness_ci": "pass",
     "production_change_control_ci": "pass"
@@ -45,18 +47,23 @@
     {"name":"p1_commerce_control_durability_batch_7","state":"closed","validated_head":"378fdcec5240076c20381b3310ad7fbdb018eae9","pull_request":82,"merge_commit":"db344147e8ed490f486a6aa86f4b19a3e1d675bf"},
     {"name":"p1_seller_pricing_source_batch_8","state":"closed","validated_code_head":"85918d271c107881d8cd9a7781370f4e1742a42e","pull_request":84},
     {"name":"p1_upstream_response_bounds_batch_9","state":"closed","validated_head":"f9d465fa0986fb6f9a902acfae2a3fb2a57a2576","pull_request":86,"merge_commit":"dcaa00adb88e3ed62207a870be95128d500a4edb"},
-    {"name":"p1_holiday_provenance_batch_10","state":"closed","validated_code_head":"63a8d78a3c0db7d6de75e3f267647015af4cccec","pull_request":87}
+    {"name":"p1_holiday_provenance_batch_10","state":"closed","validated_code_head":"63a8d78a3c0db7d6de75e3f267647015af4cccec","pull_request":87,"merge_commit":"91a9ac7c112a455835270066e72567a02e123cdb"},
+    {"name":"p1_production_candidate_alignment_batch_11","state":"closed","production_candidate_pr":89,"validated_reconciliation_head":"62e09f8aa7f3139c8dbc5103af03ad5cb01bb489","production_branch_unchanged":true}
   ],
   "deployment": {
     "provider": "render",
     "auto_deploy_branch": "feat/hermes-commerce-control-plane",
     "production_branch_head": "bc6b1a80aa4f71a7db68c35c07c54bbae7e69ef9",
-    "production_promotion_pr": 79,
+    "production_promotion_pr": 89,
+    "production_promotion_branch": "promote/main-through-batch-10",
+    "production_promotion_state": "open_draft_unmerged",
     "production_promotion_merged": false,
+    "candidate_reconciles_production_and_main": true,
+    "candidate_requires_refresh_if_main_advances": true,
     "validated_batches_through_10_deployed": false,
     "candidate_root_dir": "products/published/data-quality-profiler",
     "candidate_root_dir_deployed": false,
-    "rule": "Merging PR #79 into the protected production branch is a production deployment event. Main-target hardening PRs do not deploy Render."
+    "rule": "Merging PR #89 into the protected production branch is a live Render deployment event. Keep it draft/unmerged until explicit deployment authorization; if main advances, refresh and revalidate the promotion branch first."
   },
   "financial": {
     "transactional_authority": "local_gitignored_sqlite",
@@ -133,9 +140,11 @@
   "pull_requests": {
     "closed_unmerged_batch_6c": [1,2,33,34,35,64,76,77,78,80],
     "closed_unmerged_connector_workarounds": [83,85],
+    "closed_unmerged_superseded_production_candidates": [79,88],
     "deferred_open": [8,63],
-    "production_candidate": 79,
+    "production_candidate": 89,
     "production_candidate_state": "open_draft_unmerged",
+    "production_candidate_branch": "promote/main-through-batch-10",
     "alignment_pr": 81,
     "commerce_control_durability_pr": 82,
     "seller_pricing_source_pr": 84,
@@ -148,8 +157,8 @@
     "preservation_refs_retained": true
   },
   "current_sequence": {
-    "completed": ["6a", "6b", "6c", "7", "8", "9", "10"],
-    "current_batch": "p1_holiday_provenance_batch_10",
+    "completed": ["6a", "6b", "6c", "7", "8", "9", "10", "11"],
+    "current_batch": "p1_production_candidate_alignment_batch_11",
     "state": "closed",
     "next": ["remaining_operational_hardening", "controlled_production_promotion_when_authorized"]
   }
