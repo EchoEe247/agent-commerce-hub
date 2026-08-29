@@ -1,3 +1,5 @@
+import { readResponseTextBounded, ResponseBodyLimitError } from "./bounded-response.mjs";
+
 const NPM_REGISTRY_BASE = "https://registry.npmjs.org";
 const PYPI_BASE = "https://pypi.org/pypi";
 const REQUEST_TIMEOUT_MS = 10000;
@@ -119,8 +121,14 @@ export function createPackageMaintenanceSnapshot({ fetchImpl = globalThis.fetch,
     if (response?.status === 404) throw new Error(notFoundMessage);
     if (!response?.ok) throw new Error(`PACKAGE_SOURCE_UNAVAILABLE: package registry request failed with HTTP ${response?.status ?? "unknown"}`);
     let text;
-    try { text = await response.text(); } catch (error) { throw new Error(`PACKAGE_SOURCE_UNAVAILABLE: ${error?.message ?? "package registry response could not be read"}`); }
-    if (Buffer.byteLength(text, "utf8") > MAX_RESPONSE_BYTES) throw new Error("PACKAGE_SOURCE_UNAVAILABLE: package registry response exceeded the 8 MiB safety limit");
+    try {
+      text = await readResponseTextBounded(response, MAX_RESPONSE_BYTES);
+    } catch (error) {
+      if (error instanceof ResponseBodyLimitError) {
+        throw new Error("PACKAGE_SOURCE_UNAVAILABLE: package registry response exceeded the 8 MiB safety limit");
+      }
+      throw new Error(`PACKAGE_SOURCE_UNAVAILABLE: ${error?.message ?? "package registry response could not be read"}`);
+    }
     try {
       const value = JSON.parse(text);
       if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("invalid shape");
