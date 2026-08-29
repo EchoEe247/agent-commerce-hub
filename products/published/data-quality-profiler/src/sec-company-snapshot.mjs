@@ -1,3 +1,5 @@
+import { readResponseTextBounded, ResponseBodyLimitError } from "./bounded-response.mjs";
+
 const TICKER_MAP_URL = "https://www.sec.gov/files/company_tickers_exchange.json";
 const SUBMISSIONS_BASE = "https://data.sec.gov/submissions/";
 const COMPANY_FACTS_BASE = "https://data.sec.gov/api/xbrl/companyfacts/";
@@ -5,6 +7,9 @@ const ARCHIVES_BASE = "https://www.sec.gov/Archives/edgar/data";
 const REQUEST_TIMEOUT_MS = 10000;
 const TICKER_CACHE_MS = 24 * 60 * 60 * 1000;
 const SEC_USER_AGENT = "Hermes Commerce https://hermes-counterparty-api.onrender.com";
+const TICKER_MAP_MAX_BYTES = 8 * 1024 * 1024;
+const SUBMISSIONS_MAX_BYTES = 8 * 1024 * 1024;
+const COMPANY_FACTS_MAX_BYTES = 32 * 1024 * 1024;
 
 export function createSecCompanySnapshot({
   fetchImpl = globalThis.fetch,
@@ -27,8 +32,8 @@ export function createSecCompanySnapshot({
     const submissionsUrl = `${SUBMISSIONS_BASE}CIK${cik}.json`;
     const companyFactsUrl = `${COMPANY_FACTS_BASE}CIK${cik}.json`;
     const [submissions, factsResult] = await Promise.all([
-      fetchJson(submissionsUrl, { required: true }),
-      fetchJson(companyFactsUrl, { required: false }),
+      fetchJson(submissionsUrl, { required: true, maxBytes: SUBMISSIONS_MAX_BYTES, label: "submissions" }),
+      fetchJson(companyFactsUrl, { required: false, maxBytes: COMPANY_FACTS_MAX_BYTES, label: "company facts" }),
     ]);
 
     if (!submissions || typeof submissions !== "object" || !submissions.name) {
@@ -87,7 +92,11 @@ export function createSecCompanySnapshot({
   async function loadTickerMap() {
     const now = clock.now();
     if (tickerCache && now - tickerCache.fetchedAt < TICKER_CACHE_MS) return tickerCache.value;
-    const value = await fetchJson(TICKER_MAP_URL, { required: true });
+    const value = await fetchJson(TICKER_MAP_URL, {
+      required: true,
+      maxBytes: TICKER_MAP_MAX_BYTES,
+      label: "ticker map",
+    });
     if (!value || !Array.isArray(value.fields) || !Array.isArray(value.data)) {
       throw new Error("SEC_SOURCE_UNAVAILABLE: SEC ticker map response was not usable");
     }
@@ -95,7 +104,7 @@ export function createSecCompanySnapshot({
     return value;
   }
 
-  async function fetchJson(url, { required }) {
+  async function fetchJson(url, { required, maxBytes, label }) {
     if (typeof fetchImpl !== "function") {
       if (required) throw new Error("SEC_SOURCE_UNAVAILABLE: SEC fetch is unavailable");
       return null;
@@ -114,8 +123,27 @@ export function createSecCompanySnapshot({
         if (!required) return null;
         throw new Error(`SEC_SOURCE_UNAVAILABLE: SEC request failed with HTTP ${response?.status ?? "unknown"}`);
       }
-      const value = await response.json();
-      if (!value || typeof value !== "object") {
+
+      let text;
+      try {
+        text = await readResponseTextBounded(response, maxBytes);
+      } catch (error) {
+        if (error instanceof ResponseBodyLimitError) {
+          if (!required) return null;
+          throw new Error(`SEC_SOURCE_UNAVAILABLE: SEC ${label} response exceeded the ${Math.floor(maxBytes / (1024 * 1024))} MiB safety limit`);
+        }
+        if (!required) return null;
+        throw error;
+      }
+
+      let value;
+      try {
+        value = JSON.parse(text);
+      } catch {
+        if (!required) return null;
+        throw new Error("SEC_SOURCE_UNAVAILABLE: SEC returned invalid JSON data");
+      }
+      if (!value || typeof value !== "object" || Array.isArray(value)) {
         if (!required) return null;
         throw new Error("SEC_SOURCE_UNAVAILABLE: SEC returned invalid JSON data");
       }
