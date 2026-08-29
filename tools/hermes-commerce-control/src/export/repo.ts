@@ -96,7 +96,7 @@ export function stableJson(value: unknown): string {
 }
 
 function assertExportable(relativePath: string, text: string): void {
-  if (relativePath.startsWith("state/") || /(?:^|\/)\w+-latest\.json$/i.test(relativePath)) {
+  if (relativePath.startsWith("state/") || /(?:^|\/)[^/]+-latest\.json$/i.test(relativePath)) {
     throw new CommerceError(
       "STATE_ERROR",
       `refusing authoritative-looking legacy export path ${relativePath}`,
