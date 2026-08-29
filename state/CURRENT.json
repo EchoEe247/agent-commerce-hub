@@ -11,6 +11,7 @@
     "default_branch": "main",
     "canonical_repository_branch": "main",
     "production_branch": "feat/hermes-commerce-control-plane",
+    "main_protected": true,
     "production_branch_protected": true,
     "required_status_checks": ["workflow-policy", "seller", "commerce-control"],
     "strict_status_checks": true,
@@ -18,17 +19,18 @@
     "force_push_allowed": false,
     "branch_deletion_allowed": false,
     "default_branch_alignment": "complete_via_pr_81_history_preserving_snapshot",
-    "main_protection_pending_admin_cleanup": true,
     "pre_alignment_main_head": "fb1574abcad25f68c59d9589ae1701d43e3107cc",
-    "pre_alignment_main_preservation_ref": "archive/batch-6c-main-before-alignment-fb1574a"
+    "pre_alignment_main_preservation_ref": "archive/batch-6c-main-before-alignment-fb1574a",
+    "batch_7_merge_commit": "db344147e8ed490f486a6aa86f4b19a3e1d675bf",
+    "batch_7_admin_closeout": "complete"
   },
   "validated_baseline": {
-    "branch": "fix/p1-commerce-control-durability-batch-7",
-    "code_head": "fcb576a485e3629dd739d1f8760bfa5ec5e724fd",
-    "pull_request": 82,
+    "branch": "fix/p1-seller-pricing-source-batch-8",
+    "code_head": "85918d271c107881d8cd9a7781370f4e1742a42e",
+    "pull_request": 83,
     "state": "validated_not_production_deployed",
-    "seller_tests": 306,
-    "commerce_control_tests": 494
+    "distribution_readiness_ci": "pass",
+    "production_change_control_ci": "pass"
   },
   "hardening_batches": [
     {"name":"p0_security_batch_1","state":"closed","head":"fd61b87914a33ba37daf745724a812abe02d9d2c"},
@@ -39,7 +41,8 @@
     {"name":"p1_canonical_state_batch_6a","state":"closed","head":"54674d29ffb6fed9614ea6ef56b1520d16a8ec47"},
     {"name":"p1_seller_lifecycle_batch_6b","state":"closed","head":"c9512348567459be3164f2413d4e187a7bed7501"},
     {"name":"p1_repository_alignment_batch_6c","state":"closed","alignment_pr":81},
-    {"name":"p1_commerce_control_durability_batch_7","state":"closed","validated_code_head":"fcb576a485e3629dd739d1f8760bfa5ec5e724fd","pull_request":82}
+    {"name":"p1_commerce_control_durability_batch_7","state":"closed","validated_head":"378fdcec5240076c20381b3310ad7fbdb018eae9","pull_request":82,"merge_commit":"db344147e8ed490f486a6aa86f4b19a3e1d675bf"},
+    {"name":"p1_seller_pricing_source_batch_8","state":"closed","validated_code_head":"85918d271c107881d8cd9a7781370f4e1742a42e","pull_request":83}
   ],
   "deployment": {
     "provider": "render",
@@ -47,10 +50,10 @@
     "production_branch_head": "bc6b1a80aa4f71a7db68c35c07c54bbae7e69ef9",
     "production_promotion_pr": 79,
     "production_promotion_merged": false,
-    "validated_batches_through_7_deployed": false,
+    "validated_batches_through_8_deployed": false,
     "candidate_root_dir": "products/published/data-quality-profiler",
     "candidate_root_dir_deployed": false,
-    "rule": "Merging PR #79 into the protected production branch is a production deployment event. Main-target hardening PRs such as #82 do not deploy Render."
+    "rule": "Merging PR #79 into the protected production branch is a production deployment event. Main-target hardening PRs do not deploy Render."
   },
   "financial": {
     "transactional_authority": "local_gitignored_sqlite",
@@ -65,7 +68,15 @@
     "tree_move_preserves_file_content": true,
     "old_active_path_retired": true,
     "paid_x402_operations": 13,
-    "free_preview": "/v1/company-domain-intelligence/preview"
+    "free_preview": "/v1/company-domain-intelligence/preview",
+    "pricing_authority": "products/published/data-quality-profiler/src/config.mjs#SELLER_PRICE_DEFAULTS+SELLER_PRICE_CATALOG",
+    "pricing_catalog_operation_count": 13,
+    "pricing_route_env_config_mapping_canonical": true,
+    "agent402_manifest_uses_canonical_pricing": true,
+    "openapi_uses_canonical_pricing": true,
+    "pricing_consistency_ci": true,
+    "dependency_vulnerability_default_price": "$0.005",
+    "package_maintenance_default_price": "$0.005"
   },
   "commerce_control": {
     "path": "tools/hermes-commerce-control/",
@@ -102,17 +113,18 @@
     "production_candidate": 79,
     "production_candidate_state": "open_draft_unmerged",
     "alignment_pr": 81,
-    "alignment_pr_role": "merged_to_canonical_main_no_production_deploy",
     "commerce_control_durability_pr": 82,
+    "seller_pricing_source_pr": 83,
     "preservation_index": "Unknown/Archived/branches/2026-08-29-batch-6c-pr-branch-index.md"
   },
+  "repository_cleanup": {
+    "obsolete_branches_deleted_batch_7_admin": 10,
+    "preservation_refs_retained": true
+  },
   "current_sequence": {
-    "completed": ["6a", "6b", "6c", "7"],
-    "current_batch": "p1_commerce_control_durability_batch_7",
+    "completed": ["6a", "6b", "6c", "7", "8"],
+    "current_batch": "p1_seller_pricing_source_batch_8",
     "state": "closed",
-    "next": [
-      "github_admin_main_protection_and_obsolete_ref_cleanup",
-      "remaining_operational_hardening"
-    ]
+    "next": ["remaining_operational_hardening", "controlled_production_promotion_when_authorized"]
   }
 }
