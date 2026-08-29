@@ -61,7 +61,7 @@ test("export: writes to correct canonical paths in the repo root", () => {
       "research/normalized/commerce-control/services-latest.json",
       "research/normalized/commerce-control/work-latest.json",
       "analytics/commerce-control/source-health-latest.json",
-      "state/commerce-control/STATUS.json",
+      "analytics/commerce-control/status-latest.json",
     ];
 
     for (const p of expectedPaths) {
