@@ -109,7 +109,7 @@
       "head": "fix/p1-production-change-control-batch-4",
       "head_sha": "f0f9503a4b01cff98003de9b06f4f77db2ce2fdb",
       "base": "feat/hermes-commerce-control-plane",
-      "disposition": "do_not_merge_subset_disposition_batch_6c"
+      "disposition": "do_not_merge_superseded_subset_disposition_batch_6c"
     },
     {
       "number": 77,
@@ -117,11 +117,19 @@
       "head": "fix/p1-preview-abuse-batch-5",
       "head_sha": "ab06f198904ff67e3d4b518d8c177af460a2c8ca",
       "base": "feat/hermes-commerce-control-plane",
-      "disposition": "do_not_merge_pending_canonicalization"
+      "disposition": "do_not_merge_superseded_by_pr_78_disposition_batch_6c"
+    },
+    {
+      "number": 78,
+      "state": "open_draft_unmerged",
+      "head": "chore/p1-canonical-state-batch-6a",
+      "base": "feat/hermes-commerce-control-plane",
+      "disposition": "current_complete_staged_candidate_do_not_merge_during_batch_6"
     }
   ],
   "canonicalization": {
     "branch": "chore/p1-canonical-state-batch-6a",
+    "pull_request": 78,
     "batch": "6a",
     "next": [
       "batch_6b_seller_lifecycle_move",
