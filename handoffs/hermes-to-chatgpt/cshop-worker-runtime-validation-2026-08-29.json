@@ -1,0 +1,65 @@
+{
+  "handoff_id": "hermes-cshop-worker-runtime-validation-2026-08-29",
+  "from": "hermes",
+  "to": "chatgpt",
+  "created_at": "2026-08-29T17:00:00Z",
+  "repository": "EchoEe247/agent-commerce-hub",
+  "source_branch": "feat/cshop-worker-adapter",
+  "hub_head": "5002b1e36b93461f9ff71e3ca36716bbb90f8cb4",
+  "upstream": {
+    "repository": "https://github.com/stubbb/c-shop.git",
+    "commit": "f3b2033c07df92e8e72ff83a29955a2c10494d95",
+    "binary_package": "cshop-app",
+    "binary_name": "cshop",
+    "expected_mcp_url": "http://127.0.0.1:7333/mcp",
+    "expected_protocol": "2025-06-18"
+  },
+  "environment": {
+    "node": "v24.18.0",
+    "rust": "rustc 1.97.1 (8bab26f4f 2026-07-14)",
+    "cargo": "cargo 1.97.1 (c980f4866 2026-06-30)",
+    "docker": "not available",
+    "vulkan_swrast": "mesa-vulkan-icd-swrast 26.0.6-2 present, ICD at /data/data/com.termux/files/usr/share/vulkan/icd.d/lvp_icd.aarch64.json, VK_ICD_FILENAMES not set",
+    "loopback_only": true
+  },
+  "adapter_tests": {
+    "total": 4,
+    "pass": 4,
+    "fail": 0,
+    "command": "cd ~/agent-commerce-hub/tools/cshop-worker-adapter && npm test",
+    "result": "PASS"
+  },
+  "cargo_test": {
+    "attempted": true,
+    "result": "FAIL_ENVIRONMENT",
+    "exit_code": 101,
+    "log": "/data/data/com.termux/files/home/cshop_cargo_test3.log",
+    "blocker": "Transitive dependencies in the cargo registry are missing source files for this environment. First observed in arboard v3.6.1 (platform module files present but lib.rs references types not exported from linux platform module). Second fatal error in android-activity v0.6.1: `activity_impl` module file not found in crate source tree. These are upstream registry/toolchain-compatibility issues, not c-shop source defects."
+  },
+  "cargo_build": {
+    "attempted": true,
+    "result": "FAIL_ENVIRONMENT",
+    "exit_code": 101,
+    "log": "/data/data/com.termux/files/home/cshop_cargo_test3.log",
+    "note": "Build was chained after cargo test in the same background job; failed at the same dependency compile stage before producing a release binary."
+  },
+  "runtime_confirmations": {
+    "explicit_session_retention": "STATICALLY_CONFIRMED — source at crates/cshop-app/src/mcp/server.rs:301-305: session_of() uses supplied sane mcp-session-id, else new_session_id() from /dev/urandom. Runtime test not reached because binary did not build.",
+    "unauthenticated_health_metadata": "STATICALLY_CONFIRMED — source at crates/cshop-app/src/mcp/server.rs:99-111 and 213-292: GET /health and GET / are routed outside guarded(), so no token check. Runtime test not reached because binary did not build.",
+    "style_filesystem_surface": "STATICALLY_CONFIRMED_BOUNDARY — source at crates/cshop-app/src/mcp/tools.rs:336 and crates/cshop-app/src/script.rs:1808-1823: style_dirs searches workspace/base, workspace/styles, executable-relative dirs, and $HOME/.config/cshop/styles. Adapter emits no style command and rejects unknown fields including script."
+  },
+  "smoke_job": {
+    "attempted": false,
+    "reason": "cshop release binary was not produced due to upstream dependency compile failure"
+  },
+  "patches_made": [],
+  "final_status": "FAIL_ENVIRONMENT",
+  "CSHOP_WORKER_RUNTIME_VALIDATION": "FAIL_ENVIRONMENT",
+  "evidence_backed_blocker": "Pinned c-shop workspace (stubbb/c-shop@f3b2033) cannot compile in this environment because cargo-registry copies of transitive dependencies are incomplete: arboard 3.6.1 has platform module mismatch, and android-activity 0.6.1 is missing activity_impl.rs. The adapter tests (4/4) and static-source confirmations (3/3) are complete; runtime validation is blocked upstream of the adapter. Proposed separate-fork change: upstream c-shop should vendor/pin dependencies that are known to compile on Android cross-targets, or the adapter validation should be split so cshop-core/cshop-gpu/cshop-io can be validated independently of the cshop-ui/android-activity dependency chain.",
+  "security_boundary_observed": [
+    "C-Shop loopback-only; port 7333 not exposed",
+    "No changes to Render, seller payments, ledgers, wallets, or live-value settings",
+    "No merge performed on feat/cshop-worker-adapter",
+    "Commerce adapter rejects unknown fields and emits no style command"
+  ]
+}
