@@ -1,6 +1,8 @@
 # Opportunity ingestion
 
-This is a read-only discovery layer inside `agent-commerce-hub`. It is intentionally provider-independent: external sources feed one normalized opportunity model, while triage, model-assisted evaluation, human/AI routing, and any eventual execution stay downstream.
+This is a read-only discovery layer inside `agent-commerce-hub`. External sources normalize into one provider-independent opportunity model; deterministic triage, optional local model evaluation, ranking, preparation, and verification stay downstream.
+
+Nothing in the opportunity pipeline authorizes contacting a counterparty, claiming/accepting work, submitting work, hiring an executor, or moving money.
 
 ## Permanent-free first
 
@@ -8,35 +10,61 @@ The initial Reddit path does **not** depend on OAuth, signup credits, or a paid 
 
 1. **Reddit RSS/Atom** — primary selected-subreddit ingestion.
 2. **RedditAlert free tier** — planned independent targeted backup signal.
-3. **Redditapis permanent-free sitewide keyword monitor** — planned webhook backup signal.
+3. **Redditapis permanent-free sitewide keyword monitor** — reserved push-source lane pending a verified delivery/signature contract.
 4. **ThreadSnoop / SocialCrawl / CreatorCrawl** — optional lazy enrichment only; never required to keep the base watcher alive.
 
 The architecture assumes Reddit RSS can change or disappear. It is an adapter, not a permanent infrastructure promise.
 
 ### Redditapis integration status
 
-As researched on 2026-08-27, Redditapis' current pricing page says every account gets one all-of-Reddit new-post keyword monitor at roughly 60-second cadence with webhook/Slack/Discord delivery and no per-match/API-credit charge. Its public MCP tool catalog also describes that free entitlement. However, the MCP README still contains older wording saying monitoring has no free tier, and the exact generic signed webhook envelope/header contract is not exposed in the client code inspected so far.
+Research performed on 2026-08-27 found current public pricing/tool material describing a permanent-free all-of-Reddit keyword monitor, while older documentation contained conflicting wording and the exact generic signed webhook envelope/header contract was not exposed in the inspected client code.
 
-For that reason this repository does **not** guess a webhook payload or signature format. The `redditapis_monitor` source ID is reserved behind the provider-independent boundary; implementation should land only after the delivery contract can be verified from an authoritative schema or a real test delivery.
+For that reason this repository does **not** guess a webhook payload or signature format. The `redditapis_monitor` source ID is reserved behind the provider-independent boundary; implementation should land only after the delivery contract can be verified from authoritative schema or a real test delivery. Treat the dated provider research as historical evidence and re-check it before implementing the adapter.
 
 ## Current implementation
 
 `tools/hermes-commerce-control/src/opportunities/`
 
+### Discovery and durable state
+
 - `models.ts` — canonical provider-independent opportunity shape and cross-source identity.
 - `adapters/interface.ts` — pull-source adapter contract.
 - `adapters/reddit-rss.ts` — bounded public Reddit Atom ingestion.
 - `events.ts` — push/event normalizer seam for verified webhook/email events.
-- `dedupe.ts` — first-wins canonical dedupe.
+- `dedupe.ts` — canonical dedupe.
 - `ingest.ts` — bounded multi-source execution with failure isolation.
-- `store.ts` — local JSONL persistence for durable seen-ID dedupe.
 - `pipeline.ts` — discover + dedupe + persist orchestration.
+- `store.ts` / `file-lock.ts` — durable local JSONL persistence and multiwriter-safe append/repair behavior.
+- `runtime-health.ts` — source/runtime health projection.
+- `cli.ts` — runnable Reddit RSS watcher.
+
+### Deterministic triage and profiles
+
 - `triage.ts` — zero-cost deterministic pre-triage before model/enrichment spending.
 - `profiles.ts` — named reusable triage profiles.
-- `evaluation.ts` — strict provider-neutral model-evaluation contract and response validator.
-- `cli.ts` — runnable Reddit RSS watcher with named profiles and explicit overrides.
+- `review.ts` / `review-cli.ts` — offline re-triage/review of persisted listings.
 
-Canonical identity prefers the listing's normalized public URL. That means the same Reddit listing can later arrive from RSS and a webhook/API adapter and still collapse to one opportunity.
+### Model evaluation
+
+- `evaluation.ts` — strict provider-neutral evaluation schema/prompt contract.
+- `evaluation-queue.ts` / `evaluation-queue-cli.ts` — stable bounded evaluation requests.
+- `evaluation-results.ts` — validated append-only evaluation result persistence.
+- `evaluation-runner.ts` — evaluation execution/dedupe orchestration.
+- `local-openai-evaluator.ts` / `evaluate-local-cli.ts` — explicitly configured literal-loopback OpenAI-compatible evaluator with no remote credential path.
+
+### Ranking and operator preparation
+
+- `ranking.ts` / `ranking-cli.ts` — offline freshness-aware ranked operator queue.
+- `operator-packet.ts` / `operator-packet-cli.ts` — bounded preparation packets for eligible ranked rows.
+- `pursuit-dossier.ts` / `pursuit-dossier-cli.ts` — internal pursuit dossiers and controlled contact briefs.
+
+### Verification
+
+- `verification-plan.ts` / `verification-plan-cli.ts` — stable controlled checks and effective readiness state.
+- `verification-resolutions.ts` — append-only compatible evidence resolution logic.
+- `record-verification-cli.ts` — records local verification evidence without performing the external verification itself.
+
+Canonical identity prefers a listing's normalized public URL. The same listing can therefore arrive from RSS and a later webhook/API adapter and still collapse to one opportunity.
 
 ## Pull sources vs push sources
 
@@ -50,13 +78,13 @@ This separation is intentional. The read-only commerce control plane does not ne
 - public TLS/port exposure;
 - provider-specific retry acknowledgements.
 
-Those are runtime concerns. Normalization, cross-source identity, dedupe, storage, triage, and evaluation remain reusable here.
+Those are runtime concerns. Normalization, cross-source identity, dedupe, storage, triage, evaluation, ranking, preparation, and verification remain reusable here.
 
 ## Zero-cost triage
 
-Triage is deliberately conservative. It extracts explicit USD amounts, demand/supply intent, paid/unpaid language, remote/local language, caller-configured preferred/excluded terms, and a few caution signals. It returns `candidate`, `review`, or `reject` without using a model.
+Triage is deliberately conservative. It extracts explicit USD amounts, demand/supply intent, paid/unpaid language, remote/local language, caller-configured preferred/excluded terms, and bounded caution signals. It returns `candidate`, `review`, or `reject` without using a model.
 
-Demand/supply separation matters on mixed hiring communities. For example, `[HIRING]`/`[TASK]` posts are buyer-side demand, while `[FOR HIRE]`/`[OFFER]` posts are seller-side supply. A demand-only profile rejects an explicit seller post instead of mistaking a competitor advertising "automation" for a buyer seeking automation.
+Demand/supply separation matters on mixed hiring communities. For example, `[HIRING]`/`[TASK]` posts are buyer-side demand, while `[FOR HIRE]`/`[OFFER]` posts are seller-side supply. A demand-only profile rejects an explicit seller post instead of mistaking a competitor advertising automation for a buyer seeking automation.
 
 A hard rejection is limited to explicit or caller-controlled facts such as:
 
@@ -66,37 +94,41 @@ A hard rejection is limited to explicit or caller-controlled facts such as:
 - a caller-supplied excluded phrase;
 - a clearly fixed USD price below a caller-supplied minimum.
 
-Hourly amounts are never compared against a fixed-project minimum. Caution signals reduce score but are **not** treated as proof that a listing is fraudulent. Unknown or ambiguous cases remain reviewable for a later model/human evaluator.
+Hourly amounts are never compared against a fixed-project minimum. Caution signals reduce score but are **not** proof that a listing is fraudulent. Unknown or ambiguous cases remain reviewable.
 
 ## Named profiles
 
-The watcher has reusable profiles so a local Hermes invocation can stay short:
+The watcher has reusable profiles:
 
 - `all` — no built-in hard filters.
-- `demand` — **default**; reject explicit seller/service-offer posts, while retaining remote and physical buyer tasks.
+- `demand` — **default**; reject explicit seller/service-offer posts while retaining remote and physical buyer tasks.
 - `remote-demand` — demand-only plus explicit local/in-person rejection.
 - `automation-demand` — demand-only and boosts automation/workflow/API/integration/CRM-style listings.
 - `automation-remote` — automation-oriented demand plus remote-only filtering.
 
-The default is intentionally `demand`, not `remote-demand`: the broader opportunity router can later decide whether a task is AI-capable, needs a remote human, or needs physical presence. Explicit CLI/environment terms extend the named profile rather than replacing it.
+The default is intentionally `demand`, not `remote-demand`: later routing can decide whether a task is AI-capable, needs a remote human, or needs physical presence. Explicit CLI/environment terms extend the named profile rather than replacing it.
 
 ## Model-assisted evaluation boundary
 
-The expensive layer lives **after** deterministic triage. `evaluation.ts` defines an `OpportunityEvaluator` interface but does not choose or import a model provider. This keeps free/local/provider rotation possible.
+The expensive layer lives **after** deterministic triage. `evaluation.ts` defines the provider-neutral `OpportunityEvaluator` contract. A deterministic `reject` skips evaluation entirely.
 
-A deterministic `reject` skips the evaluator entirely. `candidate` and `review` items can be sent to a coordinator/model through the interface. Model output is rejected unless it matches a strict schema covering:
+The repository also contains a concrete **local-only** adapter. `opportunities:evaluate-local` accepts only an explicit literal-loopback HTTP endpoint (`127.0.0.1` or `::1`) with a port, carries no Authorization/Cookie mechanism, and validates strict JSON responses. See `docs/opportunity-local-evaluator.md`.
+
+Remote paid-provider support is not implied by that adapter and should be implemented separately if ever needed, with explicit credentials and cost policy.
+
+Model output is rejected unless it matches the strict schema covering:
 
 - recommendation: `reject | watch | pursue | manual_review`;
 - execution route: `ai_direct | human_remote | human_physical | hybrid | manual | unknown`;
 - risk and confidence;
 - effort estimate or explicit unknown;
-- payout, execution-cost, and margin ranges with `observed` vs `inferred` provenance;
+- payout, execution-cost, and margin ranges with provenance;
 - whether AI can complete the work, whether a human is required, and whether physical presence is required;
 - reasons, blockers, and next checks.
 
-The prompt contract explicitly forbids inventing unknown payouts and treats caution flags as signals rather than proof of fraud. It is analysis-only: no contact, claim, submission, payment, or other external mutation is part of evaluation.
+The prompt contract forbids inventing unknown payouts and treats caution flags as signals rather than proof of fraud. Evaluation is analysis-only.
 
-## Run
+## Run ingestion
 
 From `tools/hermes-commerce-control` after dependencies are installed:
 
@@ -117,7 +149,7 @@ npm run opportunities:watch -- \
   --json
 ```
 
-For automation-oriented demand without excluding other demand-side work from ingestion:
+For automation-oriented demand:
 
 ```bash
 npm run opportunities:watch -- \
@@ -139,11 +171,7 @@ export OPPORTUNITY_EXCLUDED_TERMS='survey'
 node --import tsx src/opportunities/cli.ts --json
 ```
 
-After `npm run build`, the same entry point is available as:
-
-```bash
-npm run opportunities:watch:built -- --subreddit forhire --json
-```
+After `npm run build`, the same watcher is available through `opportunities:watch:built`.
 
 The default store is:
 
@@ -152,6 +180,23 @@ The default store is:
 ```
 
 Only local state is written. The watcher does not log in to Reddit, post, comment, message users, claim work, move money, or call a paid enrichment API.
+
+## Current downstream command chain
+
+After ingestion, the implemented analysis/preparation path is:
+
+```text
+opportunities:review
+  -> opportunities:prepare-evaluation
+  -> opportunities:evaluate-local        (optional local model step)
+  -> opportunities:rank
+  -> opportunities:prepare-operator
+  -> opportunities:prepare-pursuit
+  -> opportunities:verification-plan
+  -> opportunities:record-verification   (when compatible evidence actually exists)
+```
+
+These commands do not convert internal readiness into permission for an external action.
 
 ## Source hierarchy
 
@@ -164,18 +209,20 @@ For future sites, prefer the least brittle structured source available:
 
 Every source should normalize into the same opportunity model before evaluation.
 
-## Remaining runtime proof
+## Remaining live runtime proof
 
-The GitHub/CI implementation can validate parsing, type safety, deterministic behavior, schema contracts, and fixtures. The next genuinely local proof is a one-shot invocation against live Reddit RSS from the real runtime/network. Hermes only needs to run that proof; it does not need to implement this feature.
+GitHub/CI validates parsing, type safety, deterministic behavior, schema contracts, concurrency/durability logic, and fixtures. That does **not** prove the real runtime/network can currently fetch Reddit RSS.
 
-After that proof, the system can decide whether continuous scheduling belongs on the local phone/runtime or an optional 24/7 server.
+The remaining live ingestion proof is a one-shot watcher invocation from the real local runtime/network, using canonical `main`, as documented in `docs/opportunity-runtime-proof.md`. Do not claim that proof complete until an actual runtime receipt exists.
+
+The local loopback evaluator is already implemented; after live ingestion is proven, validate it against a currently working local model bridge rather than implementing another evaluator first.
 
 ## Next stages
 
-- Verify one live RSS watcher pass from the real local runtime.
-- Connect an existing free/local coordinator to the `OpportunityEvaluator` interface only after the live ingestion path is proven.
-- Add a webhook normalizer for the permanent-free Redditapis monitor once its delivery contract is verified.
-- Add an email/event normalizer for RedditAlert if it remains useful.
-- Spend limited API credits only for candidates that survive cheap filtering/evaluation.
-- Promote the JSONL store behind a stable repository interface to SQLite once the evaluation schema stabilizes.
-- Add WebMCP/Playwright adapters only when a target source actually needs them.
+- Run and record one live Reddit RSS watcher proof from the real local runtime.
+- Validate the existing loopback evaluator on one current candidate, then prove persisted dedupe on a repeat run.
+- Add a webhook normalizer for Redditapis only after its delivery contract is verified.
+- Add an email/event normalizer for RedditAlert only if it remains useful.
+- Spend limited remote API credits only through a separately authorized adapter and only for candidates that survive cheap filtering.
+- Consider promoting opportunity JSONL persistence behind a stable repository interface to SQLite only when there is concrete need; do not migrate state merely for cleanup.
+- Add WebMCP/Playwright adapters only when a target source actually requires them.

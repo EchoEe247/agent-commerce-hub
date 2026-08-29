@@ -1,8 +1,8 @@
 # Opportunity evaluation queue
 
-The evaluation queue is the boundary between permanent-free discovery/triage and any later model-assisted analysis.
+The evaluation queue is the boundary between permanent-free discovery/triage and model-assisted analysis.
 
-It reads the durable opportunity store, re-runs deterministic triage, compacts each selected listing to the bounded evaluation schema, and generates a provider-neutral prompt. It does **not** call a model or require a provider key.
+It reads the durable opportunity store, re-runs deterministic triage, compacts each selected listing to the bounded evaluation schema, and generates a provider-neutral prompt. Queue preparation itself does **not** call a model or require a provider key.
 
 From `tools/hermes-commerce-control`:
 
@@ -26,14 +26,29 @@ npm run opportunities:prepare-evaluation -- \
 
 Each prepared request contains:
 
-- a stable `evalreq_...` request ID derived from the bounded packet;
+- a stable `evalreq_...` request ID derived from the bounded packet and evaluation-policy version;
 - the opportunity ID;
 - deterministic triage decision and score;
 - the bounded provider-neutral evaluation packet;
 - the strict JSON-only evaluation prompt.
 
-Stable request IDs are independent of wall-clock time. A future local/free coordinator can therefore use them to deduplicate model work without changing the discovery subsystem.
+Stable request IDs are independent of wall-clock time. They are used to deduplicate model work and to prevent evaluation results created under older packet/policy state from silently becoming current.
 
-The queue intentionally does not choose OpenAI, Gemini, Groq, Mistral, a local model, or any other provider. Provider selection and credentials belong in the runtime adapter that eventually implements the existing `OpportunityEvaluator` interface.
+## Current local evaluator
 
-Safety properties remain unchanged: listing content is untrusted data, author/source metadata are omitted from model context, deterministic rejects are excluded by default, and no contacting, claiming, submission, payment, or other external mutation is performed by queue preparation.
+The queue remains provider-neutral, but the repository now includes a separate loopback-only execution adapter documented in [`opportunity-local-evaluator.md`](opportunity-local-evaluator.md).
+
+A prepared candidate can be evaluated through an explicitly configured local OpenAI-compatible bridge with:
+
+```bash
+npm run opportunities:evaluate-local -- \
+  --base-url http://127.0.0.1:20130/v1 \
+  --model <local-model-id> \
+  --decision candidate \
+  --limit 1 \
+  --json
+```
+
+That adapter is intentionally separate from queue construction. Remote/provider-authenticated evaluators, if ever added, should remain separate adapters with explicit credential/cost policy rather than broadening this local-only path.
+
+Safety properties remain unchanged: listing content is untrusted data, author/source metadata are omitted from model context, deterministic rejects are excluded by default, and no contacting, claiming, submission, payment, or other external mutation is performed by queue preparation or evaluation.
