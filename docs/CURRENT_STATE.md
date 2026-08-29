@@ -9,9 +9,11 @@ Last current-state update: **2026-08-29**.
 - **Canonical/default repository branch:** `main`.
 - **Canonical main protection:** enabled; pull requests are required with strict `workflow-policy`, `seller`, and `commerce-control` checks, admins enforced, force-push/deletion disabled.
 - **Production deployment branch:** `feat/hermes-commerce-control-plane`.
-- **Latest completed implementation batch:** P1 Seller Pricing Source Batch 8, validated for merge through PR #84.
+- **Latest completed implementation batch:** P1 Holiday Provenance Batch 10, code validated at `63a8d78a3c0db7d6de75e3f267647015af4cccec` through PR #87.
 
 Batch 6C aligned canonical state into `main` through PR #81. Batch 7 was then validated at `378fdcec5240076c20381b3310ad7fbdb018eae9`, merged through PR #82, and completed its GitHub administration at `main` merge commit `db344147e8ed490f486a6aa86f4b19a3e1d675bf`. Ten already-archived obsolete branch refs were removed while preservation refs were retained.
+
+Batch 8 centralized seller pricing and merged through PR #84. Batch 9 bounded public upstream response bodies before parsing, validated at `f9d465fa0986fb6f9a902acfae2a3fb2a57a2576`, and merged through PR #86 as `dcaa00adb88e3ed62207a870be95128d500a4edb`. Batch 10 adds explicit static holiday-rule provenance and corrects Brazil Carnival national-scope classification.
 
 The production branch remains separately protected with the same required checks and remains at `bc6b1a80aa4f71a7db68c35c07c54bbae7e69ef9`.
 
@@ -21,7 +23,7 @@ Render auto-deploys from `feat/hermes-commerce-control-plane`, not from `main`. 
 
 PR **#79** remains the production-promotion candidate. It stays OPEN/DRAFT/UNMERGED until an explicit production deployment is authorized. Merging #79 into the production branch is the deployment event.
 
-The repository candidate `render.yaml` uses `products/published/data-quality-profiler`; that candidate root is not proof that the live Render service has moved. Validated batches through Batch 8 remain **not production-deployed**.
+The repository candidate `render.yaml` uses `products/published/data-quality-profiler`; that candidate root is not proof that the live Render service has moved. Validated batches through Batch 10 remain **not production-deployed**.
 
 ## Closed validation batches
 
@@ -37,6 +39,8 @@ The repository candidate `render.yaml` uses `products/published/data-quality-pro
 | P1 Repository Alignment Batch 6C | CLOSED | PR #81 aligned canonical state into `main` without production deploy |
 | P1 Commerce Control Durability Batch 7 | CLOSED | `378fdcec5240076c20381b3310ad7fbdb018eae9`, PR #82, merged to `main` as `db344147e8ed490f486a6aa86f4b19a3e1d675bf` |
 | P1 Seller Pricing Source Batch 8 | CLOSED | code validated at `85918d271c107881d8cd9a7781370f4e1742a42e`, merge PR #84 |
+| P1 Upstream Response Bounds Batch 9 | CLOSED | `f9d465fa0986fb6f9a902acfae2a3fb2a57a2576`, PR #86, merged to `main` as `dcaa00adb88e3ed62207a870be95128d500a4edb` |
+| P1 Holiday Provenance Batch 10 | CLOSED | code validated at `63a8d78a3c0db7d6de75e3f267647015af4cccec`, merge PR #87 |
 
 ## Financial state
 
@@ -69,6 +73,27 @@ No package or lockfile upgrade was required for Batch 8.
 
 Published repository lifecycle **does not mean deployed**. Production remains on the older protected deployment branch until #79 is deliberately merged.
 
+## Seller upstream resource bounds
+
+Batch 9 replaced post-buffer size checks and unbounded JSON reads on public upstream integrations with bounded pre-parse reads:
+
+- OSV — 2 MiB;
+- npm/PyPI registry responses — 8 MiB;
+- RDAP — 2 MiB, preserving degrade-to-unavailable behavior;
+- SEC ticker map and submissions — 8 MiB each;
+- SEC company facts — 32 MiB, preserving optional/degraded behavior;
+- OFAC SDN/ALT/ADD CSVs — 32 MiB each.
+
+`src/bounded-response.mjs` rejects oversized declared `Content-Length` before consumption, cancels the body, and byte-counts native streaming bodies so a missing or false length cannot force an unbounded application buffer. The existing hardened company-domain website transport remains separate because it already had streaming byte limits.
+
+## Counterparty holiday provenance
+
+Batch 10 makes the counterparty-availability holiday result explicitly advisory. Every response now includes `holiday_calendar` provenance identifying the deterministic repository rule set, its version and source path, evaluated year and jurisdiction scope, and `live_authoritative_lookup: false`, plus limitations covering regional and one-off calendar differences.
+
+The API retains its existing business-day fields for compatibility, but consumers are explicitly told to confirm an official calendar for legal, payroll, contractual, or time-critical decisions.
+
+Brazil's national-scope rule set no longer marks Carnival Monday or Tuesday as public holidays. Brazil's official 2026 federal calendar classifies those days as `ponto facultativo`, while actual national holidays such as Tiradentes remain holidays in the seller rule set.
+
 ## Commerce Control durability
 
 `tools/hermes-commerce-control/` remains the Commerce Control package. Batch 7 closed the known durability gaps without enabling external writes or value movement.
@@ -99,7 +124,7 @@ Deliberately retained older PRs:
 - **#63** — useful root landing page; extract/rebase onto the canonical seller later.
 - **#79** — production-promotion candidate; OPEN/DRAFT/UNMERGED.
 
-PR **#82** is merged and closed as Batch 7. Draft PR **#83** was validated but closed unmerged solely because the ChatGPT GitHub connector could not clear its draft flag; the identical branch is carried by non-draft PR **#84** for the protected-main merge. Neither PR targets the Render-linked production branch.
+PR **#82** is merged and closed as Batch 7. Draft PRs **#83** and **#85** were validated but closed unmerged solely because the ChatGPT GitHub connector could not clear their draft flags; their identical validated branches were merged through non-draft PRs **#84** and **#86** respectively. PR **#87** is the protected-main Batch 10 merge path. None of these hardening PRs target the Render-linked production branch.
 
 ## Archive policy
 
@@ -112,5 +137,6 @@ PR **#82** is merged and closed as Batch 7. Draft PR **#83** was validated but c
 3. A closed validation batch or `products/published/` path is not automatically deployed.
 4. Merging #79 is a production deployment event; do not use it merely for validation or repository cleanup.
 5. All seller default-price changes must update the canonical `SELLER_PRICE_DEFAULTS` / `SELLER_PRICE_CATALOG` authority and pass the pricing-consistency suite.
-6. Preserve uncertain historical material before removing it.
-7. Never commit secrets, private paid results, local SQLite/WAL/SHM files, or generated `node_modules`.
+6. Counterparty holiday output is advisory static-rule data, not a live authoritative calendar; retain provenance and limitations if the holiday implementation changes.
+7. Preserve uncertain historical material before removing it.
+8. Never commit secrets, private paid results, local SQLite/WAL/SHM files, or generated `node_modules`.
