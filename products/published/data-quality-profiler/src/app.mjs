@@ -11,6 +11,7 @@ import { createPackageMaintenanceSnapshot } from "./package-maintenance-snapshot
 import { buildOpenApiDocument } from "./openapi.mjs";
 import { buildLlmsDiscovery } from "./llms-discovery.mjs";
 import { installCommerceTelemetry } from "./commerce-telemetry.mjs";
+import { withSellerPriceDefaults } from "./config.mjs";
 import {
   duplicateAudit,
   qualityGate,
@@ -47,6 +48,7 @@ export function buildApp({
   domainClock,
   ofacFetch = globalThis.fetch,
 }) {
+  config = withSellerPriceDefaults(config);
   const app = Fastify({
     logger: false,
     bodyLimit: LIMITS.bodyBytes,
@@ -120,19 +122,21 @@ export function buildApp({
 
   app.get("/.well-known/x402", async () => {
     const network = config.x402Network ?? "eip155:8453";
-    const localePrice = config.x402LocalePrice ?? "$0.03";
-    const sanctionsPrice = config.x402SanctionsScreenPrice ?? "$0.02";
-    const companyDomainPrice = config.x402CompanyDomainPrice ?? "$0.02";
-    const secCompanyPrice = config.x402SecCompanyPrice ?? "$0.02";
-    const dependencyVulnerabilityPrice = config.x402DependencyVulnerabilityPrice ?? "$0.015";
-    const packageMaintenancePrice = config.x402PackageMaintenancePrice ?? "$0.015";
-    const profilerPrice = config.x402Price ?? "$0.02";
-    const duplicatePrice = config.x402DuplicateAuditPrice ?? "$0.005";
-    const qualityGatePrice = config.x402QualityGatePrice ?? "$0.01";
-    const schemaDriftPrice = config.x402SchemaDriftPrice ?? "$0.015";
-    const dataContractPrice = config.x402DataContractPrice ?? "$0.015";
-    const cleanNormalizePrice = config.x402CleanNormalizePrice ?? "$0.02";
-    const repairPlanPrice = config.x402RepairPlanPrice ?? "$0.02";
+    const {
+      x402LocalePrice: localePrice,
+      x402SanctionsScreenPrice: sanctionsPrice,
+      x402CompanyDomainPrice: companyDomainPrice,
+      x402SecCompanyPrice: secCompanyPrice,
+      x402DependencyVulnerabilityPrice: dependencyVulnerabilityPrice,
+      x402PackageMaintenancePrice: packageMaintenancePrice,
+      x402Price: profilerPrice,
+      x402DuplicateAuditPrice: duplicatePrice,
+      x402QualityGatePrice: qualityGatePrice,
+      x402SchemaDriftPrice: schemaDriftPrice,
+      x402DataContractPrice: dataContractPrice,
+      x402CleanNormalizePrice: cleanNormalizePrice,
+      x402RepairPlanPrice: repairPlanPrice,
+    } = config;
     const businessIntelligencePrices = [localePrice, companyDomainPrice, secCompanyPrice];
     const dataQualityPrices = [profilerPrice, duplicatePrice, qualityGatePrice, schemaDriftPrice, dataContractPrice, cleanNormalizePrice, repairPlanPrice];
     const priceRange = buildPriceRange([...businessIntelligencePrices, sanctionsPrice, dependencyVulnerabilityPrice, packageMaintenancePrice, ...dataQualityPrices]);
@@ -386,7 +390,7 @@ export function buildApp({
   app.post("/v1/company-domain-intelligence/preview", async (request, reply) => {
     try {
       const result = await inspectCompanyDomain(request.body);
-      return reply.send(buildCompanyDomainPreview(result, config.x402CompanyDomainPrice ?? "$0.02"));
+      return reply.send(buildCompanyDomainPreview(result, config.x402CompanyDomainPrice));
     } catch (error) {
       const { statusCode, body } = classifyError(error);
       return reply.status(statusCode).send(body);
