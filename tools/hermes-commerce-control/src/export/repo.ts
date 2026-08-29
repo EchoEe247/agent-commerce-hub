@@ -43,7 +43,7 @@ export const EXPORT_PATHS = Object.freeze({
   services: "research/normalized/commerce-control/services-latest.json",
   work: "research/normalized/commerce-control/work-latest.json",
   sourceHealth: "analytics/commerce-control/source-health-latest.json",
-  status: "state/commerce-control/STATUS.json",
+  status: "analytics/commerce-control/status-latest.json",
 });
 
 /** Keys whose 64-hex values are locally computed digests, not secrets. */
