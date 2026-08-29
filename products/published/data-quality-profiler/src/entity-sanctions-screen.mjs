@@ -1,4 +1,5 @@
 import { parse } from "csv-parse/sync";
+import { readResponseTextBounded, ResponseBodyLimitError } from "./bounded-response.mjs";
 
 const OFAC_EXPORT_BASE = "https://sanctionslistservice.ofac.treas.gov/api/PublicationPreview/exports";
 const SOURCE_URLS = Object.freeze({
@@ -11,6 +12,7 @@ const DISCLAIMER = "Screening result is informational and is not a legal complia
 const DEFAULT_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
 const MATCH_THRESHOLD = 80;
 const MAX_RESULTS = 5;
+const MAX_SOURCE_BYTES = 32 * 1024 * 1024;
 const ENTITY_TYPES = new Set(["individual", "entity", "vessel", "aircraft"]);
 
 export function createEntitySanctionsScreen({
@@ -134,11 +136,14 @@ async function loadSnapshot(fetchImpl, loadedAt) {
   let addressText;
   try {
     [primaryText, aliasText, addressText] = await Promise.all([
-      primaryResponse.text(),
-      aliasResponse.text(),
-      addressResponse.text(),
+      readResponseTextBounded(primaryResponse, MAX_SOURCE_BYTES),
+      readResponseTextBounded(aliasResponse, MAX_SOURCE_BYTES),
+      readResponseTextBounded(addressResponse, MAX_SOURCE_BYTES),
     ]);
-  } catch {
+  } catch (error) {
+    if (error instanceof ResponseBodyLimitError) {
+      throw new Error("SANCTIONS_SOURCE_UNAVAILABLE: authoritative OFAC SDN file exceeded the 32 MiB safety limit");
+    }
     throw new Error("SANCTIONS_SOURCE_UNAVAILABLE: authoritative OFAC SDN data could not be read");
   }
 
