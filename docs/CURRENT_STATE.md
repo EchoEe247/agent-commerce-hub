@@ -78,7 +78,14 @@ The seller exposes thirteen paid x402 POST operations plus one free bounded comp
 
 `tools/hermes-commerce-control/` remains the Commerce Control package. Its legacy Mode-A snapshot files from August 19 are historical and must not be used as present operational state.
 
-Legacy generated research files such as `research/normalized/commerce-control/services-latest.json` and `work-latest.json` are also **non-authoritative snapshots**. They remain in their existing namespace temporarily because the legacy exporter can regenerate them; exporter namespace/durability cleanup is deferred to the later Commerce Control durability batch.
+Legacy generated files remain **non-authoritative snapshots**:
+
+- `research/normalized/commerce-control/services-latest.json`
+- `research/normalized/commerce-control/work-latest.json`
+- `analytics/commerce-control/source-health-latest.json`
+- `analytics/commerce-control/status-latest.json`
+
+Batch 6A moved the legacy status exporter out of the retired authoritative-looking path `state/commerce-control/STATUS.json`; the exporter can no longer recreate that retired state path. The remaining `*-latest` namespace cleanup is deferred to the later Commerce Control durability batch.
 
 ## Staged pull requests
 
@@ -101,7 +108,7 @@ Never place raw credentials or secrets in the repository archive.
 1. **Batch 6A — canonical state + stale operational truth archive** (this branch / PR #78)
 2. **Batch 6B — seller lifecycle move out of `drafts` + coherent path updates**
 3. **Batch 6C — branch/PR cleanup + default/canonical branch alignment**
-4. **Later Commerce Control durability** — JSONL inter-process locking/claim safety, sanitizer/storage invariant, and legacy export namespace cleanup
+4. **Later Commerce Control durability** — JSONL inter-process locking/claim safety, sanitizer/storage invariant, and remaining legacy export namespace cleanup
 
 ## Rules for future agents
 
