@@ -7,6 +7,38 @@ const WORKFLOW_DIR = path.join(ROOT, ".github", "workflows");
 const allowedWriteWorkflow = "hermes-x402-signer.yml";
 const errors = [];
 
+function indentation(line) {
+  return line.match(/^\s*/)?.[0].length ?? 0;
+}
+
+function checkRunExpressionInterpolation(name, lines) {
+  for (let index = 0; index < lines.length; index++) {
+    const line = lines[index];
+    const match = line.match(/^(\s*)run:\s*(.*)$/);
+    if (!match) continue;
+
+    const runIndent = match[1].length;
+    const value = match[2].trim();
+    const isBlock = /^[|>][+-]?(?:\s+#.*)?$/.test(value);
+
+    if (!isBlock) {
+      if (value.includes("${{")) {
+        errors.push(`${name}:${index + 1}: GitHub expressions must not be interpolated directly into run commands; pass them through env instead`);
+      }
+      continue;
+    }
+
+    for (let bodyIndex = index + 1; bodyIndex < lines.length; bodyIndex++) {
+      const bodyLine = lines[bodyIndex];
+      if (!bodyLine.trim()) continue;
+      if (indentation(bodyLine) <= runIndent) break;
+      if (bodyLine.includes("${{")) {
+        errors.push(`${name}:${bodyIndex + 1}: GitHub expressions must not be interpolated directly into run commands; pass them through env instead`);
+      }
+    }
+  }
+}
+
 for (const name of fs.readdirSync(WORKFLOW_DIR).filter((n) => /\.ya?ml$/i.test(n)).sort()) {
   const filePath = path.join(WORKFLOW_DIR, name);
   const text = fs.readFileSync(filePath, "utf8");
@@ -21,6 +53,8 @@ for (const name of fs.readdirSync(WORKFLOW_DIR).filter((n) => /\.ya?ml$/i.test(n
       errors.push(`${name}:${index + 1}: action ${action} must be pinned to a full 40-char commit SHA`);
     }
   }
+
+  checkRunExpressionInterpolation(name, lines);
 
   if (/npm\s+ci\s*\|\|\s*npm\s+install/.test(text)) {
     errors.push(`${name}: npm ci || npm install fallback is forbidden`);
