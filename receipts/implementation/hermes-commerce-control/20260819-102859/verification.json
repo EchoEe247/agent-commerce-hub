@@ -1,0 +1,196 @@
+{
+  "receipt_id": "hermes-commerce-control-plane-runtime-20260819-102859",
+  "product": "hermes-commerce-control",
+  "version": "0.1.0",
+  "phase": "runtime-activation-verification",
+  "agent": "hermes-auto",
+  "timestamp": "2026-08-19T10:28:59Z",
+  "source_commit": "c3c63a6b97135fec1ba7a08855b8cd3e94561163",
+  "branch": "feat/hermes-commerce-control-plane",
+  "environment": {
+    "hermes_version": "Hermes Agent v0.20.0 (2026.8.3)",
+    "node_version": "v24.18.0",
+    "npm_version": "12.0.2",
+    "operating_system": "android (Termux)"
+  },
+  "installer_result": {
+    "status": "success",
+    "node24_healthy": true,
+    "node_sqlite_healthy": true,
+    "built_entrypoints_present": true,
+    "cli_wrapper": "/data/data/com.termux/files/home/.hermes/commerce-control/commerce-control-cli.sh",
+    "mcp_wrapper": "/data/data/com.termux/files/home/.hermes/commerce-control/commerce-control-mcp.sh",
+    "wallet_scrub_verified": true,
+    "doctor_healthy": true,
+    "mcp_handshake_verified": true,
+    "install_log": "/data/data/com.termux/files/home/.hermes/commerce-control/install.log"
+  },
+  "hermes_mcp_registration": {
+    "status": "enabled",
+    "name": "commerce-control",
+    "command": "/data/data/com.termux/files/home/.hermes/commerce-control/commerce-control-mcp.sh",
+    "connect_timeout": 90.0,
+    "enabled_config": true,
+    "registration_note": "Registered via 'hermes mcp add'; initial connect handshake returned Connection closed, so Hermes saved config as disabled. Enabled afterward with 'hermes config set mcp_servers.commerce-control.enabled true'. 'hermes mcp test' still reports Connection closed."
+  },
+  "tool_surface": {
+    "exact_tool_count": 11,
+    "canonical_tool_names": [
+      "commerce_status",
+      "commerce_sources",
+      "commerce_discover_services",
+      "commerce_discover_work",
+      "commerce_inspect",
+      "commerce_quote",
+      "commerce_prepare_purchase",
+      "commerce_prepare_claim",
+      "commerce_prepare_publish",
+      "commerce_probe",
+      "commerce_export_evidence"
+    ],
+    "forbidden_tool_check": "passed",
+    "forbidden_absent": [
+      "commerce_pay",
+      "commerce_purchase",
+      "commerce_claim",
+      "commerce_submit",
+      "commerce_settle",
+      "commerce_transfer",
+      "commerce_withdraw",
+      "commerce_fund",
+      "commerce_publish",
+      "commerce_execute",
+      "commerce_sign",
+      "coinbase_transfer",
+      "usdc_transfer",
+      "x402_settle",
+      "piprail_pay_request"
+    ]
+  },
+  "doctor_result": {
+    "ok": true,
+    "mode": "A",
+    "externalWritesEnabled": false,
+    "liveValueMovementEnabled": false,
+    "walletSecretPresent": false,
+    "summary": {
+      "pass": 13,
+      "warn": 1,
+      "fail": 0
+    }
+  },
+  "status_result": {
+    "ok": true,
+    "mode": "A",
+    "externalWritesEnabled": false,
+    "liveValueMovementEnabled": false,
+    "walletSecretPresent": false,
+    "counts": {
+      "services": 68,
+      "work": 44,
+      "intents": 0,
+      "probes": 0
+    }
+  },
+  "live_readonly_probes": {
+    "executed": true,
+    "summary": {
+      "ok": 7,
+      "degraded": false
+    },
+    "adapters": [
+      {
+        "platform": "cdp_bazaar",
+        "status": "ok",
+        "checkedAt": "2026-08-19T10:28:21.880Z",
+        "latencyMs": 2989,
+        "detail": "public discovery reachable; 20 item(s) in probe page"
+      },
+      {
+        "platform": "agent402",
+        "status": "ok",
+        "checkedAt": "2026-08-19T10:28:21.930Z",
+        "latencyMs": 3992,
+        "detail": "catalog reachable; 531 endpoint(s)"
+      },
+      {
+        "platform": "piprail",
+        "status": "ok",
+        "checkedAt": "2026-08-19T10:28:21.933Z",
+        "latencyMs": 3036,
+        "detail": "walletless discovery reachable; 37 resource(s)"
+      },
+      {
+        "platform": "agent_bounties",
+        "status": "ok",
+        "checkedAt": "2026-08-19T10:28:24.869Z",
+        "latencyMs": 466,
+        "detail": "inventory reachable; 61 claimable bounty/bounties"
+      },
+      {
+        "platform": "bountybook",
+        "status": "ok",
+        "checkedAt": "2026-08-19T10:28:24.969Z",
+        "latencyMs": 513,
+        "detail": "job board reachable; 114 open job(s)"
+      },
+      {
+        "platform": "the402",
+        "status": "ok",
+        "checkedAt": "2026-08-19T10:28:25.336Z",
+        "latencyMs": 657,
+        "detail": "catalog reachable; 485 listed service(s)"
+      },
+      {
+        "platform": "paysh",
+        "status": "ok",
+        "checkedAt": "2026-08-19T10:28:25.483Z",
+        "latencyMs": 392,
+        "detail": "pay-skills registry reachable; 25 provider(s); publication is Phase 2"
+      }
+    ]
+  },
+  "exported_evidence": {
+    "paths": [
+      "research/normalized/commerce-control/services-latest.json",
+      "research/normalized/commerce-control/work-latest.json",
+      "analytics/commerce-control/source-health-latest.json",
+      "state/commerce-control/STATUS.json"
+    ],
+    "services_count": 68,
+    "work_count": 44,
+    "secret_scan": {
+      "status": "clean",
+      "patterns_checked": [
+        "PRIVATE_KEY",
+        "MNEMONIC",
+        "SEED_PHRASE",
+        "NWC",
+        "wallet_secret",
+        "Authorization",
+        "Bearer",
+        "PAYMENT-SIGNATURE",
+        "X-PAYMENT"
+      ],
+      "note": "Credential-shaped env names are present in doctor flaggedEnvNames; none are read into configuration, evidence, exports, or logs. No secret values were observed in exported JSON files."
+    }
+  },
+  "security_invariants": {
+    "mode": "A",
+    "external_writes_enabled": false,
+    "live_value_movement_enabled": false,
+    "wallet_secret_present": false,
+    "financial_action_executed": false,
+    "external_mutation_executed": false,
+    "real_payment_sent": false,
+    "real_claim_sent": false,
+    "real_submission_sent": false,
+    "production_publication": false,
+    "coinbase_action": false
+  },
+  "limitations": [
+    "hermes mcp test commerce-control reports Connection closed; runtime registration is enabled in Hermes config, but native Hermes tool discovery through the MCP client did not complete in this environment.",
+    "The only doctor warning is credential_env_clean; flagged env names are not used as configuration or exported secrets.",
+    "Stage B1 and B2 remain unimplemented and inactive."
+  ]
+}

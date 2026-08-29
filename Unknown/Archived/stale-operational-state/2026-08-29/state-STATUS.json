@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "project": "agent-commerce-hub",
+  "status": "runtime_verified_mode_a",
+  "active_focus": "hermes-commerce-control-plane-runtime-verified",
+  "current_research": ["agent402", "the402", "cdp_bazaar", "piprail", "bountybook", "paysh", "agent_bounties"],
+  "active_products": [
+    {
+      "name": "data-quality-profiler",
+      "state": "approved_for_implementation",
+      "path": "products/drafts/data-quality-profiler/",
+      "design": "docs/superpowers/specs/2026-08-18-data-quality-profiler-design.md",
+      "plan": "docs/superpowers/plans/2026-08-18-data-quality-profiler.md",
+      "target": "agent402-x402",
+      "payment_test_network": "base-sepolia",
+      "mainnet_authorized": false
+    },
+    {
+      "name": "hermes-commerce-control",
+      "state": "runtime_verified_mode_a",
+      "path": "tools/hermes-commerce-control/",
+      "design": "docs/superpowers/specs/2026-08-18-hermes-commerce-control-plane-design.md",
+      "plan": "docs/superpowers/plans/2026-08-18-hermes-commerce-control-plane-headless.md",
+      "target": "multi-platform-discovery-ranking-and-preparation",
+      "payment_test_network": "none-read-only-mode-a",
+      "mainnet_authorized": false,
+      "runtime_verification_receipt": "receipts/implementation/hermes-commerce-control/20260819-102859/verification.json"
+    }
+  ],
+  "paused_channels": ["hypawave", "the402-commercial-target"],
+  "canonical_fiat_exit": "coinbase",
+  "notes": [
+    "Repository is the shared Hermes/ChatGPT coordination layer.",
+    "Hermes Commerce Control Plane native MCP integration is verified in Mode A with 11 MCP tools, native Hermes tool discovery enabled, safe read-only probes, and exported evidence.",
+    "No hosting purchase, mainnet deployment, wallet transfer, listing submission, or Coinbase action is authorized yet.",
+    "No wallet credentials or secrets belong in this repository."
+  ]
+}

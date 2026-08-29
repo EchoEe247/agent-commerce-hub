@@ -1,0 +1,62 @@
+name: Hermes Seller Live Read-Only Smoke
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hermes-seller-live-read-only
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: products/published/data-quality-profiler/package-lock.json
+      - name: Install and run deterministic seller suite
+        working-directory: products/published/data-quality-profiler
+        run: |
+          npm ci
+          npm test
+      - name: Verify deployed seller read-only surfaces
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE='https://hermes-counterparty-api.onrender.com'
+          curl -fsS --max-time 60 "$BASE/health" > /tmp/health.json
+          curl -fsS --max-time 60 "$BASE/.well-known/x402" > /tmp/manifest.json
+
+          status=$(curl -sS --max-time 60 \
+            -D /tmp/quote-headers.txt \
+            -o /tmp/quote-body.txt \
+            -w '%{http_code}' \
+            -X POST "$BASE/v1/counterparty-availability" \
+            -H 'content-type: application/json' \
+            --data '{"country_code":"US","timezone":"America/Chicago"}')
+          test "$status" = '402'
+
+          payment_required=$(tr -d '\r' < /tmp/quote-headers.txt | awk 'BEGIN{IGNORECASE=1} /^payment-required:/ {sub(/^[^:]*:[[:space:]]*/, ""); print; exit}')
+          test -n "$payment_required"
+          PAYMENT_REQUIRED="$payment_required" node <<'NODE'
+          const required = JSON.parse(Buffer.from(process.env.PAYMENT_REQUIRED, 'base64').toString('utf8'));
+          const accepts = Array.isArray(required.accepts) ? required.accepts : [];
+          const q = accepts.find((x) => x?.scheme === 'exact' && x?.network === 'eip155:8453');
+          if (!q) throw new Error('missing exact Base mainnet quote');
+          const amount = BigInt(q.amount ?? q.maxAmountRequired ?? '0');
+          if (amount <= 0n) throw new Error('non-positive quote amount');
+          if (String(q.asset ?? '').toLowerCase() !== '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913') {
+            throw new Error(`wrong asset: ${q.asset}`);
+          }
+          console.log(`LIVE_READ_ONLY_X402_OK amountRaw=${amount} network=${q.network}`);
+          NODE

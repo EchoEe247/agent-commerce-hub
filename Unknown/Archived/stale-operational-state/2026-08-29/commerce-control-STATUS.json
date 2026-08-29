@@ -1,0 +1,53 @@
+{
+  "adapters": [
+    {
+      "enabled": true,
+      "lastStatus": "ok",
+      "platform": "cdp_bazaar"
+    },
+    {
+      "enabled": true,
+      "lastStatus": "ok",
+      "platform": "agent402"
+    },
+    {
+      "enabled": true,
+      "lastStatus": "ok",
+      "platform": "piprail"
+    },
+    {
+      "enabled": true,
+      "lastStatus": "ok",
+      "platform": "agent_bounties"
+    },
+    {
+      "enabled": true,
+      "lastStatus": "ok",
+      "platform": "bountybook"
+    },
+    {
+      "enabled": true,
+      "lastStatus": "ok",
+      "platform": "the402"
+    },
+    {
+      "enabled": true,
+      "lastStatus": "ok",
+      "platform": "paysh"
+    }
+  ],
+  "counts": {
+    "intents": 0,
+    "services": 68,
+    "work": 44
+  },
+  "externalMutationExecuted": false,
+  "externalWritesEnabled": false,
+  "financialActionExecuted": false,
+  "generatedAt": "2026-08-19T10:28:34.318Z",
+  "intentOutcomes": {},
+  "liveValueMovementEnabled": false,
+  "mode": "A",
+  "tool": "hermes-commerce-control",
+  "version": "0.1.0"
+}

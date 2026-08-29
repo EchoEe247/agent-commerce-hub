@@ -1,0 +1,75 @@
+{
+  "receipt_id": "hermes-commerce-control-plane-completion-20260819-102000",
+  "product": "hermes-commerce-control",
+  "version": "0.1.0",
+  "phase": "implementation-completion",
+  "agent": "gemini-cli-yolo",
+  "timestamp": "2026-08-19T10:20:00Z",
+  "source_commit": "666f5872ac1cf8a50221543c538ce700e99c1e58",
+  "branch": "feat/hermes-commerce-control-plane",
+  "environment": {
+    "node_version": "v24.18.0",
+    "npm_version": "12.0.2",
+    "operating_system": "android (Termux)"
+  },
+  "test_evidence": {
+    "test_command_parallel": "npm test",
+    "test_command_serial": "npm run test:serial",
+    "test_command_contracts": "npm run test:contracts",
+    "parallel_results": { "pass": 393, "fail": 0, "total": 393 },
+    "serial_results": { "pass": 393, "fail": 0, "total": 393 },
+    "contract_results": { "pass": 65, "fail": 0, "total": 65 },
+    "deterministic": true
+  },
+  "local_performance_measurements": {
+    "local_status_duration_ms": 868.70,
+    "sqlite_database_setup_and_100_ops_ms": 52.81,
+    "intent_creation_100_ops_ms": 22.35,
+    "one_k_candidates_normalization_ms": 3.00,
+    "one_k_candidates_deterministic_rank_ms": 20.72,
+    "mcp_standalone_idle_rss_mb": 41.96
+  },
+  "mcp_standalone_handshake": {
+    "status": "verified",
+    "entrypoint": "~/.hermes/commerce-control/commerce-control-mcp.sh",
+    "exposed_tools_count": 11,
+    "canonical_tools": [
+      "commerce_status",
+      "commerce_sources",
+      "commerce_discover_services",
+      "commerce_discover_work",
+      "commerce_inspect",
+      "commerce_quote",
+      "commerce_prepare_purchase",
+      "commerce_prepare_claim",
+      "commerce_prepare_publish",
+      "commerce_probe",
+      "commerce_export_evidence"
+    ]
+  },
+  "data_quality_profiler_integration": {
+    "status": "verified",
+    "readiness_command": "~/.hermes/commerce-control/commerce-control-cli.sh prepare publish data-quality-profiler",
+    "readiness_check_tests": "passed",
+    "bazaar_extension_validation": "passed",
+    "base_network_alignment": "passed"
+  },
+  "security_invariants": {
+    "mode": "A",
+    "external_writes_enabled_gate": false,
+    "live_value_movement_enabled_gate": false,
+    "wallet_secret_present": false,
+    "real_payment_sent": false,
+    "real_claim_sent": false,
+    "real_submission_sent": false,
+    "production_publication_executed": false,
+    "coinbase_action_executed": false
+  },
+  "hermes_runtime_verification": {
+    "status": "HERMES_RUNTIME_VERIFICATION_DEFERRED",
+    "actual_hermes_mcp_registration": "deferred-to-hermes-execution",
+    "live_mcp_invocation_via_hermes": "deferred-to-hermes-execution",
+    "hermes_native_tool_enumeration_check": "deferred-to-hermes-execution",
+    "final_live_marketplace_probe_execution": "deferred-to-hermes-execution"
+  }
+}
