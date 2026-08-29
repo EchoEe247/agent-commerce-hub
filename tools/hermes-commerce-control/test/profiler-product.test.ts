@@ -195,11 +195,8 @@ test("profiler: inspection performs no network or process activity", async () =>
   }
 });
 
-test("profiler: the product is not moved out of drafts by this assessment", () => {
+test("profiler: readiness follows the canonical published lifecycle path", () => {
   const readiness = inspectProfiler({ repoRoot: REPO_ROOT });
-  assert.equal(
-    readiness.path.startsWith("products/drafts/"),
-    true,
-    "readiness must not relocate the product",
-  );
+  assert.equal(readiness.path, "products/published/data-quality-profiler");
+  assert.equal(readiness.path.startsWith("products/drafts/"), false);
 });
