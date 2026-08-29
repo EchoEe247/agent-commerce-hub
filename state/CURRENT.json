@@ -139,7 +139,14 @@
       "head": "chore/p1-canonical-state-batch-6a",
       "head_sha": "54674d29ffb6fed9614ea6ef56b1520d16a8ec47",
       "base": "feat/hermes-commerce-control-plane",
-      "disposition": "do_not_merge_superseded_by_batch_6b_candidate_disposition_batch_6c"
+      "disposition": "do_not_merge_superseded_by_pr_79_disposition_batch_6c"
+    },
+    {
+      "number": 79,
+      "state": "open_draft_unmerged",
+      "head": "chore/p1-seller-lifecycle-batch-6b",
+      "base": "feat/hermes-commerce-control-plane",
+      "disposition": "current_complete_staged_candidate_do_not_merge_during_batch_6"
     }
   ],
   "canonicalization": {
@@ -151,7 +158,7 @@
       }
     ],
     "branch": "chore/p1-seller-lifecycle-batch-6b",
-    "pull_request": null,
+    "pull_request": 79,
     "batch": "6b",
     "state": "implementation_candidate_not_deployed",
     "next": [
