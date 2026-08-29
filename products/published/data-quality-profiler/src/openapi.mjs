@@ -1,8 +1,10 @@
 import { buildOpenApiDocument as buildBaseOpenApiDocument } from "./openapi-base.mjs";
+import { withSellerPriceDefaults } from "./config.mjs";
 
 const PREVIEW_PATH = "/v1/company-domain-intelligence/preview";
 
 export function buildOpenApiDocument(config) {
+  config = withSellerPriceDefaults(config);
   const document = buildBaseOpenApiDocument(config);
   const company = document.paths["/v1/company-domain-intelligence"].post;
   const domainSchema = company.requestBody.content["application/json"].schema;
