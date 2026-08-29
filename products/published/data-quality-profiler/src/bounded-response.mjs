@@ -22,6 +22,13 @@ function asBuffer(chunk) {
   return Buffer.from(String(chunk));
 }
 
+async function cancelBody(body) {
+  try {
+    if (typeof body?.cancel === "function") await body.cancel();
+    else if (typeof body?.destroy === "function") body.destroy();
+  } catch {}
+}
+
 async function readWebStream(body, maxBytes) {
   const reader = body.getReader();
   const chunks = [];
@@ -80,6 +87,7 @@ export async function readResponseTextBounded(response, maxBytes) {
 
   const declared = contentLength(response?.headers);
   if (declared !== null && declared > maxBytes) {
+    await cancelBody(response?.body);
     throw new ResponseBodyLimitError(maxBytes);
   }
 
