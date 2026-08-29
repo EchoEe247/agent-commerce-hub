@@ -1,6 +1,14 @@
 const DAY_MS = 86_400_000;
 const WEEKDAY = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 
+export const HOLIDAY_RULESET = Object.freeze({
+  id: 'counterparty-availability-static-holidays',
+  version: '2026-08-29.1',
+  method: 'deterministic_repository_rules',
+  repositoryPath: 'products/published/data-quality-profiler/src/counterparty-availability.mjs',
+  liveAuthoritativeLookup: false,
+});
+
 export const SUPPORTED_COUNTRIES = Object.freeze({
   US: { name: 'United States', defaultTimezone: 'America/New_York', currency: 'USD', callingCode: '+1', holidayScope: 'US federal' },
   CA: { name: 'Canada', defaultTimezone: 'America/Toronto', currency: 'CAD', callingCode: '+1', holidayScope: 'Canadian federal/common' },
@@ -91,7 +99,21 @@ export function buildCounterpartyAvailability({ countryCode, timezone, at } = {}
       next_contact_local: correctedNextContact,
       assumed_business_hours: '09:00-17:00 local',
     },
-    caveat: 'National/federal calendar only; regional, state, company, and emergency closures are not included.',
+    holiday_calendar: {
+      rule_set_id: HOLIDAY_RULESET.id,
+      rule_set_version: HOLIDAY_RULESET.version,
+      method: HOLIDAY_RULESET.method,
+      repository_path: HOLIDAY_RULESET.repositoryPath,
+      evaluated_year: local.year,
+      jurisdiction_scope: country.holidayScope,
+      live_authoritative_lookup: HOLIDAY_RULESET.liveAuthoritativeLookup,
+      use: 'advisory_business_availability',
+      limitations: [
+        'Regional, state, provincial, territorial, municipal, company, election-specific, emergency, and one-off closures may be absent.',
+        'Year-specific government calendar changes or substitute-day rules can differ from these deterministic repository rules.',
+      ],
+    },
+    caveat: 'Advisory static national/federal rule set only; confirm the relevant official calendar before relying on a holiday determination for legal, payroll, contractual, or time-critical decisions.',
   };
 }
 
@@ -159,7 +181,10 @@ function holidayMap(code, year) {
     add(1, 1, 'New Year'); add(1, 6, 'Epiphany'); addDate(addDays(easter, 1), 'Easter Monday'); add(4, 25, 'Liberation Day'); add(5, 1, 'Labour Day'); add(6, 2, 'Republic Day');
     add(8, 15, 'Assumption'); add(11, 1, "All Saints' Day"); add(12, 8, 'Immaculate Conception'); add(12, 25, 'Christmas Day'); add(12, 26, "St Stephen's Day");
   } else if (code === 'BR') {
-    add(1, 1, 'Confraternização Universal'); addDate(addDays(easter, -48), 'Carnival Monday'); addDate(addDays(easter, -47), 'Carnival Tuesday'); addDate(addDays(easter, -2), 'Good Friday');
+    // Carnival is ponto facultativo in Brazil's 2026 federal calendar, not a
+    // national public holiday. Keep this national-scope rule set from
+    // promoting those optional closure days to is_public_holiday=true.
+    add(1, 1, 'Confraternização Universal'); addDate(addDays(easter, -2), 'Good Friday');
     add(4, 21, 'Tiradentes'); add(5, 1, 'Labour Day'); add(9, 7, 'Independence Day'); add(10, 12, 'Our Lady of Aparecida'); add(11, 2, "All Souls' Day");
     add(11, 15, 'Republic Proclamation Day'); add(11, 20, 'Black Consciousness Day'); add(12, 25, 'Christmas Day');
   } else if (code === 'JP') {
