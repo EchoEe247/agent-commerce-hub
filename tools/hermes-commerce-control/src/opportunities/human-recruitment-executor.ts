@@ -11,6 +11,8 @@ export interface HumanRecruitmentTransportInput {
   readonly action: "post" | "contact";
   readonly target: string;
   readonly delivery: HumanRecruitmentPayload["delivery"];
+  /** Frozen worker-visible terms only; upstream payout/internal margin remain absent. */
+  readonly workerTerms: HumanRecruitmentPayload["workerTerms"];
   readonly title: string;
   readonly body: string;
 }
@@ -125,6 +127,7 @@ export async function executeHumanRecruitmentAction(
     action: intent.action,
     target: payload.target,
     delivery: payload.delivery,
+    workerTerms: payload.workerTerms,
     title: payload.rendered.title,
     body: payload.rendered.body,
   });
