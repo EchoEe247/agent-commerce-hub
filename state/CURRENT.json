@@ -10,8 +10,8 @@
   "repository": {
     "default_branch": "main",
     "canonical_repository_branch": "main",
-    "source_main_head_at_execution_routing_start": "4d2f9869eaa681954a69b08e17502355ee0b9349",
-    "reconciled_through_pull_request": 106,
+    "source_main_head_at_human_contract_start": "c8a5eb5b6401640fdcd1f5c7f59d451b2df541b0",
+    "reconciled_through_pull_request": 107,
     "production_branch": "feat/hermes-commerce-control-plane",
     "main_protected": true,
     "production_branch_protected": true,
@@ -106,6 +106,9 @@
       "revenue_ranking": true,
       "execution_routing": true,
       "human_fulfillment_planning": true,
+      "human_recruitment_drafting": true,
+      "human_contract_drafting": true,
+      "human_attempt_review": true,
       "verification_planning": true,
       "verification_resolutions": true,
       "pursuit_dossiers": true,
@@ -124,13 +127,32 @@
         "reject"
       ],
       "mode": "analysis_only",
-      "external_mutation_allowed": false,
-      "human_compensation_policy": {
-        "full_completion": "full_agreed_compensation_after_acceptance",
-        "good_faith_failed_attempt": "contract_defined_partial_after_review",
-        "no_effort_or_established_fraud": "none_after_review",
-        "suspicious_case": "requires_review"
-      }
+      "external_mutation_allowed": false
+    },
+    "human_fulfillment": {
+      "module": "tools/hermes-commerce-control/src/opportunities/human-fulfillment.ts",
+      "document": "docs/human-fulfillment-contract.md",
+      "policy_version": 1,
+      "recruitment_channels_represented": [
+        "reddit",
+        "marketplace",
+        "direct",
+        "other"
+      ],
+      "recruitment_channel_invocation_enabled": false,
+      "worker_facing_outline_excludes_internal_economics_and_source_title": true,
+      "contract_freezes_scope_acceptance_evidence_and_compensation": true,
+      "good_faith_partial_must_be_positive_and_below_full": true,
+      "known_upstream_payout_positive_gross_margin_gate": true,
+      "review_outcomes": [
+        "accepted",
+        "good_faith_failed",
+        "no_meaningful_effort",
+        "established_fraud",
+        "suspicious"
+      ],
+      "suspicion_alone_can_auto_deny_compensation": false,
+      "payment_execution_allowed": false
     },
     "marketplace_service_adapters": [
       "agent402",
@@ -193,19 +215,23 @@
     "commercial_fact": "No successful paid seller transaction has been recorded in the canonical post-deploy observation.",
     "current_bottleneck": "paid demand and executable opportunity conversion rather than additional generic seller hardening",
     "next_work": [
-      "human_recruitment_adapter",
-      "fulfillment_task_contract_and_acceptance_record",
+      "worker_facing_recruitment_adapter",
+      "approved_contact_and_post_boundary",
+      "persistent_human_fulfillment_lifecycle",
       "buyer_demand_validation",
       "commercialize_product_listing_graphic"
     ],
     "human_fulfillment": {
       "analysis_only_planning_implemented": true,
+      "recruitment_draft_core_implemented": true,
+      "contract_draft_core_implemented": true,
+      "attempt_review_core_implemented": true,
       "external_recruitment_implemented": false,
       "worker_contact_implemented": false,
       "worker_payment_implemented": false,
       "physical_safety_review_required": true,
       "integration_point": "tools/hermes-commerce-control/src/opportunities",
-      "rule": "extend the existing opportunity and policy machinery rather than create a duplicate repository or second opportunity engine"
+      "rule": "future worker-facing adapters must consume the frozen recruitment/contract artifacts rather than duplicate scope, economics, or compensation policy"
     }
   },
   "workflow_security": {
