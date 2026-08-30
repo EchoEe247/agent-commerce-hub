@@ -109,6 +109,24 @@ async function measure(client, value, size, bold = false) {
   return parseMeasurement(toolText(result));
 }
 
+async function fitMeasuredText(client, value, requestedSize, maxWidth, { bold = false, minSize }) {
+  let size = requestedSize;
+  let measurement = await measure(client, value, size, bold);
+
+  while (measurement.width > maxWidth && size > minSize) {
+    const proportional = Math.floor((size * maxWidth) / measurement.width);
+    const nextSize = Math.max(minSize, Math.min(size - 1, proportional));
+    size = nextSize;
+    measurement = await measure(client, value, size, bold);
+  }
+
+  if (measurement.width > maxWidth) {
+    throw new RangeError(`text cannot fit within ${maxWidth}px even at minimum size ${minSize}`);
+  }
+
+  return { size, measurement };
+}
+
 function centredX(canvasWidth, measurement, margin = 24) {
   return Math.max(margin, Math.round((canvasWidth - measurement.width) / 2 - measurement.offsetX));
 }
@@ -124,25 +142,35 @@ export async function executeProductGraphicsJob(client, rawJob) {
   try {
     await client.runScript(bootstrap, { returnImage: false });
 
-    const titleMeasure = await measure(client, job.title, job.titleSize, true);
-    const titleX = centredX(job.width, titleMeasure);
+    const horizontalMargin = Math.max(24, Math.round(job.width * 0.04));
+    const maxTextWidth = job.width - horizontalMargin * 2;
+    const fittedTitle = await fitMeasuredText(client, job.title, job.titleSize, maxTextWidth, {
+      bold: true,
+      minSize: 18,
+    });
+    const titleMeasure = fittedTitle.measurement;
+    const titleX = centredX(job.width, titleMeasure, horizontalMargin);
     const titleTop = Math.round(job.height * 0.69);
     const titleBaseline = Math.min(job.height - 24, Math.max(24, titleTop - titleMeasure.offsetY));
 
     let priceLine = '';
     if (job.price) {
-      const priceMeasure = await measure(client, job.price, job.priceSize, true);
-      const priceX = centredX(job.width, priceMeasure);
+      const fittedPrice = await fitMeasuredText(client, job.price, job.priceSize, maxTextWidth, {
+        bold: true,
+        minSize: 14,
+      });
+      const priceMeasure = fittedPrice.measurement;
+      const priceX = centredX(job.width, priceMeasure, horizontalMargin);
       const priceTop = Math.min(job.height - priceMeasure.height - 24, titleTop + titleMeasure.height + 24);
       const priceBaseline = Math.min(job.height - 20, Math.max(20, priceTop - priceMeasure.offsetY));
-      priceLine = `\ntext ${priceX} ${priceBaseline} ${quote(job.price)} size=${job.priceSize} color=${job.priceColor} bold`;
+      priceLine = `\ntext ${priceX} ${priceBaseline} ${quote(job.price)} size=${fittedPrice.size} color=${job.priceColor} bold`;
     }
 
     const compose = [
       'layer new',
       'set name="commerce-overlay"',
       `gradient 0 ${job.height} 0 ${Math.round(job.height * 0.42)} from=${job.overlayTo} to=${job.overlayFrom}`,
-      `text ${titleX} ${titleBaseline} ${quote(job.title)} size=${job.titleSize} color=${job.titleColor} bold${priceLine}`,
+      `text ${titleX} ${titleBaseline} ${quote(job.title)} size=${fittedTitle.size} color=${job.titleColor} bold${priceLine}`,
       `export ${quote(job.output)}`,
     ].join('\n');
 
