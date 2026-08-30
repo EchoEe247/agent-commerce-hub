@@ -8,9 +8,8 @@
  *  - Dangerous *attributes* dominate the declared class. An operation that
  *    claims to be READ but requests a signer is blocked, so a mislabelled or
  *    hostile callsite cannot launder a dangerous action through a safe class.
- *  - There is no input that flips a block into an allow. The request type has
- *    no override/force/approved field, and extra properties on the incoming
- *    object are ignored because the engine only reads the fields it knows.
+ *  - General external writes remain disabled. The only B1 slice currently
+ *    represented is an exact-intent human-recruitment grant bound in config.
  *  - An unrecognized class fails closed.
  */
 import type { CommerceConfig } from "../config.js";
@@ -24,8 +23,31 @@ import {
 import { OPERATION_CLASSES, type OperationClass } from "./modes.js";
 
 const KNOWN_CLASSES = new Set<string>(OPERATION_CLASSES);
+const HUMAN_RECRUITMENT_EXTERNAL_OPERATIONS = new Set([
+  "human_recruitment_post",
+  "human_recruitment_contact",
+]);
 
-/** Evaluates a request against Mode-A policy. Never throws for a block. */
+function exactHumanRecruitmentGrantMatches(
+  config: CommerceConfig,
+  request: PolicyRequest,
+  operation: string,
+  cls: OperationClass,
+): boolean {
+  const activation = config.humanRecruitmentActivation;
+  if (!activation.enabled) return false;
+  if (cls !== "EXTERNAL_WRITE") return false;
+  if (!HUMAN_RECRUITMENT_EXTERNAL_OPERATIONS.has(operation)) return false;
+  if (typeof request.platform !== "string" || !request.platform.startsWith("human_recruitment:")) {
+    return false;
+  }
+  return (
+    typeof request.externalIntentId === "string" &&
+    request.externalIntentId === activation.approvedIntentId
+  );
+}
+
+/** Evaluates a request against fail-closed Commerce Control policy. Never throws for a block. */
 export function evaluatePolicy(
   config: CommerceConfig,
   request: PolicyRequest,
@@ -81,6 +103,34 @@ export function evaluatePolicy(
   }
 
   if (request.mutatesExternal === true || cls === "EXTERNAL_WRITE") {
+    if (exactHumanRecruitmentGrantMatches(config, request, operation, cls)) {
+      return allowDecision({
+        operation,
+        class: cls,
+        rule: "B1_HUMAN_RECRUITMENT_EXACT_INTENT",
+        detail:
+          "external recruitment is authorized for exactly the configured prepared intent; " +
+          "general external writes and all value movement remain disabled",
+        evaluatedAt,
+      });
+    }
+
+    if (
+      config.humanRecruitmentActivation.enabled &&
+      HUMAN_RECRUITMENT_EXTERNAL_OPERATIONS.has(operation)
+    ) {
+      return blockDecision({
+        operation,
+        class: cls,
+        rule: "B1_HUMAN_RECRUITMENT_EXACT_INTENT",
+        reason: "EXTERNAL_WRITE_NOT_AUTHORIZED",
+        requiredActivation: "B1",
+        detail:
+          "human recruitment B1 is active, but this external action does not match the exact approved intent id",
+        evaluatedAt,
+      });
+    }
+
     return blockDecision({
       operation,
       class: cls,
@@ -88,9 +138,9 @@ export function evaluatePolicy(
       reason: "EXTERNAL_WRITE_DISABLED",
       requiredActivation: "B1",
       detail:
-        `external writes are disabled (externalWritesEnabled=${String(
+        `general external writes are disabled (externalWritesEnabled=${String(
           config.externalWritesEnabled,
-        )}); Stage B1 is not implemented`,
+        )}); only an exact configured human-recruitment intent may be activated`,
       evaluatedAt,
     });
   }
@@ -131,11 +181,6 @@ export function evaluatePolicy(
           "and no external mutation",
         evaluatedAt,
       });
-    // EXTERNAL_WRITE, VALUE_MOVEMENT and SECRET_ACCESS are already handled by
-    // the attribute guards above, so TypeScript has narrowed them out of `cls`
-    // here. The exhaustive default below therefore deny-by-defaults anything
-    // new: adding a class to OPERATION_CLASSES without handling it explicitly
-    // is a compile error, not a silent allow.
     default: {
       const exhaustive: never = cls;
       return blockDecision({
