@@ -7,6 +7,7 @@ import { withFileLock } from "./file-lock.js";
 export const HUMAN_FULFILLMENT_EVENT_TYPES = [
   "recruitment_payload_prepared",
   "external_action_intent_prepared",
+  "external_action_executed",
   "candidate_recorded",
   "contract_recorded",
   "worker_acceptance_recorded",
@@ -26,6 +27,8 @@ export const humanFulfillmentLifecycleEventSchema = z
     recruitmentDraftId: z.string().min(1).max(128).optional(),
     payloadId: z.string().min(1).max(128).optional(),
     intentId: z.string().min(1).max(128).optional(),
+    executionReceiptId: z.string().min(1).max(128).optional(),
+    externalReference: z.string().min(1).max(2_048).optional(),
     candidateReference: z.string().min(1).max(512).optional(),
     evidenceSummary: z.array(z.string().min(1).max(2_000)).max(32).optional(),
     reviewId: z.string().min(1).max(128).optional(),
@@ -43,6 +46,8 @@ export interface CreateHumanFulfillmentLifecycleEventInput {
   readonly recruitmentDraftId?: string | undefined;
   readonly payloadId?: string | undefined;
   readonly intentId?: string | undefined;
+  readonly executionReceiptId?: string | undefined;
+  readonly externalReference?: string | undefined;
   readonly candidateReference?: string | undefined;
   readonly evidenceSummary?: readonly string[] | undefined;
   readonly reviewId?: string | undefined;
@@ -77,6 +82,8 @@ export function createHumanFulfillmentLifecycleEvent(
     ...(optionalText(input.recruitmentDraftId, 128) === undefined ? {} : { recruitmentDraftId: optionalText(input.recruitmentDraftId, 128) }),
     ...(optionalText(input.payloadId, 128) === undefined ? {} : { payloadId: optionalText(input.payloadId, 128) }),
     ...(optionalText(input.intentId, 128) === undefined ? {} : { intentId: optionalText(input.intentId, 128) }),
+    ...(optionalText(input.executionReceiptId, 128) === undefined ? {} : { executionReceiptId: optionalText(input.executionReceiptId, 128) }),
+    ...(optionalText(input.externalReference, 2_048) === undefined ? {} : { externalReference: optionalText(input.externalReference, 2_048) }),
     ...(optionalText(input.candidateReference, 512) === undefined ? {} : { candidateReference: optionalText(input.candidateReference, 512) }),
     ...(evidenceSummary === undefined ? {} : { evidenceSummary }),
     ...(optionalText(input.reviewId, 128) === undefined ? {} : { reviewId: optionalText(input.reviewId, 128) }),
