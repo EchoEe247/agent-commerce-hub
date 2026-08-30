@@ -36,8 +36,21 @@
   "mechanical_result": "PASS",
 
   "visual_review": {
-    "status": "PENDING"
+    "reviewer": "ChatGPT",
+    "status": "PASS_WITH_LIMITATION",
+    "product_visibly_stretched": false,
+    "product_visibly_squashed": false,
+    "title_fully_visible": true,
+    "price_fully_visible": true,
+    "text_overlap": false,
+    "text_readable_over_photo": true,
+    "gradient_looks_intentional": true,
+    "composition_looks_reasonable": true,
+    "buyer_deliverable_quality": true,
+    "known_limitation": "Centered cover cropping can trim edge content when source and output aspect ratios differ; this sample trims part of the cup handle and saucer at the right edge."
   },
+
+  "final_result": "PASS_WITH_LIMITATION",
 
   "process_safety": {
     "other_hermes_processes_touched": false
