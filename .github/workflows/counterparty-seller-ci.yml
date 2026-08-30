@@ -30,6 +30,13 @@ jobs:
           persist-credentials: false
       - name: Enforce workflow security policy
         run: node .github/scripts/workflow-policy-check.mjs
+      - name: Setup Node.js for C-Shop adapter gate
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24'
+      - name: C-Shop adapter regression and invariant gate
+        working-directory: tools/cshop-worker-adapter
+        run: npm test
 
   seller:
     name: seller
