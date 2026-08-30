@@ -125,3 +125,60 @@ test('product graphics workflow uses measured placement and emits only its const
   assert.doesNotMatch(emitted, /\bstyle\b/);
   assert.ok(requests.every((request) => request.jsonrpc === '2.0'));
 });
+
+test('long titles are remeasured at a smaller size before rendering', async () => {
+  const requests = [];
+  const title = 'Wireless Noise Cancelling Headphones';
+  const fetchImpl = async (_url, init) => {
+    const body = JSON.parse(init.body);
+    requests.push(body);
+
+    if (body.method === 'initialize') {
+      return reply({ protocolVersion: '2025-06-18', capabilities: { tools: {} } });
+    }
+
+    const { name, arguments: args } = body.params;
+    if (name === 'reset') return reply({ content: [{ type: 'text', text: 'reset' }] });
+
+    if (args.script.startsWith(`measure text "${title}"`)) {
+      const size = Number(/size=(\d+)/.exec(args.script)?.[1]);
+      if (size === 90) {
+        return reply({ content: [{ type: 'text', text: `measure "${title}": 1763x90 (offset 0, -72)` }] });
+      }
+      if (size === 56) {
+        return reply({ content: [{ type: 'text', text: `measure "${title}": 1097x56 (offset 0, -45)` }] });
+      }
+      throw new Error(`unexpected fitted title size: ${size}`);
+    }
+
+    if (args.return_image) {
+      return reply({
+        content: [
+          { type: 'text', text: '1200x1200, 2 layers; 4 steps ran, 0 failed' },
+          { type: 'image', mimeType: 'image/jpeg', data: '/9j/4AAQSkZJRg==' },
+        ],
+      });
+    }
+
+    return reply({ content: [{ type: 'text', text: '1200x1200, 1 layers; 1 steps ran, 0 failed' }] });
+  };
+
+  const client = new CShopClient({ sessionId: 'commerce-job-long-title', fetchImpl });
+  const result = await executeProductGraphicsJob(client, {
+    title,
+    output: 'long-title.jpg',
+    width: 1200,
+    height: 1200,
+  });
+
+  assert.equal(result.output, 'long-title.jpg');
+
+  const scripts = requests
+    .filter((request) => request.method === 'tools/call' && request.params.name === 'run_script')
+    .map((request) => request.params.arguments.script);
+  assert.ok(scripts.some((script) => script.includes(`measure text "${title}" size=90 bold`)));
+  assert.ok(scripts.some((script) => script.includes(`measure text "${title}" size=56 bold`)));
+  const compose = scripts.find((script) => script.includes('export "long-title.jpg"'));
+  assert.match(compose, /Wireless Noise Cancelling Headphones" size=56 color=/);
+  assert.doesNotMatch(compose, /Wireless Noise Cancelling Headphones" size=90 color=/);
+});
