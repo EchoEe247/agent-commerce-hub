@@ -10,8 +10,8 @@
   "repository": {
     "default_branch": "main",
     "canonical_repository_branch": "main",
-    "source_main_head_at_givegigs_transport_start": "f9269fd2f02d19c584ac8df0ce38bd84d097135a",
-    "reconciled_through_pull_request": 112,
+    "source_main_head_at_givegigs_application_start": "705199fb2a6d49fa7705113c9fb594cca4b67536",
+    "reconciled_through_pull_request": 113,
     "production_branch": "feat/hermes-commerce-control-plane",
     "main_protected": true,
     "production_branch_protected": true,
@@ -114,6 +114,8 @@
       "provider_neutral_recruitment_executor": true,
       "givegigs_offsite_pay_recruitment_transport": true,
       "givegigs_crash_conservative_idempotency": true,
+      "givegigs_application_candidate_ingestion": true,
+      "givegigs_candidate_specific_contract_binding": true,
       "candidate_qualification": true,
       "candidate_followup_classification": true,
       "assignment_offer_and_decision": true,
@@ -150,6 +152,7 @@
       "recruitment_intent_module": "tools/hermes-commerce-control/src/opportunities/human-recruitment-intent.ts",
       "recruitment_executor_module": "tools/hermes-commerce-control/src/opportunities/human-recruitment-executor.ts",
       "givegigs_transport_module": "tools/hermes-commerce-control/src/opportunities/givegigs-recruitment-transport.ts",
+      "givegigs_application_ingestion_module": "tools/hermes-commerce-control/src/opportunities/givegigs-application-ingestion.ts",
       "candidate_assignment_module": "tools/hermes-commerce-control/src/opportunities/human-candidate-assignment.ts",
       "attempt_orchestration_module": "tools/hermes-commerce-control/src/opportunities/human-attempt-orchestration.ts",
       "lifecycle_module": "tools/hermes-commerce-control/src/opportunities/human-fulfillment-lifecycle.ts",
@@ -157,6 +160,7 @@
       "adapter_document": "docs/human-recruitment-adapters.md",
       "activation_document": "docs/human-recruitment-b1-activation.md",
       "givegigs_transport_document": "docs/givegigs-recruitment-transport.md",
+      "givegigs_application_ingestion_document": "docs/givegigs-application-ingestion.md",
       "candidate_assignment_document": "docs/human-candidate-assignment.md",
       "attempt_orchestration_document": "docs/human-attempt-correction-orchestration.md",
       "policy_version": 1,
@@ -211,6 +215,27 @@
         "corrupt_complete_journal_fails_closed": true,
         "real_api_key_used_in_repository_validation": false,
         "live_task_created_by_repository_validation": false
+      },
+      "givegigs_application_ingestion": {
+        "provider_api_contract_checked_at": "2026-08-30",
+        "endpoint_pattern": "https://givegigs.com/api/ai/tasks/<taskId>",
+        "method": "GET",
+        "authentication_required": false,
+        "shared_safe_fetch_required": true,
+        "public_task_reference_pattern": "https://givegigs.com/ai/gigs/tasks/<taskId>",
+        "provider_controlled_read_destination_allowed": false,
+        "candidate_reference_pattern": "givegigs:worker:<workerId>",
+        "application_reference_deterministic": true,
+        "malformed_individual_rows_skipped": true,
+        "nonempty_all_unusable_response_fails_closed": true,
+        "application_status_auto_qualifies_worker": false,
+        "application_status_auto_hires_worker": false,
+        "candidate_contract_changes_only_worker_reference": true,
+        "candidate_binding_preserves_scope_acceptance_evidence_compensation_deadline_and_economics": true,
+        "financially_blocked_template_can_bind_candidate": false,
+        "raw_application_message_persisted_to_lifecycle_by_default": false,
+        "provider_application_acceptance_write_implemented": false,
+        "payment_execution_allowed": false
       },
       "candidate_qualification": {
         "requirement_categories": [
@@ -393,11 +418,11 @@
   },
   "strategic_frontier": {
     "commercial_fact": "No successful paid seller transaction has been recorded in the canonical post-deploy observation.",
-    "current_bottleneck": "real upstream demand and real worker execution; one concrete B1 marketplace transport now exists",
+    "current_bottleneck": "real upstream demand and real worker execution; concrete GiveGigs recruitment plus public application ingestion now exist",
     "next_work": [
-      "givegigs_application_candidate_ingestion",
       "real_worker_counterparty_validation",
       "buyer_upstream_demand_validation",
+      "givegigs_provider_side_application_acceptance_when_live_case_requires",
       "b2_worker_payment_when_required",
       "commercialize_product_listing_graphic"
     ],
@@ -410,7 +435,8 @@
       "exact_intent_b1_authorization_implemented": true,
       "provider_neutral_executor_implemented": true,
       "givegigs_offsite_pay_transport_implemented": true,
-      "givegigs_application_ingestion_implemented": false,
+      "givegigs_application_ingestion_implemented": true,
+      "givegigs_candidate_specific_contract_binding_implemented": true,
       "candidate_qualification_implemented": true,
       "assignment_and_replacement_state_implemented": true,
       "attempt_submission_and_assessment_implemented": true,
@@ -425,7 +451,7 @@
       "worker_payment_implemented": false,
       "physical_safety_review_required": true,
       "integration_point": "tools/hermes-commerce-control/src/opportunities",
-      "rule": "GiveGigs and any future real channel transport must consume frozen payload/intent artifacts, remain behind exact B1 approval, and bridge provider candidates into the existing qualification/assignment/attempt lifecycle rather than create parallel business rules"
+      "rule": "GiveGigs and any future real channel transport must consume frozen payload/intent artifacts, remain behind exact B1 approval for writes, and bridge provider candidates into the existing qualification/assignment/attempt lifecycle rather than create parallel business rules"
     }
   },
   "workflow_security": {
@@ -438,6 +464,8 @@
     "public_buyer_execute_mode_available": false,
     "live_seller_smoke_read_only": true,
     "givegigs_api_key_persisted": false,
-    "givegigs_credential_endpoint_fixed": true
+    "givegigs_credential_endpoint_fixed": true,
+    "givegigs_application_reads_authenticated": false,
+    "givegigs_application_reads_use_shared_safe_fetch": true
   }
 }
