@@ -3,7 +3,7 @@
   "name": "Product Listing Graphic",
   "status": "draft",
   "version": "0.2.0",
-  "description": "Create one deterministic marketplace-ready product graphic from a supplied workspace image or a blank canvas. Supplied images are preserved in a dedicated upper image zone above a separate title/price panel; blank-canvas jobs retain the gradient-overlay layout.",
+  "description": "Create one deterministic product-listing graphic from a supplied workspace image or a blank canvas. Supplied images are preserved in a dedicated upper image zone above a separate title/price panel; blank-canvas jobs retain the gradient-overlay layout.",
   "execution": {
     "kind": "private-local-worker",
     "adapter": "tools/cshop-worker-adapter",
