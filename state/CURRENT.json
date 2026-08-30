@@ -10,8 +10,8 @@
   "repository": {
     "default_branch": "main",
     "canonical_repository_branch": "main",
-    "source_main_head_at_attempt_orchestration_start": "f11c3a4aa7cc08c3e3ae21c7600c7be29afe2339",
-    "reconciled_through_pull_request": 111,
+    "source_main_head_at_givegigs_transport_start": "f9269fd2f02d19c584ac8df0ce38bd84d097135a",
+    "reconciled_through_pull_request": 112,
     "production_branch": "feat/hermes-commerce-control-plane",
     "main_protected": true,
     "production_branch_protected": true,
@@ -112,6 +112,8 @@
       "external_recruitment_intent_preparation": true,
       "scoped_recruitment_b1_authorization": true,
       "provider_neutral_recruitment_executor": true,
+      "givegigs_offsite_pay_recruitment_transport": true,
+      "givegigs_crash_conservative_idempotency": true,
       "candidate_qualification": true,
       "candidate_followup_classification": true,
       "assignment_offer_and_decision": true,
@@ -147,12 +149,14 @@
       "recruitment_adapter_module": "tools/hermes-commerce-control/src/opportunities/human-recruitment-adapters.ts",
       "recruitment_intent_module": "tools/hermes-commerce-control/src/opportunities/human-recruitment-intent.ts",
       "recruitment_executor_module": "tools/hermes-commerce-control/src/opportunities/human-recruitment-executor.ts",
+      "givegigs_transport_module": "tools/hermes-commerce-control/src/opportunities/givegigs-recruitment-transport.ts",
       "candidate_assignment_module": "tools/hermes-commerce-control/src/opportunities/human-candidate-assignment.ts",
       "attempt_orchestration_module": "tools/hermes-commerce-control/src/opportunities/human-attempt-orchestration.ts",
       "lifecycle_module": "tools/hermes-commerce-control/src/opportunities/human-fulfillment-lifecycle.ts",
       "contract_document": "docs/human-fulfillment-contract.md",
       "adapter_document": "docs/human-recruitment-adapters.md",
       "activation_document": "docs/human-recruitment-b1-activation.md",
+      "givegigs_transport_document": "docs/givegigs-recruitment-transport.md",
       "candidate_assignment_document": "docs/human-candidate-assignment.md",
       "attempt_orchestration_document": "docs/human-attempt-correction-orchestration.md",
       "policy_version": 1,
@@ -164,6 +168,7 @@
       ],
       "worker_payload_excludes_internal_economics_source_text_and_model_metadata": true,
       "worker_payload_requires_positive_economic_readiness": true,
+      "transport_receives_frozen_worker_terms_only": true,
       "target_rules_verification_timestamp_required": true,
       "target_rules_max_age_days_at_execution": 7,
       "direct_recruitment_private_message_only": true,
@@ -181,7 +186,32 @@
       "signer_or_secret_access_allowed": false,
       "live_value_movement_allowed": false,
       "transport_contract_requires_intent_idempotency_key": true,
-      "credential_bearing_channel_transport_implemented": false,
+      "credential_bearing_channel_transport_implemented": true,
+      "givegigs_transport": {
+        "provider": "GiveGigs",
+        "provider_api_contract_checked_at": "2026-08-30",
+        "endpoint": "https://givegigs.com/api/ai/tasks",
+        "method": "POST",
+        "funding_type": "OFFSITE_PAY",
+        "platform_value_movement": false,
+        "channel": "marketplace",
+        "delivery": "public_post",
+        "target_pattern": "givegigs:offsite-pay:<32 hex>",
+        "target_binds_contact_payment_location_configuration": true,
+        "physical_requires_local_coordinates_country": true,
+        "remote_requires_remote_location_type": true,
+        "raw_api_key_in_commerce_config": false,
+        "raw_api_key_persisted": false,
+        "credential_endpoint_fixed": true,
+        "idempotency_store": "append_only_jsonl",
+        "idempotency_claim_before_remote_post": true,
+        "completed_replay_without_network": true,
+        "ambiguous_outcome_blocks_automatic_retry": true,
+        "definitive_no_create_can_release_for_retry": true,
+        "corrupt_complete_journal_fails_closed": true,
+        "real_api_key_used_in_repository_validation": false,
+        "live_task_created_by_repository_validation": false
+      },
       "candidate_qualification": {
         "requirement_categories": [
           "capability",
@@ -363,9 +393,9 @@
   },
   "strategic_frontier": {
     "commercial_fact": "No successful paid seller transaction has been recorded in the canonical post-deploy observation.",
-    "current_bottleneck": "first real recruitment transport and real upstream/worker validation rather than more generic internal orchestration",
+    "current_bottleneck": "real upstream demand and real worker execution; one concrete B1 marketplace transport now exists",
     "next_work": [
-      "first_real_recruitment_transport",
+      "givegigs_application_candidate_ingestion",
       "real_worker_counterparty_validation",
       "buyer_upstream_demand_validation",
       "b2_worker_payment_when_required",
@@ -379,6 +409,8 @@
       "external_action_intent_boundary_implemented": true,
       "exact_intent_b1_authorization_implemented": true,
       "provider_neutral_executor_implemented": true,
+      "givegigs_offsite_pay_transport_implemented": true,
+      "givegigs_application_ingestion_implemented": false,
       "candidate_qualification_implemented": true,
       "assignment_and_replacement_state_implemented": true,
       "attempt_submission_and_assessment_implemented": true,
@@ -388,12 +420,12 @@
       "private_worker_performance_history_implemented": true,
       "persistent_lifecycle_core_implemented": true,
       "attempt_review_core_implemented": true,
-      "credential_bearing_channel_transport_implemented": false,
+      "credential_bearing_channel_transport_implemented": true,
       "real_worker_contact_observed": false,
       "worker_payment_implemented": false,
       "physical_safety_review_required": true,
       "integration_point": "tools/hermes-commerce-control/src/opportunities",
-      "rule": "real channel transports and worker execution must consume the frozen payload/qualification/assignment/attempt artifacts instead of bypassing recruitment economics, qualification, acceptance, correction, or compensation policy"
+      "rule": "GiveGigs and any future real channel transport must consume frozen payload/intent artifacts, remain behind exact B1 approval, and bridge provider candidates into the existing qualification/assignment/attempt lifecycle rather than create parallel business rules"
     }
   },
   "workflow_security": {
@@ -404,6 +436,8 @@
     "testnet_signer_audit_branch_pattern": "testnet-audit/run-<run_id>-<run_attempt>",
     "testnet_signer_force_push_allowed": false,
     "public_buyer_execute_mode_available": false,
-    "live_seller_smoke_read_only": true
+    "live_seller_smoke_read_only": true,
+    "givegigs_api_key_persisted": false,
+    "givegigs_credential_endpoint_fixed": true
   }
 }
