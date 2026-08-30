@@ -10,8 +10,8 @@
   "repository": {
     "default_branch": "main",
     "canonical_repository_branch": "main",
-    "source_main_head_at_recruitment_b1_start": "e01b53b8c554487eb1339ea7e5608d0dc1c4e5df",
-    "reconciled_through_pull_request": 109,
+    "source_main_head_at_candidate_assignment_start": "ae237a389bcaf8ed7b7ee473c7da54fd855e9610",
+    "reconciled_through_pull_request": 110,
     "production_branch": "feat/hermes-commerce-control-plane",
     "main_protected": true,
     "production_branch_protected": true,
@@ -112,6 +112,11 @@
       "external_recruitment_intent_preparation": true,
       "scoped_recruitment_b1_authorization": true,
       "provider_neutral_recruitment_executor": true,
+      "candidate_qualification": true,
+      "candidate_followup_classification": true,
+      "assignment_offer_and_decision": true,
+      "assignment_replacement_linkage": true,
+      "worker_performance_history": true,
       "human_fulfillment_lifecycle_persistence": true,
       "human_attempt_review": true,
       "verification_planning": true,
@@ -137,10 +142,12 @@
       "recruitment_adapter_module": "tools/hermes-commerce-control/src/opportunities/human-recruitment-adapters.ts",
       "recruitment_intent_module": "tools/hermes-commerce-control/src/opportunities/human-recruitment-intent.ts",
       "recruitment_executor_module": "tools/hermes-commerce-control/src/opportunities/human-recruitment-executor.ts",
+      "candidate_assignment_module": "tools/hermes-commerce-control/src/opportunities/human-candidate-assignment.ts",
       "lifecycle_module": "tools/hermes-commerce-control/src/opportunities/human-fulfillment-lifecycle.ts",
       "contract_document": "docs/human-fulfillment-contract.md",
       "adapter_document": "docs/human-recruitment-adapters.md",
       "activation_document": "docs/human-recruitment-b1-activation.md",
+      "candidate_assignment_document": "docs/human-candidate-assignment.md",
       "policy_version": 1,
       "recruitment_channels": [
         "reddit",
@@ -168,6 +175,56 @@
       "live_value_movement_allowed": false,
       "transport_contract_requires_intent_idempotency_key": true,
       "credential_bearing_channel_transport_implemented": false,
+      "candidate_qualification": {
+        "requirement_categories": [
+          "capability",
+          "equipment",
+          "credential",
+          "location",
+          "schedule",
+          "other"
+        ],
+        "verification_modes": [
+          "self_attestation",
+          "evidence_required"
+        ],
+        "statuses": [
+          "qualified",
+          "needs_followup",
+          "not_qualified"
+        ],
+        "physical_location_requirement_mandatory": true,
+        "deadline_confirmation_required": true,
+        "correction_availability_required": true,
+        "communication_acknowledgement_required": true,
+        "compensation_terms_acknowledgement_required": true,
+        "missing_information_is_hard_rejection": false
+      },
+      "assignment": {
+        "initial_status": "offered",
+        "decisions": [
+          "accepted",
+          "declined",
+          "withdrawn",
+          "expired"
+        ],
+        "only_accepted_may_start_execution": true,
+        "acceptance_deadline_must_precede_task_deadline": true,
+        "replacement_assignment_pointer_supported": true,
+        "payment_execution_allowed": false
+      },
+      "worker_performance": {
+        "future_eligibility_states": [
+          "eligible",
+          "case_by_case",
+          "hold_for_manual_review",
+          "do_not_reoffer"
+        ],
+        "suspicion_creates_permanent_ban": false,
+        "correction_counts_recorded": true,
+        "communication_recorded": true,
+        "timeliness_recorded": true
+      },
       "lifecycle_store": "append_only_jsonl",
       "lifecycle_multiwriter_locking": true,
       "lifecycle_event_types": [
@@ -175,10 +232,14 @@
         "external_action_intent_prepared",
         "external_action_executed",
         "candidate_recorded",
+        "candidate_qualification_recorded",
         "contract_recorded",
+        "assignment_recorded",
+        "assignment_decision_recorded",
         "worker_acceptance_recorded",
         "attempt_evidence_recorded",
-        "review_recorded"
+        "review_recorded",
+        "worker_performance_recorded"
       ],
       "contract_freezes_scope_acceptance_evidence_and_compensation": true,
       "good_faith_partial_must_be_positive_and_below_full": true,
@@ -252,11 +313,11 @@
   },
   "strategic_frontier": {
     "commercial_fact": "No successful paid seller transaction has been recorded in the canonical post-deploy observation.",
-    "current_bottleneck": "real provider transport, worker/counterparty qualification, and upstream demand conversion rather than additional generic planning infrastructure",
+    "current_bottleneck": "first real recruitment transport and real upstream/worker validation rather than more generic internal planning infrastructure",
     "next_work": [
       "first_real_recruitment_transport",
-      "candidate_qualification_and_assignment_state",
       "real_worker_counterparty_validation",
+      "execution_correction_and_replacement_orchestration",
       "buyer_upstream_demand_validation",
       "b2_worker_payment_when_required",
       "commercialize_product_listing_graphic"
@@ -269,6 +330,9 @@
       "external_action_intent_boundary_implemented": true,
       "exact_intent_b1_authorization_implemented": true,
       "provider_neutral_executor_implemented": true,
+      "candidate_qualification_implemented": true,
+      "assignment_and_replacement_state_implemented": true,
+      "private_worker_performance_history_implemented": true,
       "persistent_lifecycle_core_implemented": true,
       "attempt_review_core_implemented": true,
       "credential_bearing_channel_transport_implemented": false,
@@ -276,7 +340,7 @@
       "worker_payment_implemented": false,
       "physical_safety_review_required": true,
       "integration_point": "tools/hermes-commerce-control/src/opportunities",
-      "rule": "real channel transports must consume frozen payload/intent artifacts, honor the intent id as an idempotency key, and remain behind the exact-intent central policy grant"
+      "rule": "real channel transports and worker execution must consume the frozen payload/qualification/assignment artifacts instead of bypassing recruitment economics, qualification, acceptance, or compensation policy"
     }
   },
   "workflow_security": {
