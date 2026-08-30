@@ -1,0 +1,45 @@
+{
+  "product": "product-listing-graphic",
+  "acceptance": "real-product-photo-cover-crop",
+  "date": "2026-08-30",
+
+  "repository": "EchoEe247/agent-commerce-hub",
+  "branch": "fix/cshop-asset-cover-crop",
+  "pr": 101,
+  "code_head": "b5039510f55c16970e748e3435210436970be4c1",
+
+  "source": {
+    "dimensions": "1280x853",
+    "bytes": 45441
+  },
+
+  "output": {
+    "file": "rendered-coffee-card-fixed.jpg",
+    "dimensions": "1200x1200",
+    "bytes": 128476
+  },
+
+  "resize": {
+    "proportional_scale_used": true,
+    "exact_stretch_resize_used": false,
+    "centered_canvas_crop_used": true,
+    "source_aspect_ratio_preserved_during_scaling": true
+  },
+
+  "text": {
+    "title": "Fresh Roasted Coffee",
+    "price": "$12.99",
+    "title_present": true,
+    "price_present": true
+  },
+
+  "mechanical_result": "PASS",
+
+  "visual_review": {
+    "status": "PENDING"
+  },
+
+  "process_safety": {
+    "other_hermes_processes_touched": false
+  }
+}
