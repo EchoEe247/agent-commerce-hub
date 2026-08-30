@@ -1,0 +1,68 @@
+{
+  "product": "product-listing-graphic",
+  "acceptance": "real-product-photo",
+  "date": "2026-08-30",
+
+  "repository": "EchoEe247/agent-commerce-hub",
+  "branch": "accept/cshop-real-product-photo",
+  "code_head": "45c937f0bd2410d598738542bf256a2d29f8a857",
+
+  "runtime": {
+    "start": "PASS",
+    "render_completed": true
+  },
+
+  "source": {
+    "file": "source-coffee.jpg",
+    "dimensions": "1280x853",
+    "bytes": 45441,
+    "sha256": "d32ae1283102eecd1a828156840222a1a0754bcbf5b6f13cf596879800453847"
+  },
+
+  "output": {
+    "file": "rendered-coffee-card.jpg",
+    "dimensions": "1200x1200",
+    "bytes": 116813,
+    "sha256": "10a4042799b97ff876ad36dc14b1f37734f8d101aa8068b05ffdb9236c969789"
+  },
+
+  "job": {
+    "title": "Fresh Roasted Coffee",
+    "price": "$12.99",
+    "requested_width": 1200,
+    "requested_height": 1200
+  },
+
+  "machine_evidence": {
+    "render_file_exists": true,
+    "title_text_detected": true,
+    "price_text_detected": true
+  },
+
+  "visual_assessment": {
+    "reviewer": "ChatGPT/human",
+    "status": "PENDING",
+    "source_aspect_ratio_preserved": null,
+    "product_visibly_stretched": null,
+    "product_visibly_squashed": null,
+    "unwanted_cropping": null,
+    "title_fully_visible": null,
+    "price_fully_visible": null,
+    "text_overlap": null,
+    "text_readable_over_photo": null,
+    "gradient_looks_intentional": null,
+    "product_obscured_by_overlay": null,
+    "composition_looks_reasonable": null,
+    "buyer_deliverable_quality": null
+  },
+
+  "final_result": "PENDING_VISUAL_REVIEW",
+
+  "process_safety": {
+    "other_hermes_processes_touched": false
+  },
+
+  "known_blockers": [
+    "vision_analyze unavailable in this session: no vision-capable provider configured"
+  ]
+}
