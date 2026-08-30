@@ -10,8 +10,8 @@
   "repository": {
     "default_branch": "main",
     "canonical_repository_branch": "main",
-    "source_main_head_at_human_contract_start": "c8a5eb5b6401640fdcd1f5c7f59d451b2df541b0",
-    "reconciled_through_pull_request": 107,
+    "source_main_head_at_recruitment_adapter_start": "b10d6c1f7a4e65ec80ad8a930ca6b8ea0e821b4d",
+    "reconciled_through_pull_request": 108,
     "production_branch": "feat/hermes-commerce-control-plane",
     "main_protected": true,
     "production_branch_protected": true,
@@ -108,6 +108,9 @@
       "human_fulfillment_planning": true,
       "human_recruitment_drafting": true,
       "human_contract_drafting": true,
+      "worker_facing_recruitment_payloads": true,
+      "external_recruitment_intent_preparation": true,
+      "human_fulfillment_lifecycle_persistence": true,
       "human_attempt_review": true,
       "verification_planning": true,
       "verification_resolutions": true,
@@ -130,17 +133,39 @@
       "external_mutation_allowed": false
     },
     "human_fulfillment": {
-      "module": "tools/hermes-commerce-control/src/opportunities/human-fulfillment.ts",
-      "document": "docs/human-fulfillment-contract.md",
+      "contract_module": "tools/hermes-commerce-control/src/opportunities/human-fulfillment.ts",
+      "recruitment_adapter_module": "tools/hermes-commerce-control/src/opportunities/human-recruitment-adapters.ts",
+      "recruitment_intent_module": "tools/hermes-commerce-control/src/opportunities/human-recruitment-intent.ts",
+      "lifecycle_module": "tools/hermes-commerce-control/src/opportunities/human-fulfillment-lifecycle.ts",
+      "contract_document": "docs/human-fulfillment-contract.md",
+      "adapter_document": "docs/human-recruitment-adapters.md",
       "policy_version": 1,
-      "recruitment_channels_represented": [
+      "recruitment_channels": [
         "reddit",
         "marketplace",
         "direct",
         "other"
       ],
-      "recruitment_channel_invocation_enabled": false,
-      "worker_facing_outline_excludes_internal_economics_and_source_title": true,
+      "worker_payload_excludes_internal_economics_source_text_and_model_metadata": true,
+      "worker_payload_requires_positive_economic_readiness": true,
+      "target_rules_verification_timestamp_required": true,
+      "direct_recruitment_private_message_only": true,
+      "external_recruitment_policy_class": "EXTERNAL_WRITE",
+      "external_recruitment_policy_rule": "A_MODE_EXTERNAL_WRITE",
+      "external_recruitment_execution_enabled": false,
+      "external_mutation_executed": false,
+      "operator_approval_required": true,
+      "lifecycle_store": "append_only_jsonl",
+      "lifecycle_multiwriter_locking": true,
+      "lifecycle_event_types": [
+        "recruitment_payload_prepared",
+        "external_action_intent_prepared",
+        "candidate_recorded",
+        "contract_recorded",
+        "worker_acceptance_recorded",
+        "attempt_evidence_recorded",
+        "review_recorded"
+      ],
       "contract_freezes_scope_acceptance_evidence_and_compensation": true,
       "good_faith_partial_must_be_positive_and_below_full": true,
       "known_upstream_payout_positive_gross_margin_gate": true,
@@ -152,7 +177,7 @@
         "suspicious"
       ],
       "suspicion_alone_can_auto_deny_compensation": false,
-      "payment_execution_allowed": false
+      "worker_payment_execution_allowed": false
     },
     "marketplace_service_adapters": [
       "agent402",
@@ -213,25 +238,28 @@
   },
   "strategic_frontier": {
     "commercial_fact": "No successful paid seller transaction has been recorded in the canonical post-deploy observation.",
-    "current_bottleneck": "paid demand and executable opportunity conversion rather than additional generic seller hardening",
+    "current_bottleneck": "paid demand and explicitly authorized real external recruitment/contact rather than additional internal planning infrastructure",
     "next_work": [
-      "worker_facing_recruitment_adapter",
-      "approved_contact_and_post_boundary",
-      "persistent_human_fulfillment_lifecycle",
+      "b1_recruitment_activation",
+      "real_worker_counterparty_validation",
       "buyer_demand_validation",
+      "b2_worker_payment_when_required",
       "commercialize_product_listing_graphic"
     ],
     "human_fulfillment": {
       "analysis_only_planning_implemented": true,
       "recruitment_draft_core_implemented": true,
       "contract_draft_core_implemented": true,
+      "worker_facing_payload_adapter_implemented": true,
+      "external_action_intent_boundary_implemented": true,
+      "persistent_lifecycle_core_implemented": true,
       "attempt_review_core_implemented": true,
       "external_recruitment_implemented": false,
       "worker_contact_implemented": false,
       "worker_payment_implemented": false,
       "physical_safety_review_required": true,
       "integration_point": "tools/hermes-commerce-control/src/opportunities",
-      "rule": "future worker-facing adapters must consume the frozen recruitment/contract artifacts rather than duplicate scope, economics, or compensation policy"
+      "rule": "future B1 worker-facing executors must consume frozen payload/intent artifacts and remain behind the central policy/authorization boundary rather than duplicate or bypass recruitment economics and compensation policy"
     }
   },
   "workflow_security": {
