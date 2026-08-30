@@ -4,7 +4,7 @@
 
 Last current-state reconciliation: **2026-08-30**.
 
-This snapshot is intended to land with PR **#109**. Its source `main` baseline is `e01b53b8c554487eb1339ea7e5608d0dc1c4e5df`.
+This snapshot is intended to land with PR **#110**. Its source `main` baseline is `ae237a389bcaf8ed7b7ee473c7da54fd855e9610`.
 
 ## Project mission
 
@@ -64,9 +64,12 @@ Implemented stages include:
 - frozen worker contract drafting;
 - worker-facing recruitment payload rendering;
 - recruitment external-action intent preparation;
-- **exact-intent scoped B1 human-recruitment authorization**;
-- **provider-neutral recruitment execution boundary**;
-- append-only human-fulfillment lifecycle persistence, including successful external-action receipts;
+- exact-intent scoped B1 human-recruitment authorization;
+- provider-neutral recruitment execution boundary;
+- **candidate qualification / follow-up / rejection classification**;
+- **assignment offer / acceptance / replacement state**;
+- **private worker-performance / future-eligibility records**;
+- append-only human-fulfillment lifecycle persistence;
 - human attempt/QA review;
 - verification planning/resolution;
 - pursuit dossiers and operator packets;
@@ -122,9 +125,7 @@ Canonical config/policy boundary:
 - `tools/hermes-commerce-control/src/policy/engine.ts`
 - `tools/hermes-commerce-control/src/opportunities/human-recruitment-intent.ts`
 
-Execution boundary:
-
-`tools/hermes-commerce-control/src/opportunities/human-recruitment-executor.ts`
+Execution boundary: `tools/hermes-commerce-control/src/opportunities/human-recruitment-executor.ts`.
 
 Detailed activation contract: `docs/human-recruitment-b1-activation.md`.
 
@@ -135,36 +136,58 @@ General external writes remain disabled. The only B1 slice implemented is one ex
 
 Activation without an exact intent id fails closed. A stale id with activation disabled also fails closed. `EXTERNAL_WRITES_ENABLED` remains forbidden.
 
-Recruitment intent ids are derived from immutable action facts rather than policy outcome. The intended operator flow is therefore:
+Recruitment intent ids are derived from immutable action facts rather than policy outcome. Intended flow:
 
 `prepare blocked intent → inspect exact intent id → explicitly approve that id → re-evaluate same intent → execute through channel transport`
 
-When the exact id, operation, platform namespace, and recruitment action match, central policy may return `B1_HUMAN_RECRUITMENT_EXACT_INTENT`. A different recruitment intent remains blocked with `EXTERNAL_WRITE_NOT_AUTHORIZED`; unrelated external writes remain blocked with `EXTERNAL_WRITE_DISABLED`.
-
-Signer/key access and all value movement are evaluated before the scoped recruitment grant and remain blocked.
+A different recruitment intent remains blocked with `EXTERNAL_WRITE_NOT_AUTHORIZED`; unrelated external writes remain blocked with `EXTERNAL_WRITE_DISABLED`. Signer/key access and all value movement are evaluated before the scoped recruitment grant and remain blocked.
 
 The provider-neutral executor re-evaluates central policy at execution time, requires target/community rules verification no older than seven days, and passes the intent id to the transport as an idempotency key. A successful receipt records `externalMutationExecuted: true`, while compensation and live value movement remain false.
 
-### Important current limitation
+There is still **no credential-bearing Reddit, marketplace, browser, email, or DM transport committed in this repository**.
 
-There is still **no credential-bearing Reddit, marketplace, browser, email, or DM transport committed in this repository**. The B1 authorization/executor core is implemented, but a real external recruitment mutation requires a concrete transport for a channel we are actually ready to use.
+## Candidate qualification and assignment
+
+Canonical module: `tools/hermes-commerce-control/src/opportunities/human-candidate-assignment.ts`.
+
+Documentation: `docs/human-candidate-assignment.md`.
+
+Candidate qualification is explicit rather than a generic score. Requirements can cover capability, equipment, legitimate credential, location, schedule, or another task-specific condition. Each requirement is either self-attested or requires an evidence reference.
+
+Physical work must include an explicit location requirement. Standard checks require the candidate to confirm the deadline, correction/follow-up availability, communication expectations, and compensation terms.
+
+Qualification outcomes are:
+
+- `qualified` — all hard requirements and required qualification evidence pass;
+- `needs_followup` — an answer/evidence item is missing but no hard failure has been established;
+- `not_qualified` — the candidate explicitly cannot satisfy a hard task or execution condition.
+
+`needs_followup` deliberately preserves a correction/questionnaire loop instead of treating incomplete answers as worker failure.
+
+Only a fully qualified candidate on the same financially viable contract/opportunity can receive an assignment. An assignment starts `offered`; its `acceptBy` must precede the task deadline to preserve replacement time. `accepted` is the only assignment decision that permits execution to begin. `declined`, `withdrawn`, and `expired` leave execution disabled and allow replacement. A replacement may explicitly reference the prior assignment id.
+
+Assignment/qualification records never execute payment.
+
+## Private worker performance history
+
+Final QA can be converted into a private performance record containing correction counts, communication quality, timeliness, and a bounded note.
+
+Future eligibility is intentionally nuanced:
+
+- clean accepted work → `eligible`;
+- good-faith failure or accepted work with material execution friction → `case_by_case`;
+- unresolved suspicious evidence → `hold_for_manual_review`;
+- review-established no meaningful effort or fraud → `do_not_reoffer`.
+
+Suspicion does not become an automatic fraud finding or permanent ban.
 
 ## Persistent human-fulfillment lifecycle
 
 Canonical store: `tools/hermes-commerce-control/src/opportunities/human-fulfillment-lifecycle.ts`.
 
-The local append-only JSONL lifecycle now supports:
+The append-only lifecycle supports recruitment payloads/intents/execution, candidate observations, candidate qualification, contracts, assignments, assignment decisions, worker acceptance, attempt evidence, final review, and private worker performance. Candidate/assignment/performance events can carry their deterministic record ids.
 
-- `recruitment_payload_prepared`;
-- `external_action_intent_prepared`;
-- `external_action_executed`;
-- `candidate_recorded`;
-- `contract_recorded`;
-- `worker_acceptance_recorded`;
-- `attempt_evidence_recorded`;
-- `review_recorded`.
-
-External-action execution events can record an execution receipt id and durable provider/community reference. Events remain schema-validated, deterministic, deduplicated by event id, file-locked, filterable by opportunity, and crash-tail-repaired.
+Events remain schema-validated, deterministic, deduplicated by event id, file-locked, filterable by opportunity, and crash-tail-repaired.
 
 ## Private C-Shop worker
 
@@ -184,23 +207,23 @@ The product remains commercially unfinished: pricing unset, payment integration 
 
 The deliberately deferred provider PR remains **#8 — `feat: add the402 provider adapter`**, pending provider credentials/secret custody and explicit production authorization if revived.
 
-PR **#109** is the scoped B1 human-recruitment activation change represented by this snapshot. It targets `main` only and is not a production deployment.
+PR **#110** is the candidate qualification/assignment state change represented by this snapshot. It targets `main` only and is not a production deployment.
 
 ## Strategic frontier
 
-The internal path now reaches:
+The internal human path now reaches:
 
-`qualified opportunity → execution route → frozen worker contract → channel-specific worker payload → exact action intent → exact-intent B1 grant → provider-neutral execution boundary → lifecycle receipt`
+`qualified upstream opportunity → frozen worker terms → recruitment payload → exact B1 action → candidate response → questionnaire/evidence follow-up → qualification → assignment/acceptance → execution → QA → private performance history`
 
-The next gap is concrete commercial execution rather than another generic planning layer.
+The remaining gap is increasingly real-world execution rather than internal state machinery.
 
 Priority after this slice:
 
-1. **real recruitment transport for the first chosen channel** — likely Reddit/direct or a subcontract-friendly marketplace, using the frozen payload/intent and idempotency contract rather than rebuilding business rules;
-2. **candidate qualification and assignment state** — questionnaire/capability/location/availability checks, qualified/rejected/withdrawn status, worker acceptance, replacement handling, and reliability history;
-3. **real worker/counterparty validation** — exercise the complete loop on an actual upstream opportunity whose delegation/payout/location/economics have passed verification;
-4. **buyer/upstream demand validation** — record real conversion and payout evidence;
-5. **B2 worker-payment path** — only when an actual accepted worker transaction requires value movement, with separate explicit financial authorization;
+1. **real recruitment transport for the first chosen channel** — use the existing frozen payload, exact-intent B1 gate, and idempotency contract rather than duplicating business logic;
+2. **real worker/counterparty validation** — exercise recruitment + questionnaire + assignment on an actual upstream opportunity whose delegation, payout, location, deadline, and economics are verified;
+3. **execution correction/replacement orchestration** — connect attempt evidence and follow-up deadlines to the existing assignment/review records when real worker execution begins;
+4. **buyer/upstream demand validation** — record actual conversion and payout evidence;
+5. **B2 worker-payment path** — only when an accepted real worker transaction requires value movement, with separate explicit financial authorization;
 6. **commercialize Product Listing Graphic** where it competes favorably with upstream-demand work.
 
 Do not create a second opportunity engine or duplicate recruitment economics/compensation rules per provider.
@@ -215,12 +238,15 @@ Do not create a second opportunity engine or duplicate recruitment economics/com
 6. Worker-facing adapters must consume frozen contract artifacts and must not leak upstream payout/internal margin/model scoring by default.
 7. Never enable general external writes to recruit a worker. B1 recruitment authorization must bind to one exact prepared `hintent_...` id.
 8. A real channel transport must honor the intent id as an idempotency key and return an external reference.
-9. Worker payment/value movement remains a separate B2 concern.
-10. Good-faith partial compensation must be fixed before execution, not invented retroactively.
-11. Suspicion alone must not automatically become a zero-compensation/fraud outcome.
-12. Seller pricing changes must use the canonical price catalog and pass consistency coverage.
-13. Public seller Docker changes must preserve the private buyer/financial/operator boundary.
-14. GitHub expressions must not appear directly inside workflow `run:` commands; use `env:` and quoted shell variables.
-15. Testnet signer audit snapshots must write only to run-scoped audit branches and must not force-push.
-16. Never commit secrets, private paid results, local SQLite/WAL/SHM files, or generated `node_modules`.
-17. `Unknown/Archived/` is historical evidence only.
+9. An incomplete candidate questionnaire is `needs_followup`; do not silently convert missing information into a hard rejection.
+10. Only `qualified` + accepted assignments may begin worker execution.
+11. Physical qualification must explicitly confirm location feasibility.
+12. Worker payment/value movement remains a separate B2 concern.
+13. Good-faith partial compensation must be fixed before execution, not invented retroactively.
+14. Suspicion alone must not automatically become a zero-compensation/fraud outcome or permanent worker ban.
+15. Seller pricing changes must use the canonical price catalog and pass consistency coverage.
+16. Public seller Docker changes must preserve the private buyer/financial/operator boundary.
+17. GitHub expressions must not appear directly inside workflow `run:` commands; use `env:` and quoted shell variables.
+18. Testnet signer audit snapshots must write only to run-scoped audit branches and must not force-push.
+19. Never commit secrets, private paid results, local SQLite/WAL/SHM files, or generated `node_modules`.
+20. `Unknown/Archived/` is historical evidence only.
