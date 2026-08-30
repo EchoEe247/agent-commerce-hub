@@ -136,7 +136,7 @@ export function loadConfig(env: Env = process.env): CommerceConfig {
   if (isTruthy(env.EXTERNAL_WRITES_ENABLED)) {
     throw new CommerceError(
       "CONFIG_ERROR",
-      "EXTERNAL_WRITES_ENABLED cannot be enabled. General external writes remain disabled; " +
+      "EXTERNAL_WRITES_ENABLED cannot be enabled in Mode A. General external writes remain disabled; " +
         "human recruitment uses the exact-intent HUMAN_RECRUITMENT_B1_* gate.",
       { gate: "EXTERNAL_WRITES_ENABLED" },
     );
