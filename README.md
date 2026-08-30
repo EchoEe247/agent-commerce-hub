@@ -2,14 +2,27 @@
 
 Shared coordination, product, research, and change-control repository for the agent-commerce system.
 
+## Mission
+
+`agent-commerce-hub` exists to help agents make money with as little human babysitting as practical.
+
+Repository work should preferentially improve the commercial loop from opportunity discovery through qualification, pricing, execution, quality control, delivery, payment, follow-up, and revenue measurement. Prefer work that increases the probability, speed, value, or repeatability of getting paid, or that materially reduces operator intervention needed to do so.
+
+Do not expand architecture, tooling, agent count, observability, or verification merely because it is technically interesting. Infrastructure is justified when it enables revenue, removes a demonstrated commercial bottleneck, protects revenue from a real failure mode, or makes paid work more autonomous and reusable.
+
+Production safety, financial authorization, security boundaries, and irreversible-risk controls still override speed when applicable.
+
+See [`docs/REVENUE_OPERATING_PRINCIPLES.md`](docs/REVENUE_OPERATING_PRINCIPLES.md) for the standing prioritization and agent-autonomy rules.
+
 ## Start here
 
 For current operational state, read:
 
 1. [`docs/CURRENT_STATE.md`](docs/CURRENT_STATE.md) — human-readable current state.
 2. [`state/CURRENT.json`](state/CURRENT.json) — machine-readable current state.
+3. [`docs/REVENUE_OPERATING_PRINCIPLES.md`](docs/REVENUE_OPERATING_PRINCIPLES.md) — standing revenue-first and low-babysitting mission.
 
-Those two files are the repository-level source of truth for what is current. Older `STATUS.json`, `*-latest` research files, dated receipts, plans, handoffs, and archived material are historical evidence unless `CURRENT` explicitly references them.
+Those first two files are the repository-level source of truth for what is current. Older `STATUS.json`, `*-latest` research files, dated receipts, plans, handoffs, and archived material are historical evidence unless `CURRENT` explicitly references them. The revenue operating principles are durable project policy rather than transient state.
 
 ## Production boundary
 
@@ -37,10 +50,11 @@ agent-commerce-hub/
 
 ## Core rules
 
+- Revenue generation, practical agent autonomy, and reduced operator babysitting are standing optimization targets; see `docs/REVENUE_OPERATING_PRINCIPLES.md`.
 - GitHub is a source/evidence/change-control layer, **not** a secret store, wallet, or credential vault.
 - Never commit passwords, API keys, tokens, private keys, wallet seeds, recovery phrases, NWC strings, payment preimages, session cookies, authorization headers, reusable signed payment authorizations, private paid results, local SQLite/WAL/SHM state, or generated `node_modules`.
 - Anything under `Unknown/Archived/` is historical evidence and must never be read by an active runtime as current configuration or state.
 - A file named `latest` is not automatically current.
 - Preserve uncertain historical material before removing or relocating it.
 
-See `docs/SECURITY.md`, `docs/HANDOFF_PROTOCOL.md`, and `docs/CURRENT_STATE.md` before automated writes.
+See `docs/SECURITY.md`, `docs/HANDOFF_PROTOCOL.md`, `docs/REVENUE_OPERATING_PRINCIPLES.md`, and `docs/CURRENT_STATE.md` before automated writes.
