@@ -1,0 +1,74 @@
+{
+  "product": "product-listing-graphic",
+  "acceptance": "title-fitting",
+  "date": "2026-08-30",
+
+  "repository": "EchoEe247/agent-commerce-hub",
+  "branch": "fix/cshop-title-fitting",
+  "pr": 100,
+  "validated_code_head": "5b4a35021ff63c69764e240caf0de95276b20884",
+
+  "runtime": {
+    "name": "stubbb/c-shop",
+    "commit": "f3b2033c07df92e8e72ff83a29955a2c10494d95"
+  },
+
+  "tests": {
+    "adapter": "5/5 PASS"
+  },
+
+  "original_failure": {
+    "case": "Wireless Noise Cancelling Headphones",
+    "canvas": "1200x1200",
+    "measured_title_width_px": 1763,
+    "result": "FAIL",
+    "failure": "single-line title exceeded canvas width and was clipped on both sides"
+  },
+
+  "fixed_case": {
+    "file": "case-b-after.jpg",
+    "result": "PASS",
+    "bytes": 77037,
+    "type": "JPEG image data, JFIF 1.02, 1200x1200, baseline, 3 components",
+    "title_fully_visible": true,
+    "left_clipping": false,
+    "right_clipping": false,
+    "price_visible": true,
+    "text_overlap": false,
+    "sha256": "e3c558d795c20a8d779ad188d11bf2f581eaee14acb6680b23db80856abd2044"
+  },
+
+  "before_image": {
+    "file": "case-b-before.jpg",
+    "preserved": true,
+    "sha256": "3a3525ea0e9cc7e277b8d00e49753a61c6219afa2087c3369d4ce3e48d672a98"
+  },
+
+  "asset_pipeline": {
+    "file": "asset-pipeline.png",
+    "result": "PASS",
+    "bytes": 174516,
+    "type": "PNG image data, 1200x1200, 8-bit/color RGBA, non-interlaced",
+    "path_proven": [
+      "open asset",
+      "resize",
+      "overlay",
+      "text",
+      "export"
+    ],
+    "sha256": "cb7b516f7cdcce06e52e414adf32f6dc94a082072b25b2fc3c412d97461ad7fd",
+    "visual_customer_acceptance": false,
+    "limitation": "The source asset already contained baked-in text, so the old and new titles overlap. This image proves the asset execution pipeline only."
+  },
+
+  "process_safety": {
+    "other_hermes_processes_touched": false
+  },
+
+  "remaining_gate": {
+    "chatgpt_visual_review": "PENDING",
+    "human_visual_review": "PENDING"
+  },
+
+  "known_code_blockers": []
+}
