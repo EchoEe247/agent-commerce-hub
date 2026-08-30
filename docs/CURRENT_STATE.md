@@ -2,199 +2,240 @@
 
 > **Canonical operational truth:** this document and `state/CURRENT.json` are the repository-level current-state sources. Historical receipts, plans, handoffs, `*-latest` snapshots, and `Unknown/Archived/` material are evidence, not authority, unless explicitly referenced here.
 
-Last current-state update: **2026-08-29**.
+Last current-state reconciliation: **2026-08-30**.
 
-## Repository roles
+This snapshot reconciles canonical `main` through PR **#104**. The source `main` head at reconciliation start was `241a446952775baeacf9fc68d69901cd650b2e1f`.
 
-- **Canonical/default repository branch:** `main`.
-- **Canonical main protection:** enabled; pull requests are required with strict `workflow-policy`, `seller`, and `commerce-control` checks, admins enforced, force-push/deletion disabled.
-- **Production deployment branch:** `feat/hermes-commerce-control-plane`.
-- **Latest completed implementation batch:** P1 Root Landing Extraction Batch 15, code validated at `797ea54dcf888036dea50ebc7a16a0f78a99fe78` through PR #94.
-- **Latest production promotion:** PR #95 merged the validated canonical candidate into the protected production branch as `3c501ee37bd3472afe1736213cc493dc254911a8`; Render Blueprint sync was then manually reviewed and applied.
+## Project mission
 
-Batch 6C aligned canonical state into `main` through PR #81. Batch 7 was then validated at `378fdcec5240076c20381b3310ad7fbdb018eae9`, merged through PR #82, and completed its GitHub administration at `main` merge commit `db344147e8ed490f486a6aa86f4b19a3e1d675bf`. Ten already-archived obsolete branch refs were removed while preservation refs were retained.
+`agent-commerce-hub` is now explicitly revenue-first. The standing policy is `docs/REVENUE_OPERATING_PRINCIPLES.md`.
 
-Batch 8 centralized seller pricing and merged through PR #84. Batch 9 bounded public upstream response bodies before parsing, validated at `f9d465fa0986fb6f9a902acfae2a3fb2a57a2576`, and merged through PR #86 as `dcaa00adb88e3ed62207a870be95128d500a4edb`. Batch 10 adds explicit static holiday-rule provenance and corrects Brazil Carnival national-scope classification. Batch 11 replaced stale/conflicted production staging with a dedicated reconciliation branch whose candidate tree is canonical `main` while the unchanged production head remains in its ancestry. Batch 12 minimizes the public seller Docker artifact so repository-only buyer, reconciliation, financial-store, discovery, admin, test, and documentation material is not shipped with the seller process. Batch 13 removes direct GitHub-expression interpolation from shell commands and makes that a repository-enforced workflow policy. Batch 14 removes the testnet signer's dependency on direct writeback to whichever protected/default branch launched the workflow. Batch 15 reimplements the useful human-readable root landing from stale PR #63 on the canonical published seller without merging obsolete draft-path history.
+The preferred commercial loop is:
 
-The production branch remains separately protected with the same required checks and is now at `3c501ee37bd3472afe1736213cc493dc254911a8`, the merge commit from production-promotion PR #95.
+`opportunity discovery → qualification → pricing → execution → quality gate → delivery → payment → follow-up/repeat business → revenue measurement`
 
-## Deployment boundary
+Engineering work should normally shorten that loop, improve reliability where a demonstrated commercial failure requires it, or reduce routine operator babysitting. Generic infrastructure/hardening without a credible revenue or autonomy benefit is deprioritized.
 
-Render auto-deploys from `feat/hermes-commerce-control-plane`, not from `main`. Repository hardening merged into `main` does **not** deploy production.
+## Repository and production boundary
 
-PR **#89** was closed unmerged only because the GitHub connector could not clear its draft state. Its identical validated head was reopened as PR **#95**, explicitly authorized, and merged into `feat/hermes-commerce-control-plane` as `3c501ee37bd3472afe1736213cc493dc254911a8`.
+- Canonical/default branch: `main`.
+- Production branch: `feat/hermes-commerce-control-plane`.
+- Both remain protected.
+- Required protected checks: `workflow-policy`, `seller`, and `commerce-control`.
+- `main` and production are intentionally separate change-control boundaries.
+- A merge to `main` is **not** a production deployment.
+- Future production changes require a fresh validated promotion path plus explicit production authorization.
 
-The Git merge did not itself apply the pending Render Blueprint migration. The Blueprint was reviewed separately and manually synced. Render deployment `dep-da9fhedg1s2s73a930n0` completed from the PR #95 merge commit with trigger `blueprint_sync` and reached `live` at `2026-08-29T15:21:12.959916Z`.
+The latest completed production promotion is PR **#95**, merged to the production branch as:
 
-The live service root is now `products/published/data-quality-profiler`, and the Blueprint-managed `X402_FACILITATOR_MODE=xpay` setting is applied. Validated implementation through Batch 15 is therefore **production-deployed**.
+`3c501ee37bd3472afe1736213cc493dc254911a8`
 
-`main` remains separate from production. Future production changes still require a fresh validated promotion path and explicit production authorization; a merge to `main` alone is not a production deployment.
+Render deployment `dep-da9fhedg1s2s73a930n0` is recorded live from that production baseline. The live root is:
 
-## Post-deploy verification
+`products/published/data-quality-profiler`
 
-The production deployment was verified through Render immediately after Blueprint sync:
+The production Blueprint uses `X402_FACILITATOR_MODE=xpay`.
 
-- service `hermes-counterparty-api` is `live` on deploy `dep-da9fhedg1s2s73a930n0`;
-- the live root directory is `products/published/data-quality-profiler`;
-- external unpaid probes reached multiple paid POST routes on the new instance and received the expected HTTP `402` payment challenge;
-- observed post-deploy probes included `/v1/package-maintenance-snapshot`, `/v1/schema-drift`, `/v1/counterparty-availability`, `/v1/dependency-vulnerability-check`, and `/v1/company-domain-intelligence`;
-- no `payment_succeeded:true` event was observed in the post-deploy window through `2026-08-29T15:28:04Z`, so the deployment verification did not manufacture or claim a paid sale;
-- Agent402's marketplace snapshot listed `Hermes Agent Commerce API` as healthy with 14 tools / 13 paid tools, while its displayed chain label was still unresolved. That marketplace field is transient discovery state, not production network configuration.
+## Published seller
 
-No new live-money purchase or signing action was performed for this deployment verification.
+Canonical seller:
 
-## Closed validation batches
+`products/published/data-quality-profiler/`
 
-| Batch | State | Validated head / action |
-|---|---|---|
-| P0 Security Batch 1 | CLOSED | `fd61b87914a33ba37daf745724a812abe02d9d2c` |
-| P1 Financial Safety Batch 2 | CLOSED | `0aa39b5da62221b0a22a6a280ac177da1a0ba2da` |
-| P1 Financial Durability Batch 3 | CLOSED | `e4ccc000f4ff09fb1e89f04655467ee8c9c9bba9` |
-| P1 Production Change-Control Batch 4 | CLOSED | `f0f9503a4b01cff98003de9b06f4f77db2ce2fdb` |
-| P1 Preview Resource-Abuse Batch 5 | CLOSED | `ab06f198904ff67e3d4b518d8c177af460a2c8ca` |
-| P1 Canonical-State Batch 6A | CLOSED | `54674d29ffb6fed9614ea6ef56b1520d16a8ec47` |
-| P1 Seller Lifecycle Batch 6B | CLOSED | `c9512348567459be3164f2413d4e187a7bed7501` |
-| P1 Repository Alignment Batch 6C | CLOSED | PR #81 aligned canonical state into `main` without production deploy |
-| P1 Commerce Control Durability Batch 7 | CLOSED | `378fdcec5240076c20381b3310ad7fbdb018eae9`, PR #82, merged to `main` as `db344147e8ed490f486a6aa86f4b19a3e1d675bf` |
-| P1 Seller Pricing Source Batch 8 | CLOSED | code validated at `85918d271c107881d8cd9a7781370f4e1742a42e`, merge PR #84 |
-| P1 Upstream Response Bounds Batch 9 | CLOSED | `f9d465fa0986fb6f9a902acfae2a3fb2a57a2576`, PR #86, merged to `main` as `dcaa00adb88e3ed62207a870be95128d500a4edb` |
-| P1 Holiday Provenance Batch 10 | CLOSED | code validated at `63a8d78a3c0db7d6de75e3f267647015af4cccec`, merge PR #87 |
-| P1 Production Candidate Alignment Batch 11 | CLOSED | draft PR #89; reconciliation candidate refreshed and validated as `main` advanced; production unchanged |
-| P1 Public/Private Runtime Boundary Batch 12 | CLOSED | code validated at `53b1c500af48257cd524f674367041640ec0850a`, PR #91 |
-| P1 Workflow Shell Interpolation Batch 13 | CLOSED | code validated at `5e1d0ce3e7d6a790acfaf3409ca67c82185a4ce0`, PR #92 |
-| P1 Testnet Signer Writeback Batch 14 | CLOSED | code validated at `c1c4778cd04a6dd77f35f1cd8fd3cf7a7a9d0378`, PR #93 |
-| P1 Root Landing Extraction Batch 15 | CLOSED | code validated at `797ea54dcf888036dea50ebc7a16a0f78a99fe78`, PR #94; replaces stale PR #63 semantics on canonical seller |
+Current seller state:
+
+- published and production-deployed;
+- 13 paid x402 operations;
+- free `/v1/company-domain-intelligence/preview`;
+- static read-only root discovery page at `/`;
+- canonical pricing authority in `src/config.mjs` via `SELLER_PRICE_DEFAULTS` / `SELLER_PRICE_CATALOG`;
+- Agent402 and OpenAPI pricing derive from that authority;
+- public/private Docker boundary is regression-tested;
+- buyer/discovery/private financial/operator modules remain outside the public server import graph and Docker artifact;
+- bounded upstream response reads and SSRF protections remain enforced;
+- production unpaid probes have received expected HTTP `402` payment challenges.
+
+Latest recorded marketplace observation listed the seller healthy with 14 tools / 13 paid tools. Its displayed chain label was unresolved in that transient marketplace snapshot and is not treated as authoritative production configuration.
+
+### Revenue observation
+
+The canonical post-deploy observation still records:
+
+`payment_succeeded_observed_since_deploy: false`
+
+No successful paid seller transaction has therefore been established by repository evidence yet. This makes demand acquisition and executable opportunity conversion a higher priority than another generic seller-hardening cycle unless a concrete production defect appears.
 
 ## Financial state
 
 Tracked JSON ledgers are audit snapshots, not the transactional runtime database.
 
-- Mainnet: `state/commerce-control/ledgers/mainnet-budget-ledger.json`, blob `9a9e87dce730cc3fddcbdcf8926b12d53c6046ab`.
-- Testnet: `state/commerce-control/ledgers/testnet-budget-ledger.json`, blob `0632862d26c600634068b61669db8de11faa8dad`.
-- Mainnet validated totals: initial `2380000`, spent `10000`, remaining `2370000` atomic USDC.
+Mainnet audit snapshot:
 
-The authoritative mainnet SQLite database remains local/gitignored and must not be initialized, replaced, exported, or reconciled for repository cleanup.
+- path: `state/commerce-control/ledgers/mainnet-budget-ledger.json`
+- blob: `9a9e87dce730cc3fddcbdcf8926b12d53c6046ab`
+- network: `eip155:8453`
+- asset: USDC
+- initial: `2380000`
+- spent: `10000`
+- remaining: `2370000` atomic units
 
-## Seller lifecycle and pricing
+Testnet audit snapshot:
 
-Canonical seller source:
+- path: `state/commerce-control/ledgers/testnet-budget-ledger.json`
+- blob: `0632862d26c600634068b61669db8de11faa8dad`
+- network: `eip155:84532`
+- successful signer writeback remains restricted to run-scoped `testnet-audit/run-<run_id>-<run_attempt>` branches.
 
-`products/published/data-quality-profiler/`
+The authoritative transactional SQLite database remains local/gitignored. Repository cleanup or documentation work must not initialize, replace, export, or reconcile it.
 
-Batch 6B moved the seller tree byte-for-byte from `products/drafts/data-quality-profiler/`; active workflows, financial CI, distribution CI, Commerce Control readiness inspection, and repository Render configuration use the published path.
+## Commerce Control
 
-Batch 8 makes `products/published/data-quality-profiler/src/config.mjs` the canonical seller price source. `SELLER_PRICE_DEFAULTS` contains the thirteen default prices and `SELLER_PRICE_CATALOG` binds each paid route to its config key, environment variable, and default. Config resolution, the Agent402 manifest, and public OpenAPI now normalize from this authority rather than carrying independent runtime fallbacks.
+Canonical package:
 
-The previously drifting defaults are now explicitly aligned:
+`tools/hermes-commerce-control/`
 
-- `/v1/dependency-vulnerability-check` — `$0.005`
-- `/v1/package-maintenance-snapshot` — `$0.005`
+The repository already contains a substantial opportunity pipeline. Current implemented pieces include:
 
-The Batch 8 pricing-consistency suite proves all thirteen defaults and route-specific environment overrides match between resolved config, `/.well-known/x402`, and OpenAPI; it also verifies the payment plugin consumes every canonical price config key. The existing Distribution Readiness CI path filter already covers the entire published seller tree, so changes to the canonical price source automatically run distribution contracts and the full seller suite.
+- ingestion;
+- deduplication;
+- triage;
+- local model evaluation;
+- durable evaluation queue/claiming;
+- revenue-oriented ranking;
+- verification planning;
+- verification resolutions;
+- pursuit dossiers;
+- operator packets;
+- review/runtime-health/state support;
+- Reddit RSS opportunity ingestion.
 
-The canonical published seller is now also the live Render seller root. Repository publication and production deployment remain separate concepts for future changes, but the Batch 15 validated baseline has completed both stages.
+Marketplace/service adapters currently include:
 
-## Public root landing
+- Agent402;
+- the402;
+- Agent Bounties;
+- BountyBook;
+- CDP Bazaar;
+- PaySH;
+- Piprail.
 
-Batch 15 replaces the useful intent of stale PR #63 on the current seller architecture. `src/root-landing.mjs` provides a static, read-only `GET /` API-discovery page and `src/server.mjs` registers it before listening. The canonical `app.mjs` and payment implementation remain unchanged.
+Durability/security work already present includes multiwriter JSONL locking, evaluation claims before model calls, verification-resolution locking, sanitization before SQLite persistence, safe-fetch/SSRF controls, evidence/provenance support, and non-authoritative legacy-export handling.
 
-The landing page links to `/openapi.json`, `/llms.txt`, `/.well-known/x402`, and `/health`, includes no request-derived content, is bounded below 16 KiB by regression, and sends a restrictive content-security policy plus `X-Content-Type-Options: nosniff`. It is public discovery only and does not alter paid-route protection or pricing.
+This existing opportunity/policy machinery is the correct place to extend execution routing. Do not create a duplicate opportunity engine merely to support human fulfillment.
 
-## Public/private seller deployment boundary
+## Private C-Shop worker
 
-Batch 12 makes the repository package and the public Docker artifact intentionally different scopes without moving or deleting financial/operator source needed by CI and controlled operations.
+Canonical adapter:
 
-The live Render deployment uses the seller Dockerfile, which installs production dependencies and copies only `src/` into the image. `.dockerignore` excludes repository-only `scripts/`, `test/`, and `docs/`, buyer discovery under `src/discovery/`, and the private buyer-policy, financial-store, ledger, and reconciliation modules under `src/payments/`.
+`tools/cshop-worker-adapter/`
 
-The public server import-graph regression starts at `src/server.mjs`, recursively follows local static and dynamic imports, requires `src/payments/x402-plugin.mjs` to remain reachable for seller payment enforcement, and rejects any reachability into the excluded buyer/discovery/private-financial modules. The Docker-boundary regression also rejects whole-context, scripts, or test copies. Private tooling remains in Git for CI/admin use but is outside the public seller build context and image.
+Pinned renderer:
 
-## GitHub Actions shell safety
+`stubbb/c-shop@f3b2033c07df92e8e72ff83a29955a2c10494d95`
 
-Batch 13 closes direct expression interpolation in workflow shell commands. The testnet signer passes workflow-dispatch input, repository/ref values, and runner-temporary paths through step `env:` before shell use; the arbitrary `purchaseId` is quoted as a shell variable rather than inserted into the command text before execution.
+Current boundary:
 
-`.github/scripts/workflow-policy-check.mjs` scans every workflow `run:` line and multiline `run:` block and fails if it contains a direct `${{ ... }}` GitHub expression. Expressions remain valid in non-shell YAML contexts such as `env:`, `with:`, and concurrency definitions. This makes environment mediation a structural invariant instead of a one-off signer fix.
+- private/local worker;
+- no public C-Shop endpoint;
+- loopback renderer by default;
+- remote renderer requires explicit opt-in and bearer token;
+- explicit MCP session IDs;
+- raw arbitrary `script` input rejected;
+- named `style` commands excluded;
+- workspace asset/output names constrained.
 
-## Testnet signer audit writeback
+Real C-Shop build/workspace tests and MCP smoke have passed. Known graphics failure classes discovered during real testing are now represented in reusable adapter/invariant coverage, and the required `workflow-policy` CI includes the C-Shop regression gate.
 
-Batch 14 keeps the manual external signer testnet-only while making its successful writeback compatible with protected canonical branches. After signing/reconciliation and export, a changed testnet audit snapshot is committed to a unique branch named `testnet-audit/run-<run_id>-<run_attempt>`.
+Unless commercialization reveals a new concrete failure, the C-Shop integration should not be reopened for another generic validation cycle.
 
-The signer does **not** push the result back to `github.ref_name`, does not force-push, and does not auto-merge the audit branch. The branch name is written into the workflow summary for operator inspection. This means a successful testnet financial operation no longer depends on bypassing `main` or production branch protection after value movement has already occurred.
+## Product Listing Graphic
 
-Workflow policy enforces the run-scoped audit branch pattern, forbids `github.ref_name` in the signer workflow, requires the explicit `AUDIT_BRANCH` push target, and rejects signer force pushes. This does not solve crash recovery before the export/writeback step; temporary Actions SQLite crash durability remains separate testnet-only debt.
+Draft product:
 
-## Seller upstream resource bounds
+`products/drafts/product-listing-graphic/`
 
-Batch 9 replaced post-buffer size checks and unbounded JSON reads on public upstream integrations with bounded pre-parse reads:
+Version: **0.2.0**.
 
-- OSV — 2 MiB;
-- npm/PyPI registry responses — 8 MiB;
-- RDAP — 2 MiB, preserving degrade-to-unavailable behavior;
-- SEC ticker map and submissions — 8 MiB each;
-- SEC company facts — 32 MiB, preserving optional/degraded behavior;
-- OFAC SDN/ALT/ADD CSVs — 32 MiB each.
+Graphics validation is now **PASS** at the current scope.
 
-`src/bounded-response.mjs` rejects oversized declared `Content-Length` before consumption, cancels the body, and byte-counts native streaming bodies so a missing or false length cannot force an unbounded application buffer. The existing hardened company-domain website transport remains separate because it already had streaming byte limits.
+The previous full-bleed supplied-photo layout is intentionally retained as a historical human visual failure. It was replaced with the v0.2 split layout:
 
-## Counterparty holiday provenance
+- supplied image proportionally contained in upper 64%;
+- separate lower 36% title/price panel;
+- source aspect ratio preserved;
+- complete source visible by default;
+- no gradient over supplied photographs.
 
-Batch 10 makes the counterparty-availability holiday result explicitly advisory. Every response includes `holiday_calendar` provenance identifying the deterministic repository rule set, its version and source path, evaluated year and jurisdiction scope, and `live_authoritative_lookup: false`, plus limitations covering regional and one-off calendar differences.
+The exact coffee-photo acceptance receipt records both mechanical and human visual **PASS**:
 
-The API retains its existing business-day fields for compatibility, but consumers are explicitly told to confirm an official calendar for legal, payroll, contractual, or time-critical decisions.
+`receipts/visual-acceptance/product-listing-graphic/2026-08-30-split-layout-v02/acceptance.json`
 
-Brazil's national-scope rule set no longer marks Carnival Monday or Tuesday as public holidays. Brazil's official 2026 federal calendar classifies those days as `ponto facultativo`, while actual national holidays such as Tiradentes remain holidays in the seller rule set.
+The product remains commercially unfinished:
 
-## Commerce Control durability
+- pricing unset;
+- payment integration not configured;
+- customer asset intake not defined;
+- finished-output delivery not defined;
+- first-sale distribution/payment route not selected;
+- no complete non-live commercial dry run yet;
+- unpublished;
+- undeployed.
 
-`tools/hermes-commerce-control/` remains the Commerce Control package. Batch 7 closed the known durability gaps without enabling external writes or value movement.
+Graphics acceptance is no longer one of its blockers.
 
-Durability guarantees include:
+## Current open PR state
 
-- opportunity JSONL tail repair, dedupe, and append are serialized across independent processes with bounded stale-lock recovery;
-- evaluator workers acquire a durable per-request/evaluator lease **before** calling the model, preventing duplicate concurrent evaluations;
-- verification-resolution JSONL writes are serialized and duplicate resolution IDs are suppressed;
-- untrusted service/work/probe/evidence/policy/intent/operation text is sanitized **before SQLite persistence**, not merely when exported;
-- future legacy analytics exports live only under `analytics/commerce-control/legacy/` using `*-snapshot.json` filenames and explicitly declare `authority: false`;
-- the exporter structurally refuses `state/` destinations and `*-latest.json` filenames.
+The only deliberately retained deferred PR is:
 
-Current legacy export paths are:
+- **#8 — `feat: add the402 provider adapter`**. It remains deferred pending provider credentials/secret custody and explicit production authorization if revived. Do not merge its stale implementation wholesale without revalidation.
 
-- `analytics/commerce-control/legacy/services-snapshot.json`
-- `analytics/commerce-control/legacy/work-snapshot.json`
-- `analytics/commerce-control/legacy/source-health-snapshot.json`
-- `analytics/commerce-control/legacy/status-snapshot.json`
+Recent merged `main` work through PR #104 includes the private C-Shop adapter, the Product Listing Graphic draft, real graphics failure fixes, permanent graphics regression gates, and the revenue-first operating mission.
 
-The former active-looking tracked snapshots remain preserved by exact Git blob identity under `Unknown/Archived/legacy-commerce-exports/2026-08-29/`.
+## Strategic frontier
 
-## PR state
+The immediate commercial frontier is no longer “build more generic infrastructure.” It is converting opportunities into paid, fulfillable work.
 
-Deliberately retained open PRs:
+Priority order:
 
-- **#8** — deferred the402 provider adapter; do not merge stale implementation wholesale. If revived, rebase/reimplement and add replay protection.
+1. **execution routing** — determine whether a qualified opportunity should be handled by existing automation/AI or requires a human executor;
+2. **human fulfillment** — add a controlled path for tasks that agents cannot complete alone, using the existing opportunity and policy systems rather than a new repository;
+3. **buyer demand validation** — pursue real transactions and record actual conversion/payment evidence;
+4. **commercialize Product Listing Graphic** — close pricing, intake, delivery, and first-sale path after the execution-routing work establishes the broader fulfillment model.
 
-Superseded or replaced PRs:
+Human fulfillment is **not implemented yet**. There are no canonical `human_fulfillment` or subcontract modules in the repository as of this reconciliation.
 
-- **#63** — stale draft-path root landing; useful semantics reimplemented on canonical seller by Batch 15 / PR #94; close unmerged.
-- **#79** — CLOSED/UNMERGED; stale Batch-6B-only production candidate.
-- **#88** — CLOSED/UNMERGED; direct-main candidate with confirmed dirty history conflict.
-- **#89** — CLOSED/UNMERGED; validated production candidate superseded only by the connector draft-state workaround and replaced by PR #95.
+The recommended integration point is under:
 
-PR **#82** is merged and closed as Batch 7. Draft PRs **#83** and **#85** were validated but closed unmerged solely because the ChatGPT GitHub connector could not clear their draft flags; their identical validated branches were merged through non-draft PRs **#84** and **#86** respectively. PR **#87** merged Batch 10 into protected `main`. PR **#91** merged Batch 12. PR **#92** merged Batch 13. PR **#93** merged Batch 14. PR **#94** merged Batch 15 into protected `main`. PR **#95** then promoted that validated canonical tree to the protected production branch; the subsequent manual Blueprint sync deployed it live.
+`tools/hermes-commerce-control/src/opportunities/`
 
-## Archive policy
+The intended high-level decision is:
 
-`Unknown/Archived/` is historical evidence only. No active runtime may treat it as configuration or current state. Never place raw credentials or secrets in the repository archive.
+```text
+qualified paid opportunity
+        |
+        v
+execution feasibility
+   /             \
+  /               \
+agent/AI        human-only
+execution       capability
+                    |
+                    v
+             human fulfillment
+```
 
 ## Rules for future agents
 
 1. Read `state/CURRENT.json` and this document before older status, handoff, plan, receipt, or research files.
-2. A filename containing `latest` is not automatically current; Commerce Control may no longer generate `*-latest.json` outputs.
-3. A closed validation batch or `products/published/` path is not automatically deployed.
-4. `main` and the Render-linked production branch remain separate change-control boundaries. For any future production change, create and validate a fresh promotion path, obtain explicit production authorization, then separately review any pending Render Blueprint mutation before applying it.
-5. All seller default-price changes must update the canonical `SELLER_PRICE_DEFAULTS` / `SELLER_PRICE_CATALOG` authority and pass the pricing-consistency suite.
-6. Counterparty holiday output is advisory static-rule data, not a live authoritative calendar; retain provenance and limitations if the holiday implementation changes.
-7. Public seller Docker changes must preserve the Batch 12 boundary: seller payment enforcement may ship, but buyer/discovery/private financial/operator modules must remain outside the public server import graph and Docker artifact.
-8. GitHub expressions must not appear directly inside workflow `run:` commands or blocks; pass values through `env:` and quote shell variables.
-9. Testnet signer audit snapshots must write only to run-scoped `testnet-audit/` branches; do not write directly to the selected/default/protected branch or force-push audit refs.
-10. Preserve the public root landing as a static read-only discovery surface; do not add request-derived HTML or couple it to payment execution.
-11. Preserve uncertain historical material before removing it.
+2. A filename containing `latest` is not automatically current.
+3. A `products/published/` path or merged `main` PR is not automatically production-deployed.
+4. Preserve the separation between `main` and the Render-linked production branch; production mutation requires explicit authorization.
+5. Do not reopen completed reliability work without new evidence of a real failure.
+6. Prefer whole coherent implementation followed by the relevant full gate; fix concrete failures rather than repeatedly re-planning settled architecture.
+7. Extend the existing Commerce Control opportunity/policy machinery for execution routing and human fulfillment rather than creating duplicate infrastructure.
+8. Seller default-price changes must use the canonical price catalog and pass consistency coverage.
+9. Public seller Docker changes must preserve the private buyer/financial/operator boundary.
+10. GitHub expressions must not appear directly inside workflow `run:` commands; pass values through `env:` and quote shell variables.
+11. Testnet signer audit snapshots must write only to run-scoped audit branches and must not force-push.
 12. Never commit secrets, private paid results, local SQLite/WAL/SHM files, or generated `node_modules`.
+13. `Unknown/Archived/` is historical evidence only and must not be treated as active configuration.
