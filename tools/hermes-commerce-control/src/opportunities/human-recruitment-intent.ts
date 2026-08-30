@@ -26,10 +26,29 @@ function actionFor(payload: HumanRecruitmentPayload): "post" | "contact" {
   return payload.delivery === "private_message" ? "contact" : "post";
 }
 
+function recruitmentIntentId(
+  payload: HumanRecruitmentPayload,
+  action: "post" | "contact",
+): string {
+  return `hintent_${canonicalHash({
+    schemaVersion: 1,
+    payloadId: payload.payloadId,
+    contractId: payload.contractId,
+    opportunityId: payload.opportunityId,
+    action,
+    channel: payload.channel,
+    target: payload.target,
+  }).slice(0, 32)}`;
+}
+
 /**
  * Prepare the exact external recruitment action and ask the central policy
- * engine whether it may execute. In Mode A this is intentionally blocked as an
- * EXTERNAL_WRITE. No adapter/network invocation exists in this module.
+ * engine whether it may execute.
+ *
+ * The intent id deliberately excludes the policy decision. That lets an
+ * operator prepare the intent in the default blocked state, explicitly approve
+ * that exact id, and then re-evaluate the same immutable action under the scoped
+ * recruitment B1 gate without producing a different id.
  */
 export function createHumanRecruitmentActionIntent(
   config: CommerceConfig,
@@ -42,6 +61,7 @@ export function createHumanRecruitmentActionIntent(
   const createdAt = clock();
   if (!Number.isFinite(Date.parse(createdAt))) throw new Error("intent clock must return a valid timestamp");
   const action = actionFor(payload);
+  const intentId = recruitmentIntentId(payload, action);
   const decision = evaluatePolicy(
     config,
     {
@@ -49,17 +69,10 @@ export function createHumanRecruitmentActionIntent(
       class: "EXTERNAL_WRITE",
       platform: `human_recruitment:${payload.channel}`,
       mutatesExternal: true,
+      externalIntentId: intentId,
     },
     new Date(createdAt),
   );
-  const intentId = `hintent_${canonicalHash({
-    schemaVersion: 1,
-    payloadId: payload.payloadId,
-    action,
-    channel: payload.channel,
-    target: payload.target,
-    decisionRule: decision.rule,
-  }).slice(0, 32)}`;
 
   return Object.freeze({
     schemaVersion: 1 as const,
