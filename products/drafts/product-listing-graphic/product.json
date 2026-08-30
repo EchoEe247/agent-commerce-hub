@@ -1,0 +1,75 @@
+{
+  "id": "product-listing-graphic",
+  "name": "Product Listing Graphic",
+  "status": "draft",
+  "version": "0.1.0",
+  "description": "Create one deterministic marketplace-ready product graphic from a supplied workspace image or a blank canvas, with measured title placement, an optional price, a gradient overlay, and PNG/JPEG export.",
+  "execution": {
+    "kind": "private-local-worker",
+    "adapter": "tools/cshop-worker-adapter",
+    "runtime": "stubbb/c-shop",
+    "runtimeCommit": "f3b2033c07df92e8e72ff83a29955a2c10494d95",
+    "publicEndpoint": false
+  },
+  "input": {
+    "required": ["title"],
+    "optional": [
+      "price",
+      "asset",
+      "output",
+      "width",
+      "height",
+      "titleSize",
+      "priceSize",
+      "background",
+      "titleColor",
+      "priceColor",
+      "overlayFrom",
+      "overlayTo"
+    ],
+    "defaults": {
+      "width": 1200,
+      "height": 1200,
+      "output": "product-graphic.png",
+      "background": "#111827",
+      "titleColor": "#ffffff",
+      "priceColor": "#f9fafb",
+      "overlayFrom": "#00000000",
+      "overlayTo": "#000000cc"
+    },
+    "limits": {
+      "width": { "min": 256, "max": 4096 },
+      "height": { "min": 256, "max": 4096 },
+      "titleCharacters": { "min": 1, "max": 120 },
+      "priceCharacters": { "min": 1, "max": 40 },
+      "outputFormats": ["png", "jpg", "jpeg"]
+    }
+  },
+  "output": {
+    "deliverable": "full-size exported PNG or JPEG",
+    "preview": "bounded MCP preview for inspection",
+    "report": "C-Shop execution report"
+  },
+  "boundaries": {
+    "rawScriptAccepted": false,
+    "styleCommandsEnabled": false,
+    "pathComponentsAccepted": false,
+    "rendererLoopbackByDefault": true,
+    "remoteRendererRequiresExplicitOptInAndBearerToken": true
+  },
+  "validation": {
+    "adapterTests": "4/4 PASS",
+    "cshopBuild": "PASS",
+    "cshopWorkspaceTests": "PASS",
+    "realMcpSmoke": "PASS",
+    "smokeOutput": "1200 x 1200 RGBA PNG, 151467 bytes",
+    "receipt": "handoffs/hermes-to-chatgpt/cshop-worker-runtime-validation-2026-08-29.json",
+    "mergedIntegrationCommit": "e93a8992db5760941ef0a4377f8057d05e369824"
+  },
+  "commercial": {
+    "pricingStatus": "unset",
+    "paymentIntegration": "not-configured",
+    "published": false,
+    "deployed": false
+  }
+}
