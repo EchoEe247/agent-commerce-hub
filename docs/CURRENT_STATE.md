@@ -4,11 +4,11 @@
 
 Last current-state reconciliation: **2026-08-30**.
 
-This snapshot reconciles canonical `main` through PR **#104**. The source `main` head at reconciliation start was `241a446952775baeacf9fc68d69901cd650b2e1f`.
+This snapshot is intended to land with PR **#106**. Its source `main` baseline is `4d2f9869eaa681954a69b08e17502355ee0b9349`.
 
 ## Project mission
 
-`agent-commerce-hub` is now explicitly revenue-first. The standing policy is `docs/REVENUE_OPERATING_PRINCIPLES.md`.
+`agent-commerce-hub` is explicitly revenue-first. The standing policy is `docs/REVENUE_OPERATING_PRINCIPLES.md`.
 
 The preferred commercial loop is:
 
@@ -94,7 +94,7 @@ Canonical package:
 
 `tools/hermes-commerce-control/`
 
-The repository already contains a substantial opportunity pipeline. Current implemented pieces include:
+The current opportunity pipeline includes:
 
 - ingestion;
 - deduplication;
@@ -102,6 +102,8 @@ The repository already contains a substantial opportunity pipeline. Current impl
 - local model evaluation;
 - durable evaluation queue/claiming;
 - revenue-oriented ranking;
+- **execution routing**;
+- **analysis-only human fulfillment planning**;
 - verification planning;
 - verification resolutions;
 - pursuit dossiers;
@@ -109,19 +111,68 @@ The repository already contains a substantial opportunity pipeline. Current impl
 - review/runtime-health/state support;
 - Reddit RSS opportunity ingestion.
 
-Marketplace/service adapters currently include:
-
-- Agent402;
-- the402;
-- Agent Bounties;
-- BountyBook;
-- CDP Bazaar;
-- PaySH;
-- Piprail.
+Marketplace/service adapters currently include Agent402, the402, Agent Bounties, BountyBook, CDP Bazaar, PaySH, and Piprail.
 
 Durability/security work already present includes multiwriter JSONL locking, evaluation claims before model calls, verification-resolution locking, sanitization before SQLite persistence, safe-fetch/SSRF controls, evidence/provenance support, and non-authoritative legacy-export handling.
 
-This existing opportunity/policy machinery is the correct place to extend execution routing. Do not create a duplicate opportunity engine merely to support human fulfillment.
+## Execution routing
+
+Canonical implementation:
+
+`tools/hermes-commerce-control/src/opportunities/execution-routing.ts`
+
+Offline command:
+
+```bash
+npm run opportunities:route-execution -- --json
+```
+
+The router consumes the existing ranked opportunity/evaluation state and deterministically emits one of:
+
+- `agent_direct`;
+- `human_fulfillment`;
+- `hybrid`;
+- `manual_review`;
+- `watch`;
+- `reject`.
+
+Current ranking gates remain authoritative before execution. Reject/watch/manual-review rows do not silently become executable, and route/capability contradictions are sent to manual review instead of being auto-repaired.
+
+### Human fulfillment boundary
+
+Human routes now produce a concrete **analysis-only** fulfillment plan. This is the first implemented human-fulfillment slice, but it does **not** recruit or pay anyone yet.
+
+The plan requires:
+
+- task brief;
+- acceptance criteria;
+- completion/attempt evidence;
+- completion review before full compensation;
+- worker quote;
+- compensation authorization;
+- platform/community rule verification before recruiting;
+- extra safety review for physical tasks.
+
+Compensation policy represented by the plan:
+
+- accepted completion → full agreed compensation after acceptance;
+- documented good-faith failed attempt → contract-defined partial compensation after review;
+- no meaningful effort or established fraud → no compensation after review;
+- suspicion/red flags alone → review required rather than automatic denial.
+
+The router never invents a worker payment. It only carries forward the evaluator's bounded execution-cost estimate when one exists.
+
+Human commercial readiness is explicitly classified as one of:
+
+- `economic_case_present`;
+- `needs_total_payout`;
+- `needs_worker_quote`;
+- `needs_margin_review`;
+- `nonpositive_margin`.
+
+Current safety mode remains analysis-only: no job posting, worker contact, task claim/submission, payment promise, wallet/signing action, payment execution, or production mutation.
+
+Detailed contract: `docs/opportunity-execution-routing.md`.
 
 ## Private C-Shop worker
 
@@ -144,7 +195,7 @@ Current boundary:
 - named `style` commands excluded;
 - workspace asset/output names constrained.
 
-Real C-Shop build/workspace tests and MCP smoke have passed. Known graphics failure classes discovered during real testing are now represented in reusable adapter/invariant coverage, and the required `workflow-policy` CI includes the C-Shop regression gate.
+Real C-Shop build/workspace tests and MCP smoke have passed. Known graphics failure classes discovered during real testing are represented in reusable adapter/invariant coverage, and required `workflow-policy` CI includes the C-Shop regression gate.
 
 Unless commercialization reveals a new concrete failure, the C-Shop integration should not be reopened for another generic validation cycle.
 
@@ -156,17 +207,7 @@ Draft product:
 
 Version: **0.2.0**.
 
-Graphics validation is now **PASS** at the current scope.
-
-The previous full-bleed supplied-photo layout is intentionally retained as a historical human visual failure. It was replaced with the v0.2 split layout:
-
-- supplied image proportionally contained in upper 64%;
-- separate lower 36% title/price panel;
-- source aspect ratio preserved;
-- complete source visible by default;
-- no gradient over supplied photographs.
-
-The exact coffee-photo acceptance receipt records both mechanical and human visual **PASS**:
+Graphics validation is **PASS** at the current scope. The exact coffee-photo acceptance receipt records both mechanical and human visual PASS:
 
 `receipts/visual-acceptance/product-listing-graphic/2026-08-30-split-layout-v02/acceptance.json`
 
@@ -185,44 +226,24 @@ Graphics acceptance is no longer one of its blockers.
 
 ## Current open PR state
 
-The only deliberately retained deferred PR is:
+The deliberately retained deferred provider PR remains:
 
 - **#8 — `feat: add the402 provider adapter`**. It remains deferred pending provider credentials/secret custody and explicit production authorization if revived. Do not merge its stale implementation wholesale without revalidation.
 
-Recent merged `main` work through PR #104 includes the private C-Shop adapter, the Product Listing Graphic draft, real graphics failure fixes, permanent graphics regression gates, and the revenue-first operating mission.
+PR **#106** is the execution-routing/human-fulfillment planning change represented by this snapshot. It is a `main`-only Mode-A change and is not a production deployment.
 
 ## Strategic frontier
 
-The immediate commercial frontier is no longer “build more generic infrastructure.” It is converting opportunities into paid, fulfillable work.
+The system can now decide whether a qualified opportunity belongs on an agent, human, hybrid, or manual path. The next gap is converting an approved human plan into a controlled worker-facing transaction without duplicating the opportunity stack.
 
-Priority order:
+Priority order after this slice:
 
-1. **execution routing** — determine whether a qualified opportunity should be handled by existing automation/AI or requires a human executor;
-2. **human fulfillment** — add a controlled path for tasks that agents cannot complete alone, using the existing opportunity and policy systems rather than a new repository;
-3. **buyer demand validation** — pursue real transactions and record actual conversion/payment evidence;
-4. **commercialize Product Listing Graphic** — close pricing, intake, delivery, and first-sale path after the execution-routing work establishes the broader fulfillment model.
+1. **human recruitment adapter** — turn an approved human plan into a bounded worker listing/contact workflow while retaining platform/community rules and explicit financial authorization;
+2. **fulfillment task contract + acceptance record** — freeze task scope, acceptance criteria, agreed compensation, good-faith-attempt terms, evidence, and final review outcome;
+3. **buyer demand validation** — pursue real upstream opportunities and record conversion/payment evidence;
+4. **commercialize Product Listing Graphic** — close pricing, intake, delivery, and first-sale path using the same execution/fulfillment principles where useful.
 
-Human fulfillment is **not implemented yet**. There are no canonical `human_fulfillment` or subcontract modules in the repository as of this reconciliation.
-
-The recommended integration point is under:
-
-`tools/hermes-commerce-control/src/opportunities/`
-
-The intended high-level decision is:
-
-```text
-qualified paid opportunity
-        |
-        v
-execution feasibility
-   /             \
-  /               \
-agent/AI        human-only
-execution       capability
-                    |
-                    v
-             human fulfillment
-```
+Do not create a new repository or a second opportunity engine for the recruitment layer. Extend the existing Commerce Control opportunity/policy machinery.
 
 ## Rules for future agents
 
@@ -232,10 +253,11 @@ execution       capability
 4. Preserve the separation between `main` and the Render-linked production branch; production mutation requires explicit authorization.
 5. Do not reopen completed reliability work without new evidence of a real failure.
 6. Prefer whole coherent implementation followed by the relevant full gate; fix concrete failures rather than repeatedly re-planning settled architecture.
-7. Extend the existing Commerce Control opportunity/policy machinery for execution routing and human fulfillment rather than creating duplicate infrastructure.
-8. Seller default-price changes must use the canonical price catalog and pass consistency coverage.
-9. Public seller Docker changes must preserve the private buyer/financial/operator boundary.
-10. GitHub expressions must not appear directly inside workflow `run:` commands; pass values through `env:` and quote shell variables.
-11. Testnet signer audit snapshots must write only to run-scoped audit branches and must not force-push.
-12. Never commit secrets, private paid results, local SQLite/WAL/SHM files, or generated `node_modules`.
-13. `Unknown/Archived/` is historical evidence only and must not be treated as active configuration.
+7. Extend the existing Commerce Control opportunity/policy machinery for recruitment and fulfillment rather than creating duplicate infrastructure.
+8. Human worker posting/contact/payment remains disabled until a later explicitly bounded implementation adds those capabilities.
+9. Seller default-price changes must use the canonical price catalog and pass consistency coverage.
+10. Public seller Docker changes must preserve the private buyer/financial/operator boundary.
+11. GitHub expressions must not appear directly inside workflow `run:` commands; pass values through `env:` and quote shell variables.
+12. Testnet signer audit snapshots must write only to run-scoped audit branches and must not force-push.
+13. Never commit secrets, private paid results, local SQLite/WAL/SHM files, or generated `node_modules`.
+14. `Unknown/Archived/` is historical evidence only and must not be treated as active configuration.
