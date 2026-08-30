@@ -10,8 +10,8 @@
   "repository": {
     "default_branch": "main",
     "canonical_repository_branch": "main",
-    "source_main_head_at_agent_bounties_unified_start": "81352ff42348a7984bec4dd8357a2150ff33679e",
-    "reconciled_through_pull_request": 114,
+    "source_main_head_at_forward_gmv_dossier_start": "f5f8db15da57959bf8d53d06d834f09321398950",
+    "reconciled_through_pull_request": 115,
     "production_branch": "feat/hermes-commerce-control-plane",
     "main_protected": true,
     "production_branch_protected": true,
@@ -20,10 +20,12 @@
       "seller",
       "commerce-control"
     ],
-    "strict_status_checks": true,
-    "admins_enforced": true,
-    "force_push_allowed": false,
-    "branch_deletion_allowed": false
+    "main_merge_is_production_deploy": false,
+    "latest_completed_main_change": {
+      "pull_request": 114,
+      "merge_commit": "f5f8db15da57959bf8d53d06d834f09321398950",
+      "post_merge_required_checks_passed": true
+    }
   },
   "mission": {
     "document": "docs/REVENUE_OPERATING_PRINCIPLES.md",
@@ -49,10 +51,8 @@
     "render_service": "hermes-counterparty-api",
     "render_deploy_id": "dep-da9fhedg1s2s73a930n0",
     "render_deploy_status": "live",
-    "render_deployed_at": "2026-08-29T15:21:12.959916Z",
     "root_dir": "products/published/data-quality-profiler",
     "x402_facilitator_mode": "xpay",
-    "main_merge_is_production_deploy": false,
     "future_production_change_requires_fresh_promotion_and_explicit_authorization": true
   },
   "financial": {
@@ -60,7 +60,6 @@
     "tracked_json_role": "audit_snapshot",
     "mainnet_ledger": {
       "path": "state/commerce-control/ledgers/mainnet-budget-ledger.json",
-      "blob_sha": "9a9e87dce730cc3fddcbdcf8926b12d53c6046ab",
       "network": "eip155:8453",
       "asset": "USDC",
       "initial_budget": 2380000,
@@ -69,11 +68,9 @@
     },
     "testnet_ledger": {
       "path": "state/commerce-control/ledgers/testnet-budget-ledger.json",
-      "blob_sha": "0632862d26c600634068b61669db8de11faa8dad",
       "network": "eip155:84532",
       "asset": "USDC",
-      "successful_actions_writeback": "run_scoped_audit_branch",
-      "temp_sqlite_crash_durability": "deferred_testnet_only"
+      "successful_actions_writeback": "run_scoped_audit_branch"
     }
   },
   "seller": {
@@ -81,19 +78,10 @@
     "lifecycle_state": "published_and_production_deployed",
     "paid_x402_operations": 13,
     "free_preview": "/v1/company-domain-intelligence/preview",
-    "root_landing": "/",
-    "pricing_authority": "products/published/data-quality-profiler/src/config.mjs#SELLER_PRICE_DEFAULTS+SELLER_PRICE_CATALOG",
     "public_private_deployment_boundary_enforced": true,
     "upstream_response_bounds_enforced": true,
     "production_payment_challenges_observed": true,
-    "payment_succeeded_observed_since_deploy": false,
-    "agent402_observation": {
-      "status": "listed_healthy",
-      "tools": 14,
-      "paid_tools": 13,
-      "chain_label": "unresolved_in_marketplace_snapshot",
-      "transient_observation": true
-    }
+    "payment_succeeded_observed_since_deploy": false
   },
   "commerce_control": {
     "path": "tools/hermes-commerce-control/",
@@ -105,6 +93,11 @@
       "durable_evaluation_queue": true,
       "revenue_ranking": true,
       "execution_routing": true,
+      "verification_planning": true,
+      "verification_resolutions": true,
+      "pursuit_dossiers": true,
+      "operator_packets": true,
+      "reddit_rss_adapter": true,
       "agent_bounties_unified_ready_to_earn_discovery": true,
       "agent_bounties_open_competition_v2_discovery": true,
       "human_fulfillment_planning": true,
@@ -115,13 +108,9 @@
       "scoped_recruitment_b1_authorization": true,
       "provider_neutral_recruitment_executor": true,
       "givegigs_offsite_pay_recruitment_transport": true,
-      "givegigs_crash_conservative_idempotency": true,
       "givegigs_application_candidate_ingestion": true,
-      "givegigs_candidate_specific_contract_binding": true,
       "candidate_qualification": true,
-      "candidate_followup_classification": true,
       "assignment_offer_and_decision": true,
-      "assignment_replacement_linkage": true,
       "attempt_submission": true,
       "attempt_assessment": true,
       "correction_request_and_response": true,
@@ -129,13 +118,17 @@
       "replacement_authorization": true,
       "worker_performance_history": true,
       "human_fulfillment_lifecycle_persistence": true,
-      "human_attempt_review": true,
-      "verification_planning": true,
-      "verification_resolutions": true,
-      "pursuit_dossiers": true,
-      "operator_packets": true,
-      "reddit_rss_adapter": true
+      "human_attempt_review": true
     },
+    "marketplace_service_adapters": [
+      "agent402",
+      "the402",
+      "agent-bounties",
+      "bountybook",
+      "cdp-bazaar",
+      "paysh",
+      "piprail"
+    ],
     "agent_bounties_discovery": {
       "provider": "Agent Bounties",
       "provider_contract_checked_at": "2026-08-30",
@@ -153,7 +146,6 @@
       "supports_autonomous_bounties": true,
       "supports_open_competition_v2": true,
       "legacy_inventory_is_primary_discovery": false,
-      "legacy_inventory_normalization_preserved": true,
       "exact_atomic_usdc_required": true,
       "escrowed_maps_to_funded_evidence": "observed",
       "canonical_bounty_payment_proof": "BountySettled",
@@ -164,25 +156,63 @@
       "live_claim_allowed": false,
       "live_submission_allowed": false,
       "live_funding_allowed": false,
-      "wallet_signature_allowed": false,
-      "active_counterparty_required_candidate": {
-        "opportunity_id": "open-competition-v2:base-mainnet:0x8c990ddf5360c00ee0b2090000e3a3a6f90a6a9d",
-        "title": "Highest externally funded canonical GMV — August 24 to September 21",
-        "participation_phase": "scoring",
-        "scoring_window_starts_at": "2026-08-24T00:00:00Z",
-        "scoring_window_ends_at": "2026-09-21T00:00:00Z",
-        "solver_reward_usdc": "3",
-        "provider_configured_external_spend_usdc": "0.11",
-        "provider_advertised_gross_cash_margin_usdc": "2.89",
-        "competition_mode": "best_score",
-        "entry_count_at_observation": 0,
-        "requires_different_eligible_wallet_for_settlement": true,
-        "profit_guaranteed": false
+      "wallet_signature_allowed": false
+    },
+    "forward_gmv_dossier": {
+      "document": "docs/opportunity-dossiers/agent-bounties-forward-gmv-2026-08-30.md",
+      "status": "prepare_do_not_execute",
+      "source_inspected_at": "2026-08-30",
+      "metric_profile": "forward-canonical-gmv-attribution-metric-v2",
+      "score_formula": "settlement_gmv * entrant_canonical_funding / total_canonical_funding",
+      "canonical_settlement_required": true,
+      "different_eligible_solver_required": true,
+      "creator_as_solver_excluded": true,
+      "entrant_as_solver_excluded": true,
+      "overlapping_window_eligibility_stacking_supported_by_inspected_source": true,
+      "cross_competition_consumed_settlement_registry_observed": false,
+      "multiple_prize_payout_guaranteed": false,
+      "cash_model": "profit(k) = 2.89*k - child_irreversible_cost - other_costs",
+      "child_hosted_minimum_verified": false,
+      "competitions": [
+        {
+          "contract": "0x2f1d2b24105596b153e473032256569fe544a44f",
+          "window_starts_at": "2026-08-24T00:00:00Z",
+          "window_ends_at": "2026-08-31T00:00:00Z",
+          "solver_reward_usdc": "3",
+          "provider_configured_proof_relay_spend_usdc": "0.11",
+          "snapshot_entry_count": 0,
+          "participation_phase_at_observation": "scoring"
+        },
+        {
+          "contract": "0x6f635dfd07085aa48ec8b11767eeb48936969f5c",
+          "window_starts_at": "2026-08-24T00:00:00Z",
+          "window_ends_at": "2026-09-07T00:00:00Z",
+          "solver_reward_usdc": "3",
+          "provider_configured_proof_relay_spend_usdc": "0.11",
+          "snapshot_entry_count": 0,
+          "participation_phase_at_observation": "scoring"
+        },
+        {
+          "contract": "0x8c990ddf5360c00ee0b2090000e3a3a6f90a6a9d",
+          "window_starts_at": "2026-08-24T00:00:00Z",
+          "window_ends_at": "2026-09-21T00:00:00Z",
+          "solver_reward_usdc": "3",
+          "provider_configured_proof_relay_spend_usdc": "0.11",
+          "snapshot_entry_count": 0,
+          "participation_phase_at_observation": "scoring"
+        }
+      ],
+      "autonomous_child_protocol_source_facts": {
+        "solver_reward_must_be_positive": true,
+        "verifier_reward_must_be_positive": true,
+        "creator_cannot_solve": true,
+        "claim_bond_equals_verifier_reward": true,
+        "contract_level_dollar_minimum_observed": false,
+        "hosted_tooling_minimum_requires_fresh_validation": true
       }
     },
     "execution_routing": {
       "module": "tools/hermes-commerce-control/src/opportunities/execution-routing.ts",
-      "cli": "npm run opportunities:route-execution",
       "decisions": [
         "agent_direct",
         "human_fulfillment",
@@ -202,235 +232,52 @@
       "candidate_assignment_module": "tools/hermes-commerce-control/src/opportunities/human-candidate-assignment.ts",
       "attempt_orchestration_module": "tools/hermes-commerce-control/src/opportunities/human-attempt-orchestration.ts",
       "lifecycle_module": "tools/hermes-commerce-control/src/opportunities/human-fulfillment-lifecycle.ts",
-      "contract_document": "docs/human-fulfillment-contract.md",
-      "adapter_document": "docs/human-recruitment-adapters.md",
-      "activation_document": "docs/human-recruitment-b1-activation.md",
-      "givegigs_transport_document": "docs/givegigs-recruitment-transport.md",
-      "givegigs_application_ingestion_document": "docs/givegigs-application-ingestion.md",
-      "candidate_assignment_document": "docs/human-candidate-assignment.md",
-      "attempt_orchestration_document": "docs/human-attempt-correction-orchestration.md",
-      "policy_version": 1,
-      "recruitment_channels": [
-        "reddit",
-        "marketplace",
-        "direct",
-        "other"
-      ],
       "worker_payload_excludes_internal_economics_source_text_and_model_metadata": true,
       "worker_payload_requires_positive_economic_readiness": true,
-      "transport_receives_frozen_worker_terms_only": true,
-      "target_rules_verification_timestamp_required": true,
-      "target_rules_max_age_days_at_execution": 7,
       "direct_recruitment_private_message_only": true,
       "general_external_writes_enabled": false,
       "scoped_b1_config": {
         "enabled_env": "HUMAN_RECRUITMENT_B1_ENABLED",
         "approved_intent_env": "HUMAN_RECRUITMENT_B1_APPROVED_INTENT_ID",
         "approved_intent_pattern": "hintent_<32 hex>",
-        "exact_intent_required": true,
-        "stale_intent_without_enabled_gate_rejected": true,
-        "policy_rule": "B1_HUMAN_RECRUITMENT_EXACT_INTENT"
+        "exact_intent_required": true
       },
-      "unmatched_recruitment_external_write_reason": "EXTERNAL_WRITE_NOT_AUTHORIZED",
-      "unrelated_external_write_reason": "EXTERNAL_WRITE_DISABLED",
-      "signer_or_secret_access_allowed": false,
       "live_value_movement_allowed": false,
-      "transport_contract_requires_intent_idempotency_key": true,
-      "credential_bearing_channel_transport_implemented": true,
       "givegigs_transport": {
-        "provider": "GiveGigs",
-        "provider_api_contract_checked_at": "2026-08-30",
         "endpoint": "https://givegigs.com/api/ai/tasks",
         "method": "POST",
         "funding_type": "OFFSITE_PAY",
         "platform_value_movement": false,
-        "channel": "marketplace",
-        "delivery": "public_post",
-        "target_pattern": "givegigs:offsite-pay:<32 hex>",
-        "target_binds_contact_payment_location_configuration": true,
-        "physical_requires_local_coordinates_country": true,
-        "remote_requires_remote_location_type": true,
-        "raw_api_key_in_commerce_config": false,
         "raw_api_key_persisted": false,
         "credential_endpoint_fixed": true,
-        "idempotency_store": "append_only_jsonl",
         "idempotency_claim_before_remote_post": true,
-        "completed_replay_without_network": true,
         "ambiguous_outcome_blocks_automatic_retry": true,
-        "definitive_no_create_can_release_for_retry": true,
-        "corrupt_complete_journal_fails_closed": true,
-        "real_api_key_used_in_repository_validation": false,
         "live_task_created_by_repository_validation": false
       },
       "givegigs_application_ingestion": {
-        "provider_api_contract_checked_at": "2026-08-30",
         "endpoint_pattern": "https://givegigs.com/api/ai/tasks/<taskId>",
         "method": "GET",
         "authentication_required": false,
         "shared_safe_fetch_required": true,
-        "public_task_reference_pattern": "https://givegigs.com/ai/gigs/tasks/<taskId>",
-        "provider_controlled_read_destination_allowed": false,
-        "candidate_reference_pattern": "givegigs:worker:<workerId>",
-        "application_reference_deterministic": true,
-        "malformed_individual_rows_skipped": true,
-        "nonempty_all_unusable_response_fails_closed": true,
         "application_status_auto_qualifies_worker": false,
         "application_status_auto_hires_worker": false,
         "candidate_contract_changes_only_worker_reference": true,
-        "candidate_binding_preserves_scope_acceptance_evidence_compensation_deadline_and_economics": true,
-        "financially_blocked_template_can_bind_candidate": false,
         "raw_application_message_persisted_to_lifecycle_by_default": false,
-        "provider_application_acceptance_write_implemented": false,
-        "payment_execution_allowed": false
+        "provider_application_acceptance_write_implemented": false
       },
-      "candidate_qualification": {
-        "requirement_categories": [
-          "capability",
-          "equipment",
-          "credential",
-          "location",
-          "schedule",
-          "other"
-        ],
-        "verification_modes": [
-          "self_attestation",
-          "evidence_required"
-        ],
-        "statuses": [
-          "qualified",
-          "needs_followup",
-          "not_qualified"
-        ],
-        "physical_location_requirement_mandatory": true,
-        "deadline_confirmation_required": true,
-        "correction_availability_required": true,
-        "communication_acknowledgement_required": true,
-        "compensation_terms_acknowledgement_required": true,
-        "missing_information_is_hard_rejection": false
-      },
-      "assignment": {
-        "initial_status": "offered",
-        "decisions": [
-          "accepted",
-          "declined",
-          "withdrawn",
-          "expired"
-        ],
-        "only_accepted_may_start_execution": true,
-        "acceptance_deadline_must_precede_task_deadline": true,
-        "replacement_assignment_pointer_supported": true,
-        "payment_execution_allowed": false
-      },
-      "attempt_orchestration": {
-        "attempt_requires_accepted_assignment": true,
-        "attempt_outcomes": [
-          "accepted",
-          "correction_required",
-          "worker_failed",
-          "manual_review",
-          "external_blocker"
-        ],
-        "correction_requires_concrete_deficiencies": true,
-        "correction_cycles_prebounded": true,
-        "correction_deadline_cannot_exceed_frozen_task_deadline": true,
-        "correction_frozen_terms_hash_covers_scope_acceptance_evidence_compensation_and_deadline": true,
-        "correction_new_scope_allowed": false,
-        "correction_compensation_change_allowed": false,
-        "correction_response_requires_fresh_assessment": true,
-        "external_blocker_parties": [
-          "operator",
-          "upstream",
-          "site_access",
-          "other_external"
-        ],
-        "external_blocker_establishes_worker_fault": false,
-        "external_blocker_worker_performance_penalty_allowed": false,
-        "replacement_reasons": [
-          "assignment_declined",
-          "assignment_withdrawn",
-          "assignment_expired",
-          "worker_cannot_continue",
-          "correction_deadline_expired",
-          "correction_cycles_exhausted",
-          "no_meaningful_effort_established"
-        ],
-        "replacement_changes_prior_worker_compensation_outcome": false,
-        "attempt_assessment_decides_final_compensation": false,
-        "payment_execution_allowed": false
-      },
-      "worker_performance": {
-        "future_eligibility_states": [
-          "eligible",
-          "case_by_case",
-          "hold_for_manual_review",
-          "do_not_reoffer"
-        ],
-        "suspicion_creates_permanent_ban": false,
-        "correction_counts_recorded": true,
-        "communication_recorded": true,
-        "timeliness_recorded": true
-      },
-      "lifecycle_store": "append_only_jsonl",
-      "lifecycle_multiwriter_locking": true,
-      "lifecycle_event_types": [
-        "recruitment_payload_prepared",
-        "external_action_intent_prepared",
-        "external_action_executed",
-        "candidate_recorded",
-        "candidate_qualification_recorded",
-        "contract_recorded",
-        "assignment_recorded",
-        "assignment_decision_recorded",
-        "worker_acceptance_recorded",
-        "attempt_submitted",
-        "attempt_assessed",
-        "correction_requested",
-        "correction_response_recorded",
-        "external_blocker_recorded",
-        "replacement_authorized",
-        "attempt_evidence_recorded",
-        "review_recorded",
-        "worker_performance_recorded"
+      "candidate_qualification_statuses": [
+        "qualified",
+        "needs_followup",
+        "not_qualified"
       ],
-      "contract_freezes_scope_acceptance_evidence_and_compensation": true,
-      "good_faith_partial_must_be_positive_and_below_full": true,
-      "known_upstream_payout_positive_gross_margin_gate": true,
-      "review_outcomes": [
-        "accepted",
-        "good_faith_failed",
-        "no_meaningful_effort",
-        "established_fraud",
-        "suspicious"
-      ],
-      "suspicion_alone_can_auto_deny_compensation": false,
-      "worker_payment_execution_allowed": false
-    },
-    "marketplace_service_adapters": [
-      "agent402",
-      "the402",
-      "agent-bounties",
-      "bountybook",
-      "cdp-bazaar",
-      "paysh",
-      "piprail"
-    ],
-    "jsonl_multiwriter_locking": true,
-    "evaluation_claim_before_model_call": true,
-    "verification_resolution_multiwriter_locking": true,
-    "sqlite_sanitize_before_persist": true,
-    "legacy_latest_snapshots_authoritative": false
-  },
-  "cshop_worker": {
-    "path": "tools/cshop-worker-adapter/",
-    "runtime": "stubbb/c-shop",
-    "runtime_commit": "f3b2033c07df92e8e72ff83a29955a2c10494d95",
-    "private_worker": true,
-    "public_endpoint": false,
-    "loopback_by_default": true,
-    "raw_script_accepted": false,
-    "style_commands_enabled": false,
-    "real_mcp_smoke": "PASS",
-    "regression_invariant_gate": "PASS_required_workflow-policy"
+      "only_qualified_accepted_assignment_may_execute": true,
+      "correction_new_scope_allowed": false,
+      "correction_compensation_change_allowed": false,
+      "external_blocker_establishes_worker_fault": false,
+      "replacement_changes_prior_worker_compensation_outcome": false,
+      "worker_payment_execution_allowed": false,
+      "human_use_rule": "Use a human/counterparty only where the upstream acceptance condition or execution requirement genuinely needs an independent participant/capability; do not outsource work the agent can retain internally merely because a human marketplace exists."
+    }
   },
   "products": {
     "product_listing_graphic": {
@@ -438,25 +285,16 @@
       "version": "0.2.0",
       "status": "draft",
       "graphics_acceptance": "PASS",
-      "graphics_acceptance_receipt": "receipts/visual-acceptance/product-listing-graphic/2026-08-30-split-layout-v02/acceptance.json",
       "pricing_status": "unset",
       "payment_integration": "not-configured",
       "published": false,
-      "deployed": false,
-      "remaining_commercial_gates": [
-        "buyer_facing_scope_and_acceptance",
-        "initial_price_and_delivery_expectations",
-        "customer_asset_intake",
-        "finished_output_delivery",
-        "first_sale_payment_distribution_path",
-        "complete_non_live_commercial_dry_run"
-      ]
+      "deployed": false
     }
   },
   "open_pull_requests": {
     "current": {
-      "number": 114,
-      "title": "Discover Agent Bounties unified ready-to-earn market",
+      "number": 115,
+      "title": "Add Agent Bounties Forward-GMV opportunity dossier",
       "base": "main",
       "production_deployment": false
     },
@@ -469,57 +307,29 @@
     ]
   },
   "strategic_frontier": {
-    "commercial_fact": "No successful paid seller transaction has been recorded in the canonical post-deploy observation.",
-    "current_bottleneck": "A concrete funded upstream competition is now visible; next progress requires exact live opportunity selection, complete cost/risk accounting, and a real independent participant rather than more generic discovery infrastructure.",
+    "commercial_fact": "No successful paid seller transaction has been recorded in canonical post-deploy evidence.",
+    "current_bottleneck": "Transaction-specific Forward-GMV economics and execution feasibility: exact child cost, current hosted minimums, independent solver eligibility/price, proof quotes, deadlines, and competitive risk.",
     "next_work": [
-      "refetch_and_select_still_active_agent_bounties_counterparty_required_opportunity",
-      "prepare_exact_non_live_cost_and_participation_dossier",
-      "explicit_operator_authorization_before_any_wallet_signature_claim_or_funding",
-      "real_worker_counterparty_validation_only_if_combined_economics_remain_positive",
-      "givegigs_provider_side_acceptance_and_b2_payment_only_when_real_case_requires"
-    ],
-    "human_fulfillment": {
-      "analysis_only_planning_implemented": true,
-      "recruitment_draft_core_implemented": true,
-      "contract_draft_core_implemented": true,
-      "worker_facing_payload_adapter_implemented": true,
-      "external_action_intent_boundary_implemented": true,
-      "exact_intent_b1_authorization_implemented": true,
-      "provider_neutral_executor_implemented": true,
-      "givegigs_offsite_pay_transport_implemented": true,
-      "givegigs_application_ingestion_implemented": true,
-      "givegigs_candidate_specific_contract_binding_implemented": true,
-      "candidate_qualification_implemented": true,
-      "assignment_and_replacement_state_implemented": true,
-      "attempt_submission_and_assessment_implemented": true,
-      "correction_orchestration_implemented": true,
-      "external_blocker_attribution_implemented": true,
-      "replacement_authorization_implemented": true,
-      "private_worker_performance_history_implemented": true,
-      "persistent_lifecycle_core_implemented": true,
-      "attempt_review_core_implemented": true,
-      "credential_bearing_channel_transport_implemented": true,
-      "real_worker_contact_observed": false,
-      "worker_payment_implemented": false,
-      "physical_safety_review_required": true,
-      "integration_point": "tools/hermes-commerce-control/src/opportunities",
-      "rule": "Use a human/counterparty only where the upstream acceptance condition or execution requirement genuinely needs an independent participant/capability; do not outsource work the agent can retain internally merely because a human marketplace exists."
-    }
+      "refetch_three_forward_gmv_competitions_at_decision_time",
+      "select_one_genuinely_useful_canonical_child_deliverable",
+      "establish_exact_child_solver_verifier_bond_funding_and_hosted_minimums",
+      "establish_real_independent_solver_eligibility_and_price_without_recruiting_yet",
+      "quote_each_competition_proof_relay_and_compute_joint_downside_expected_value",
+      "prepare_exact_transaction_bundle_then_stop_for_operator_authorization"
+    ]
   },
   "workflow_security": {
     "external_actions_sha_pinned": true,
     "checkout_credentials_persisted": false,
     "direct_github_expression_interpolation_in_run_allowed": false,
     "signer_testnet_only": true,
-    "testnet_signer_audit_branch_pattern": "testnet-audit/run-<run_id>-<run_attempt>",
     "testnet_signer_force_push_allowed": false,
     "public_buyer_execute_mode_available": false,
     "live_seller_smoke_read_only": true,
     "givegigs_api_key_persisted": false,
-    "givegigs_credential_endpoint_fixed": true,
     "givegigs_application_reads_authenticated": false,
-    "givegigs_application_reads_use_shared_safe_fetch": true,
     "agent_bounties_unified_discovery_read_only": true,
-    "agent_bounties_wallet_signature_allowed_by_discovery": false
+    "agent_bounties_wallet_signature_allowed_by_discovery": false,
+    "forward_gmv_dossier_authorizes_value_movement": false
   }
 }
