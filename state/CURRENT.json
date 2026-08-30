@@ -10,8 +10,8 @@
   "repository": {
     "default_branch": "main",
     "canonical_repository_branch": "main",
-    "source_main_head_at_reconciliation": "241a446952775baeacf9fc68d69901cd650b2e1f",
-    "reconciled_through_pull_request": 104,
+    "source_main_head_at_execution_routing_start": "4d2f9869eaa681954a69b08e17502355ee0b9349",
+    "reconciled_through_pull_request": 106,
     "production_branch": "feat/hermes-commerce-control-plane",
     "main_protected": true,
     "production_branch_protected": true,
@@ -104,11 +104,33 @@
       "local_model_evaluation": true,
       "durable_evaluation_queue": true,
       "revenue_ranking": true,
+      "execution_routing": true,
+      "human_fulfillment_planning": true,
       "verification_planning": true,
       "verification_resolutions": true,
       "pursuit_dossiers": true,
       "operator_packets": true,
       "reddit_rss_adapter": true
+    },
+    "execution_routing": {
+      "module": "tools/hermes-commerce-control/src/opportunities/execution-routing.ts",
+      "cli": "npm run opportunities:route-execution",
+      "decisions": [
+        "agent_direct",
+        "human_fulfillment",
+        "hybrid",
+        "manual_review",
+        "watch",
+        "reject"
+      ],
+      "mode": "analysis_only",
+      "external_mutation_allowed": false,
+      "human_compensation_policy": {
+        "full_completion": "full_agreed_compensation_after_acceptance",
+        "good_faith_failed_attempt": "contract_defined_partial_after_review",
+        "no_effort_or_established_fraud": "none_after_review",
+        "suspicious_case": "requires_review"
+      }
     },
     "marketplace_service_adapters": [
       "agent402",
@@ -171,14 +193,18 @@
     "commercial_fact": "No successful paid seller transaction has been recorded in the canonical post-deploy observation.",
     "current_bottleneck": "paid demand and executable opportunity conversion rather than additional generic seller hardening",
     "next_work": [
-      "execution_routing",
-      "human_fulfillment",
+      "human_recruitment_adapter",
+      "fulfillment_task_contract_and_acceptance_record",
       "buyer_demand_validation",
       "commercialize_product_listing_graphic"
     ],
     "human_fulfillment": {
-      "implemented": false,
-      "recommended_integration_point": "tools/hermes-commerce-control/src/opportunities",
+      "analysis_only_planning_implemented": true,
+      "external_recruitment_implemented": false,
+      "worker_contact_implemented": false,
+      "worker_payment_implemented": false,
+      "physical_safety_review_required": true,
+      "integration_point": "tools/hermes-commerce-control/src/opportunities",
       "rule": "extend the existing opportunity and policy machinery rather than create a duplicate repository or second opportunity engine"
     }
   },
