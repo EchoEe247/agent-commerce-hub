@@ -4,7 +4,7 @@
 
 Last current-state reconciliation: **2026-08-30**.
 
-This snapshot is intended to land with PR **#112**. Its source `main` baseline is `f9269fd2f02d19c584ac8df0ce38bd84d097135a`.
+This snapshot is intended to land with PR **#113**. Its source `main` baseline is `705199fb2a6d49fa7705113c9fb594cca4b67536`.
 
 ## Project mission
 
@@ -68,6 +68,8 @@ Implemented stages include:
 - provider-neutral recruitment execution boundary;
 - **concrete GiveGigs OFFSITE_PAY marketplace transport**;
 - **crash-conservative GiveGigs recruitment idempotency journal**;
+- **public GiveGigs application/candidate ingestion through the shared safe-read boundary**;
+- **candidate-specific frozen contract derivation that changes only worker identity**;
 - candidate qualification / follow-up / rejection classification;
 - assignment offer / acceptance / replacement state;
 - accepted-assignment attempt submission and assessment;
@@ -81,7 +83,7 @@ Implemented stages include:
 - pursuit dossiers and operator packets;
 - Reddit RSS opportunity ingestion.
 
-Marketplace/service discovery adapters remain Agent402, the402, Agent Bounties, BountyBook, CDP Bazaar, PaySH, and Piprail. GiveGigs is now a concrete human-recruitment execution transport, not a duplicate opportunity engine.
+Marketplace/service discovery adapters remain Agent402, the402, Agent Bounties, BountyBook, CDP Bazaar, PaySH, and Piprail. GiveGigs is now a concrete human-recruitment execution and application-ingestion path, not a duplicate opportunity engine.
 
 ## Execution routing
 
@@ -170,6 +172,24 @@ The raw GiveGigs API key is supplied lazily by an injected secret provider. It i
 
 No real GiveGigs API key has been used and no live GiveGigs task has been created by repository validation. A live post still requires fresh platform-rule verification plus explicit activation of the exact prepared `hintent_...`.
 
+## GiveGigs application ingestion
+
+Canonical module: `tools/hermes-commerce-control/src/opportunities/givegigs-application-ingestion.ts`.
+
+Documentation: `docs/givegigs-application-ingestion.md`.
+
+GiveGigs' public API contract was re-checked on 2026-08-30: `GET /api/ai/tasks/:taskId` is documented as a no-auth task-detail endpoint that includes applications, while write operations remain API-key authenticated.
+
+The reader accepts only validated public GiveGigs task references in the `https://givegigs.com/ai/gigs/tasks/<taskId>` namespace and derives the API endpoint locally. Reads run through the repository's shared no-credential `SafeFetch` boundary. Provider-supplied URLs, applicant text, and application metadata cannot change the destination or attach credentials.
+
+Applications are normalized into deterministic provider/candidate references. Malformed individual rows are skipped, but a non-empty response that yields no usable worker identity fails closed rather than silently pretending there are no candidates. Provider task identity is checked when supplied.
+
+A normalized application does **not** qualify or hire the worker. `bindGiveGigsApplicationToContract(...)` creates a new candidate-specific frozen contract whose only changed worker term is `workerReference`; scope, acceptance criteria, evidence requirements, both compensation amounts, deadline, economics, compensation policy, and payment boundary remain unchanged. A financially blocked template cannot be candidate-bound.
+
+The resulting contract flows directly into the existing candidate qualification module. The candidate lifecycle helper records only durable provider/candidate linkage and a bounded provider-status note; raw applicant messages are intentionally omitted from lifecycle state.
+
+No authenticated GiveGigs application acceptance/hire write is implemented by this slice.
+
 ## Candidate qualification and assignment
 
 Canonical module: `tools/hermes-commerce-control/src/opportunities/human-candidate-assignment.ts`.
@@ -257,21 +277,21 @@ The product remains commercially unfinished: pricing unset, payment integration 
 
 The deliberately deferred provider PR remains **#8 — `feat: add the402 provider adapter`**, pending provider credentials/secret custody and explicit production authorization if revived.
 
-PR **#112** is the concrete GiveGigs recruitment-transport change represented by this snapshot. It targets `main` only and is not a production deployment.
+PR **#113** is the GiveGigs application-ingestion/candidate-binding change represented by this snapshot. It targets `main` only and is not a production deployment.
 
 ## Strategic frontier
 
 The internal human path now reaches:
 
-`qualified upstream opportunity → frozen worker terms → exact GiveGigs-bound recruitment payload → exact B1 approval → concrete OFFSITE_PAY task POST → candidate response → qualification → assignment/acceptance → attempt/correction/blocker/replacement handling → final review → private performance history`
+`qualified upstream opportunity → frozen worker terms → exact GiveGigs-bound recruitment payload → exact B1 approval → concrete OFFSITE_PAY task POST → public application read → candidate-specific frozen contract → qualification → assignment/acceptance → attempt/correction/blocker/replacement handling → final review → private performance history`
 
-The transport gap is therefore closed for one concrete marketplace path. The remaining blocker is real demand + real worker execution, not another generic recruitment transport.
+The first concrete marketplace path now covers both outbound recruitment and inbound application discovery without conflating marketplace application status with qualification or hiring. The remaining blocker is real demand + real worker execution, not another generic candidate layer.
 
 Priority after this slice:
 
-1. **GiveGigs application/candidate ingestion bridge** — normalize applications/task responses into the existing candidate qualification pipeline without creating a second candidate model;
-2. **real worker/counterparty validation** — once there is a verified upstream opportunity and valid secret custody, explicitly approve one exact B1 GiveGigs intent and exercise the full recruitment → qualification → assignment → attempt path;
-3. **buyer/upstream demand validation** — record actual conversion and payout evidence;
+1. **real worker/counterparty validation** — once there is a verified upstream opportunity and valid secret custody, explicitly approve one exact B1 GiveGigs recruitment intent, observe real applications through the safe-read bridge, bind/qualify one candidate, and exercise assignment/attempt handling;
+2. **buyer/upstream demand validation** — record actual conversion and payout evidence;
+3. **provider-side GiveGigs application acceptance/hire write** — implement only when a real validated case requires the marketplace mutation, with its own exact scoped authorization rather than general external writes;
 4. **B2 worker-payment path** — only when an accepted real worker transaction requires value movement, with separate explicit financial authorization;
 5. **commercialize Product Listing Graphic** where it competes favorably with upstream-demand work.
 
@@ -289,18 +309,21 @@ Do not create a second opportunity engine or duplicate recruitment economics/com
 8. GiveGigs worker-visible contact/payment/location configuration must remain bound into the `givegigs:offsite-pay:<hash>` target; changing it requires a fresh recruitment payload/intent and approval.
 9. Never persist or commit a raw GiveGigs API key. The credential may exist only in secret custody and the fixed provider request path.
 10. An ambiguous GiveGigs POST outcome must remain pending until remote reconciliation; do not automatically retry and risk a duplicate listing.
-11. An incomplete candidate questionnaire is `needs_followup`; do not silently convert missing information into a hard rejection.
-12. Only `qualified` + accepted assignments may begin worker execution.
-13. Physical qualification must explicitly confirm location feasibility.
-14. Corrections must address frozen deficiencies only; do not add scope or change compensation after execution begins.
-15. Replacement does not retroactively decide the previous worker's compensation outcome.
-16. Operator/upstream/site blockers must not be converted into worker fault or a worker-performance penalty.
-17. Worker payment/value movement remains a separate B2 concern.
-18. Good-faith partial compensation must be fixed before execution, not invented retroactively.
-19. Suspicion alone must not automatically become a zero-compensation/fraud outcome or permanent worker ban.
-20. Seller pricing changes must use the canonical price catalog and pass consistency coverage.
-21. Public seller Docker changes must preserve the private buyer/financial/operator boundary.
-22. GitHub expressions must not appear directly inside workflow `run:` commands; use `env:` and quoted shell variables.
-23. Testnet signer audit snapshots must write only to run-scoped audit branches and must not force-push.
-24. Never commit secrets, private paid results, local SQLite/WAL/SHM files, or generated `node_modules`.
-25. `Unknown/Archived/` is historical evidence only.
+11. GiveGigs application reads must remain no-auth `SafeFetch` reads derived from a validated GiveGigs task reference; do not accept provider-controlled read destinations or credential headers.
+12. A GiveGigs application is not qualification or hiring. Bind only the concrete worker identity into a candidate-specific frozen contract; do not change scope, evidence, compensation, deadline, or economics during binding.
+13. Raw applicant messages are untrusted and must not be promoted into qualification evidence or persisted to lifecycle state by default.
+14. An incomplete candidate questionnaire is `needs_followup`; do not silently convert missing information into a hard rejection.
+15. Only `qualified` + accepted assignments may begin worker execution.
+16. Physical qualification must explicitly confirm location feasibility.
+17. Corrections must address frozen deficiencies only; do not add scope or change compensation after execution begins.
+18. Replacement does not retroactively decide the previous worker's compensation outcome.
+19. Operator/upstream/site blockers must not be converted into worker fault or a worker-performance penalty.
+20. Worker payment/value movement remains a separate B2 concern.
+21. Good-faith partial compensation must be fixed before execution, not invented retroactively.
+22. Suspicion alone must not automatically become a zero-compensation/fraud outcome or permanent worker ban.
+23. Seller pricing changes must use the canonical price catalog and pass consistency coverage.
+24. Public seller Docker changes must preserve the private buyer/financial/operator boundary.
+25. GitHub expressions must not appear directly inside workflow `run:` commands; use `env:` and quoted shell variables.
+26. Testnet signer audit snapshots must write only to run-scoped audit branches and must not force-push.
+27. Never commit secrets, private paid results, local SQLite/WAL/SHM files, or generated `node_modules`.
+28. `Unknown/Archived/` is historical evidence only.
