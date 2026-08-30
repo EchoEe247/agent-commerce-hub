@@ -151,7 +151,8 @@ function assertFiniteUsd(name: string, value: number): void {
   if (!Number.isFinite(value) || value < 0) {
     throw new Error(`${name} must be a finite non-negative USD amount`);
   }
-  if (Math.round(value * 100) !== value * 100) {
+  const cents = value * 100;
+  if (Math.abs(Math.round(cents) - cents) > 1e-9) {
     throw new Error(`${name} must have at most two decimal places`);
   }
 }
@@ -167,8 +168,8 @@ function normalizeChannels(channels: readonly HumanRecruitmentChannel[]): readon
 
 /**
  * Prepare a controlled worker-recruitment draft from an already-routed human plan.
- * No raw opportunity body, upstream payout, or internal scoring is placed in the
- * worker-facing outline. This remains internal preparation only.
+ * No raw opportunity body, source title, upstream payout, or internal scoring is
+ * placed in the worker-facing outline. This remains internal preparation only.
  */
 export function buildHumanRecruitmentDraft(
   entry: RankedOpportunity,
@@ -197,7 +198,7 @@ export function buildHumanRecruitmentDraft(
   if (human.kind === "physical") requiredInputs.push("physical_location_and_safety");
 
   const workerFacingOutline = uniqueNonEmpty([
-    `Paid ${human.kind} task: ${entry.opportunity.title}`,
+    `Paid ${human.kind} task opportunity.`,
     "Exact scope, acceptance criteria, timeline, evidence requirements, and compensation must be supplied from an approved fulfillment contract before this draft can be posted.",
     human.kind === "physical"
       ? "Exact location, access requirements, travel expectations, and safety constraints must be verified before recruitment."
@@ -237,7 +238,7 @@ export function buildHumanRecruitmentDraft(
       workerFacingOutline,
       guidance: Object.freeze([
         "Internal preparation only. Verify the target platform/community rules before any post or contact.",
-        "Do not expose the upstream buyer payout, internal margin, model score, risk label, or evaluator reasoning to a worker.",
+        "Do not expose the upstream buyer payout, source title, internal margin, model score, risk label, or evaluator reasoning to a worker unless the operator intentionally chooses to disclose a source fact later.",
         "Do not promise compensation until a concrete worker-facing contract has been reviewed and explicitly authorized.",
         "Do not ask a worker to begin execution before scope, acceptance, evidence, timeline, and compensation terms are fixed.",
       ]),
@@ -299,6 +300,9 @@ export function buildHumanFulfillmentContractDraft(
   assertFiniteUsd("fullCompensationUsd", terms.fullCompensationUsd);
   assertFiniteUsd("goodFaithAttemptCompensationUsd", terms.goodFaithAttemptCompensationUsd);
   if (terms.fullCompensationUsd <= 0) throw new Error("fullCompensationUsd must be greater than zero");
+  if (terms.goodFaithAttemptCompensationUsd <= 0) {
+    throw new Error("goodFaithAttemptCompensationUsd must be greater than zero");
+  }
   if (terms.goodFaithAttemptCompensationUsd >= terms.fullCompensationUsd) {
     throw new Error("goodFaithAttemptCompensationUsd must be lower than fullCompensationUsd");
   }
