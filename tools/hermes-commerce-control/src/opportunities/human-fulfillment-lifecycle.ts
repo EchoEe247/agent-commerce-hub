@@ -14,6 +14,12 @@ export const HUMAN_FULFILLMENT_EVENT_TYPES = [
   "assignment_recorded",
   "assignment_decision_recorded",
   "worker_acceptance_recorded",
+  "attempt_submitted",
+  "attempt_assessed",
+  "correction_requested",
+  "correction_response_recorded",
+  "external_blocker_recorded",
+  "replacement_authorized",
   "attempt_evidence_recorded",
   "review_recorded",
   "worker_performance_recorded",
@@ -37,6 +43,12 @@ export const humanFulfillmentLifecycleEventSchema = z
     qualificationId: z.string().min(1).max(128).optional(),
     assignmentId: z.string().min(1).max(128).optional(),
     assignmentDecisionId: z.string().min(1).max(128).optional(),
+    attemptId: z.string().min(1).max(128).optional(),
+    assessmentId: z.string().min(1).max(128).optional(),
+    correctionRequestId: z.string().min(1).max(128).optional(),
+    correctionResponseId: z.string().min(1).max(128).optional(),
+    blockerId: z.string().min(1).max(128).optional(),
+    replacementAuthorizationId: z.string().min(1).max(128).optional(),
     performanceId: z.string().min(1).max(128).optional(),
     evidenceSummary: z.array(z.string().min(1).max(2_000)).max(32).optional(),
     reviewId: z.string().min(1).max(128).optional(),
@@ -60,6 +72,12 @@ export interface CreateHumanFulfillmentLifecycleEventInput {
   readonly qualificationId?: string | undefined;
   readonly assignmentId?: string | undefined;
   readonly assignmentDecisionId?: string | undefined;
+  readonly attemptId?: string | undefined;
+  readonly assessmentId?: string | undefined;
+  readonly correctionRequestId?: string | undefined;
+  readonly correctionResponseId?: string | undefined;
+  readonly blockerId?: string | undefined;
+  readonly replacementAuthorizationId?: string | undefined;
   readonly performanceId?: string | undefined;
   readonly evidenceSummary?: readonly string[] | undefined;
   readonly reviewId?: string | undefined;
@@ -97,6 +115,12 @@ export function createHumanFulfillmentLifecycleEvent(
     qualificationId: optionalText(input.qualificationId, 128),
     assignmentId: optionalText(input.assignmentId, 128),
     assignmentDecisionId: optionalText(input.assignmentDecisionId, 128),
+    attemptId: optionalText(input.attemptId, 128),
+    assessmentId: optionalText(input.assessmentId, 128),
+    correctionRequestId: optionalText(input.correctionRequestId, 128),
+    correctionResponseId: optionalText(input.correctionResponseId, 128),
+    blockerId: optionalText(input.blockerId, 128),
+    replacementAuthorizationId: optionalText(input.replacementAuthorizationId, 128),
     performanceId: optionalText(input.performanceId, 128),
     reviewId: optionalText(input.reviewId, 128),
   };
@@ -116,6 +140,12 @@ export function createHumanFulfillmentLifecycleEvent(
     ...(optional.qualificationId === undefined ? {} : { qualificationId: optional.qualificationId }),
     ...(optional.assignmentId === undefined ? {} : { assignmentId: optional.assignmentId }),
     ...(optional.assignmentDecisionId === undefined ? {} : { assignmentDecisionId: optional.assignmentDecisionId }),
+    ...(optional.attemptId === undefined ? {} : { attemptId: optional.attemptId }),
+    ...(optional.assessmentId === undefined ? {} : { assessmentId: optional.assessmentId }),
+    ...(optional.correctionRequestId === undefined ? {} : { correctionRequestId: optional.correctionRequestId }),
+    ...(optional.correctionResponseId === undefined ? {} : { correctionResponseId: optional.correctionResponseId }),
+    ...(optional.blockerId === undefined ? {} : { blockerId: optional.blockerId }),
+    ...(optional.replacementAuthorizationId === undefined ? {} : { replacementAuthorizationId: optional.replacementAuthorizationId }),
     ...(optional.performanceId === undefined ? {} : { performanceId: optional.performanceId }),
     ...(evidenceSummary === undefined ? {} : { evidenceSummary }),
     ...(optional.reviewId === undefined ? {} : { reviewId: optional.reviewId }),
