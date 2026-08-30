@@ -2,9 +2,33 @@
 
 Private, pre-production adapter between `agent-commerce-hub` and the standalone C-Shop graphics runtime.
 
-This package does **not** vendor C-Shop, publish a graphics service, alter the live seller, or expose C-Shop to the public internet. C-Shop remains a separately cloned runtime. The adapter provides one deliberately narrow first workflow: create a marketplace/product graphic from a workspace image (or a blank canvas), measured title text, an optional price, a deterministic gradient overlay, and an exported PNG/JPEG.
+This package does **not** vendor C-Shop, publish a graphics service, alter the live seller, or expose C-Shop to the public internet. C-Shop remains a separately cloned runtime. The adapter provides one deliberately narrow first workflow: create a marketplace/product graphic from a workspace image (or a blank canvas), measured title text, an optional price, and an exported PNG/JPEG.
 
-When an input asset is supplied, the adapter preserves its aspect ratio: it proportionally cover-scales the image until the requested canvas is filled, then applies C-Shop's centered canvas crop to reach the exact requested output dimensions. It does not stretch a non-square photograph into a square output.
+## Layout policy
+
+The adapter deliberately uses two different layouts depending on whether the job has a source asset.
+
+### Supplied product photo
+
+A supplied image is treated as product content, not as a full-bleed text background.
+
+The adapter:
+
+1. opens the source and reads its actual dimensions;
+2. reserves the lower 36% of the requested canvas as a dedicated text panel;
+3. proportionally **contains** the complete source image inside the upper image zone;
+4. expands the document canvas to the requested output size without stretching the image;
+5. moves the image into the upper zone and places the configured `background` colour behind it;
+6. centers the measured title and optional price inside the lower panel;
+7. exports the exact requested dimensions.
+
+This avoids the earlier full-bleed behavior where a customer photo was enlarged/cropped and a dark gradient was laid over the photograph. That mechanical layout passed resize checks but failed human review on a real coffee image because source elements around the cup read like a synthetic shadow/halo after treatment.
+
+The split layout is intentionally conservative. It does **not** claim subject detection, background removal, focal-point selection, or semantic composition. It keeps the full supplied image visible and keeps commerce text out of the photo.
+
+### Blank canvas
+
+When there is no source image, the original deterministic blank-canvas layout remains: configured background, measured title/price placement, and a bottom gradient overlay.
 
 ## Upstream pin for validation
 
@@ -74,8 +98,8 @@ The tests cover:
 3. path traversal rejection;
 4. rejection of raw/unknown job fields such as `script`;
 5. measured title/price placement and long-title fitting;
-6. proportional cover-scaling plus centered canvas cropping for supplied assets;
-7. no `style` command being emitted by the product workflow.
+6. proportional contained-photo placement in the upper image zone with a separate lower text panel;
+7. no gradient or `style` command being emitted for supplied-photo jobs.
 
 ## Live smoke test
 
@@ -116,6 +140,6 @@ This remains an internal tool until all of the following are true:
 3. the pinned-source session/metadata/style findings are confirmed under the native runtime and remain bounded by this adapter;
 4. this adapter's unit tests pass;
 5. the live smoke job produces the expected exported file and preview;
-6. a second full validation is clean after any concrete fixes.
+6. the current product-photo layout passes real visual acceptance after any concrete fixes.
 
 Only then should a sellable graphics offering be considered under `products/drafts/`. Publication and production deployment are separate later decisions.
