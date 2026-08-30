@@ -10,8 +10,8 @@
   "repository": {
     "default_branch": "main",
     "canonical_repository_branch": "main",
-    "source_main_head_at_givegigs_application_start": "705199fb2a6d49fa7705113c9fb594cca4b67536",
-    "reconciled_through_pull_request": 113,
+    "source_main_head_at_agent_bounties_unified_start": "81352ff42348a7984bec4dd8357a2150ff33679e",
+    "reconciled_through_pull_request": 114,
     "production_branch": "feat/hermes-commerce-control-plane",
     "main_protected": true,
     "production_branch_protected": true,
@@ -105,6 +105,8 @@
       "durable_evaluation_queue": true,
       "revenue_ranking": true,
       "execution_routing": true,
+      "agent_bounties_unified_ready_to_earn_discovery": true,
+      "agent_bounties_open_competition_v2_discovery": true,
       "human_fulfillment_planning": true,
       "human_recruitment_drafting": true,
       "human_contract_drafting": true,
@@ -133,6 +135,50 @@
       "pursuit_dossiers": true,
       "operator_packets": true,
       "reddit_rss_adapter": true
+    },
+    "agent_bounties_discovery": {
+      "provider": "Agent Bounties",
+      "provider_contract_checked_at": "2026-08-30",
+      "module": "tools/hermes-commerce-control/src/adapters/agent-bounties/index.ts",
+      "unified_module": "tools/hermes-commerce-control/src/adapters/agent-bounties/unified.ts",
+      "endpoint": "https://api.agentbounties.app/v1/opportunities",
+      "method": "GET",
+      "query": {
+        "network": "base-mainnet",
+        "source_type": "canonical_base",
+        "view": "ready_to_earn",
+        "limit_max": 300
+      },
+      "live_projection_item_count_observed": 75,
+      "supports_autonomous_bounties": true,
+      "supports_open_competition_v2": true,
+      "legacy_inventory_is_primary_discovery": false,
+      "legacy_inventory_normalization_preserved": true,
+      "exact_atomic_usdc_required": true,
+      "escrowed_maps_to_funded_evidence": "observed",
+      "canonical_bounty_payment_proof": "BountySettled",
+      "open_competition_v2_payment_proof": "CompetitionSettledV2",
+      "competition_preparation_requires_participation_phase": "scoring",
+      "upcoming_competition_auto_actionable": false,
+      "proof_phase_competition_auto_actionable": false,
+      "live_claim_allowed": false,
+      "live_submission_allowed": false,
+      "live_funding_allowed": false,
+      "wallet_signature_allowed": false,
+      "active_counterparty_required_candidate": {
+        "opportunity_id": "open-competition-v2:base-mainnet:0x8c990ddf5360c00ee0b2090000e3a3a6f90a6a9d",
+        "title": "Highest externally funded canonical GMV — August 24 to September 21",
+        "participation_phase": "scoring",
+        "scoring_window_starts_at": "2026-08-24T00:00:00Z",
+        "scoring_window_ends_at": "2026-09-21T00:00:00Z",
+        "solver_reward_usdc": "3",
+        "provider_configured_external_spend_usdc": "0.11",
+        "provider_advertised_gross_cash_margin_usdc": "2.89",
+        "competition_mode": "best_score",
+        "entry_count_at_observation": 0,
+        "requires_different_eligible_wallet_for_settlement": true,
+        "profit_guaranteed": false
+      }
     },
     "execution_routing": {
       "module": "tools/hermes-commerce-control/src/opportunities/execution-routing.ts",
@@ -408,6 +454,12 @@
     }
   },
   "open_pull_requests": {
+    "current": {
+      "number": 114,
+      "title": "Discover Agent Bounties unified ready-to-earn market",
+      "base": "main",
+      "production_deployment": false
+    },
     "deferred": [
       {
         "number": 8,
@@ -418,13 +470,13 @@
   },
   "strategic_frontier": {
     "commercial_fact": "No successful paid seller transaction has been recorded in the canonical post-deploy observation.",
-    "current_bottleneck": "real upstream demand and real worker execution; concrete GiveGigs recruitment plus public application ingestion now exist",
+    "current_bottleneck": "A concrete funded upstream competition is now visible; next progress requires exact live opportunity selection, complete cost/risk accounting, and a real independent participant rather than more generic discovery infrastructure.",
     "next_work": [
-      "real_worker_counterparty_validation",
-      "buyer_upstream_demand_validation",
-      "givegigs_provider_side_application_acceptance_when_live_case_requires",
-      "b2_worker_payment_when_required",
-      "commercialize_product_listing_graphic"
+      "refetch_and_select_still_active_agent_bounties_counterparty_required_opportunity",
+      "prepare_exact_non_live_cost_and_participation_dossier",
+      "explicit_operator_authorization_before_any_wallet_signature_claim_or_funding",
+      "real_worker_counterparty_validation_only_if_combined_economics_remain_positive",
+      "givegigs_provider_side_acceptance_and_b2_payment_only_when_real_case_requires"
     ],
     "human_fulfillment": {
       "analysis_only_planning_implemented": true,
@@ -451,7 +503,7 @@
       "worker_payment_implemented": false,
       "physical_safety_review_required": true,
       "integration_point": "tools/hermes-commerce-control/src/opportunities",
-      "rule": "GiveGigs and any future real channel transport must consume frozen payload/intent artifacts, remain behind exact B1 approval for writes, and bridge provider candidates into the existing qualification/assignment/attempt lifecycle rather than create parallel business rules"
+      "rule": "Use a human/counterparty only where the upstream acceptance condition or execution requirement genuinely needs an independent participant/capability; do not outsource work the agent can retain internally merely because a human marketplace exists."
     }
   },
   "workflow_security": {
@@ -466,6 +518,8 @@
     "givegigs_api_key_persisted": false,
     "givegigs_credential_endpoint_fixed": true,
     "givegigs_application_reads_authenticated": false,
-    "givegigs_application_reads_use_shared_safe_fetch": true
+    "givegigs_application_reads_use_shared_safe_fetch": true,
+    "agent_bounties_unified_discovery_read_only": true,
+    "agent_bounties_wallet_signature_allowed_by_discovery": false
   }
 }

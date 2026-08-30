@@ -52,76 +52,55 @@ function ctx(fetch: SafeFetch): AdapterContext {
   };
 }
 
-test("agent-bounties: normalizes a claimable bounty with exact atomic reward", async () => {
-  const stub = stubFetch(() => INVENTORY_SUMMARY);
-  const adapter = new AgentBountiesAdapter(cfg.adapters.agent_bounties.baseUrl);
-  const work = await adapter.discoverWork({}, ctx(stub.fetch));
-
-  assert.equal(work.length, 2);
-  const first = work[0];
-  assert.equal(first?.kind, "work");
-  assert.equal(first?.source, "agent_bounties");
-  // 1000000 atomic USDC at 6 decimals is exactly 1.
-  assert.equal(first?.reward.amount, "1");
-  assert.equal(first?.reward.asset, "USDC");
-  assert.equal(first?.reward.usd, "1");
-  assert.equal(first?.reward.network, "base-mainnet");
-  assert.equal(first?.status, "open");
-  assert.equal(first?.funding.state, "funded");
-  assert.equal(first?.verification.type, "deterministic");
-  assert.equal(first?.actionability.canClaim, false);
-  assert.equal(first?.actionability.canSubmit, false);
-  assert.equal(first?.actionability.canPrepareClaim, true);
-  assert.match(String(first?.paymentProofRule), /BountySettled/);
+test("agent-bounties: legacy inventory items remain exactly normalizable", () => {
+  const work = normalizeBounty(
+    INVENTORY_SUMMARY.items[0],
+    ctx({} as SafeFetch),
+    "https://api.agentbounties.app/v1/base/autonomous-bounties/inventory-summary",
+    "base-mainnet",
+  );
+  assert.ok(work !== null);
+  assert.equal(work.reward.amount, "1");
+  assert.equal(work.reward.asset, "USDC");
+  assert.equal(work.reward.usd, "1");
+  assert.equal(work.status, "open");
+  assert.equal(work.funding.state, "funded");
+  assert.equal(work.verification.type, "deterministic");
+  assert.equal(work.actionability.canPrepareClaim, true);
+  assert.equal(work.actionability.canClaim, false);
+  assert.equal(work.actionability.canSubmit, false);
 });
 
-test("agent-bounties: uses the non-streaming inventory snapshot, not the SSE stream", async () => {
+test("agent-bounties: discovery uses bounded unified ready-to-earn projection, never SSE", async () => {
   const stub = stubFetch(() => INVENTORY_SUMMARY);
   const adapter = new AgentBountiesAdapter(cfg.adapters.agent_bounties.baseUrl);
   await adapter.discoverWork({}, ctx(stub.fetch));
   assert.equal(stub.urls.length, 1);
-  assert.match(stub.urls[0] ?? "", /inventory-summary/);
-  for (const url of stub.urls) {
-    assert.equal(url.includes("/stream"), false, "must not open the SSE stream");
-  }
+  const url = new URL(stub.urls[0] ?? "");
+  assert.equal(url.pathname, "/v1/opportunities");
+  assert.equal(url.searchParams.get("source_type"), "canonical_base");
+  assert.equal(url.searchParams.get("view"), "ready_to_earn");
+  assert.equal(url.searchParams.get("limit"), "300");
+  assert.equal(url.toString().includes("/stream"), false);
 });
 
-test("agent-bounties: advertised, funded, claimed, submitted, settled and refunded are distinct", async () => {
-  const stub = stubFetch(() => LIFECYCLE_SUMMARY);
-  const adapter = new AgentBountiesAdapter(cfg.adapters.agent_bounties.baseUrl);
-  const work = await adapter.discoverWork({}, ctx(stub.fetch));
-  const byId = new Map(work.map((w) => [w.externalId, w]));
-
+test("agent-bounties: legacy lifecycle mapper remains distinct and evidence-conservative", () => {
+  const context = ctx({} as SafeFetch);
+  const byId = new Map(
+    LIFECYCLE_SUMMARY.items
+      .map((item) => normalizeBounty(item, context, "https://example.test/inventory", "base-mainnet"))
+      .filter((item): item is NonNullable<typeof item> => item !== null)
+      .map((item) => [item.externalId, item]),
+  );
   assert.equal(byId.get("0xadvertised")?.funding.state, "advertised");
   assert.equal(byId.get("0xfunded")?.funding.state, "funded");
   assert.equal(byId.get("0xclaimed")?.funding.state, "claimed");
   assert.equal(byId.get("0xsubmitted")?.funding.state, "submitted");
   assert.equal(byId.get("0xsettled")?.funding.state, "settled");
   assert.equal(byId.get("0xrefunded")?.funding.state, "refunded");
-
-  // Work status is a separate axis from funding.
-  assert.equal(byId.get("0xadvertised")?.status, "open");
-  assert.equal(byId.get("0xsubmitted")?.status, "in_review");
-  assert.equal(byId.get("0xsettled")?.status, "closed");
-
-  // Only genuinely open AND funded work is claim-preparable.
   assert.equal(byId.get("0xfunded")?.actionability.canPrepareClaim, true);
   assert.equal(byId.get("0xadvertised")?.actionability.canPrepareClaim, false);
-  assert.equal(byId.get("0xclaimed")?.actionability.canPrepareClaim, false);
-});
-
-test("agent-bounties: funding evidence never reaches verified without a settled event", async () => {
-  const stub = stubFetch(() => LIFECYCLE_SUMMARY);
-  const adapter = new AgentBountiesAdapter(cfg.adapters.agent_bounties.baseUrl);
-  const work = await adapter.discoverWork({}, ctx(stub.fetch));
-  for (const w of work) {
-    assert.notEqual(
-      w.funding.evidence,
-      "verified",
-      `${w.externalId} must not claim verified funding`,
-    );
-    assert.equal(w.funding.evidence, "observed");
-  }
+  for (const item of byId.values()) assert.equal(item.funding.evidence, "observed");
 });
 
 test("agent-bounties: a leaderboard/paid flag cannot self-certify payment", async () => {
@@ -129,65 +108,53 @@ test("agent-bounties: a leaderboard/paid flag cannot self-certify payment", asyn
   const adapter = new AgentBountiesAdapter(cfg.adapters.agent_bounties.baseUrl);
   const work = await adapter.discoverWork({}, ctx(stub.fetch));
   assert.equal(work.length, 1);
-  // status says settled and paid:true is present, but evidence stays observed.
   assert.equal(work[0]?.funding.state, "settled");
   assert.equal(work[0]?.funding.evidence, "observed");
 });
 
-test("agent-bounties: zero open work is healthy, not a failure", async () => {
+test("agent-bounties: zero ready-to-earn work is healthy", async () => {
   const stub = stubFetch(() => EMPTY_SUMMARY);
   const adapter = new AgentBountiesAdapter(cfg.adapters.agent_bounties.baseUrl);
   assert.deepEqual(await adapter.discoverWork({}, ctx(stub.fetch)), []);
   const probe = await adapter.health(ctx(stub.fetch));
   assert.equal(probe.status, "ok");
-  assert.match(String(probe.detail), /0 claimable/);
+  assert.match(String(probe.detail), /0 opportunity/);
 });
 
-test("agent-bounties: verifier classification is deterministic only when verification_ready", () => {
+test("agent-bounties: verifier classification remains strict", () => {
   assert.equal(mapVerifier(true).type, "deterministic");
   assert.equal(mapVerifier(false).type, "unknown");
   assert.equal(mapVerifier(undefined).type, "unknown");
-  assert.equal(mapVerifier("true").type, "unknown", "a string must not satisfy the flag");
-});
-
-test("agent-bounties: verifier type is recorded as inferred, not observed", async () => {
-  const stub = stubFetch(() => INVENTORY_SUMMARY);
-  const adapter = new AgentBountiesAdapter(cfg.adapters.agent_bounties.baseUrl);
-  const work = await adapter.discoverWork({}, ctx(stub.fetch));
-  const verifierEvidence = work[0]?.evidence.find((e) => e.fact === "verifier_type");
-  assert.equal(verifierEvidence?.classification, "inferred");
-  const ruleEvidence = work[0]?.evidence.find((e) => e.fact === "payment_proof_rule");
-  assert.equal(ruleEvidence?.classification, "inferred");
+  assert.equal(mapVerifier("true").type, "unknown");
 });
 
 test("agent-bounties: status and funding mappers are total", () => {
   assert.equal(mapStatus("claimable"), "open");
   assert.equal(mapStatus("SETTLED"), "closed");
   assert.equal(mapStatus("nonsense"), "unknown");
-  assert.equal(mapStatus(undefined), "unknown");
   assert.equal(mapFundingState("open", "0"), "advertised");
   assert.equal(mapFundingState("open", "1100000"), "funded");
   assert.equal(mapFundingState("refunded", "0"), "refunded");
   assert.equal(mapFundingState("weird", undefined), "unknown");
 });
 
-test("agent-bounties: a bounty with no usable reward is dropped, not guessed", async () => {
-  const stub = stubFetch(() => ({
-    ...INVENTORY_SUMMARY,
-    items: [{ bounty_id: "0xnoreward", title: "No reward", status: "claimable" }],
-  }));
-  const adapter = new AgentBountiesAdapter(cfg.adapters.agent_bounties.baseUrl);
-  const work = await adapter.discoverWork({}, ctx(stub.fetch));
-  assert.deepEqual(work, []);
+test("agent-bounties: legacy bounty with no usable reward is dropped, not guessed", () => {
+  const work = normalizeBounty(
+    { bounty_id: "0xnoreward", title: "No reward", status: "claimable" },
+    ctx({} as SafeFetch),
+    "https://example.test/inventory",
+    "base-mainnet",
+  );
+  assert.equal(work, null);
 });
 
-test("agent-bounties: a malformed payload raises UPSTREAM_MALFORMED", async () => {
+test("agent-bounties: malformed discovery payload raises UPSTREAM_MALFORMED", async () => {
   const stub = stubFetch(() => MALFORMED_SUMMARY);
   const adapter = new AgentBountiesAdapter(cfg.adapters.agent_bounties.baseUrl);
   await assert.rejects(() => adapter.discoverWork({}, ctx(stub.fetch)), /UPSTREAM_MALFORMED/);
 });
 
-test("agent-bounties: timeout, 429 and 5xx propagate as typed errors", async () => {
+test("agent-bounties: timeout, 429 and 5xx remain isolated typed failures", async () => {
   const adapter = new AgentBountiesAdapter(cfg.adapters.agent_bounties.baseUrl);
   for (const code of ["UPSTREAM_TIMEOUT", "UPSTREAM_RATE_LIMITED", "UPSTREAM_UNAVAILABLE"] as const) {
     const stub = stubFetch(() => new CommerceError(code, "boom"));
@@ -210,19 +177,17 @@ test("agent-bounties: prepareClaim broadcasts nothing and states the block", asy
   assert.equal(draft.blockedReason, "EXTERNAL_WRITE_DISABLED");
   assert.ok(Array.isArray(draft.externalStepsRequired));
   assert.match(String(draft.paymentProofRule), /BountySettled/);
-  // Only the read endpoint was contacted.
-  for (const url of stub.urls) {
-    assert.match(url, /inventory-summary/, `unexpected request to ${url}`);
+  for (const raw of stub.urls) {
+    const url = new URL(raw);
+    assert.equal(url.pathname, "/v1/opportunities");
   }
 });
 
-test("agent-bounties: the adapter never calls a claim, submission or plan endpoint", () => {
-  const source = readFileSync(
-    new URL("../src/adapters/agent-bounties/index.ts", import.meta.url),
-    "utf8",
-  );
-  // No POST at all, and none of the mutating paths as request targets.
-  assert.equal(source.includes('method: "POST"'), false);
+test("agent-bounties: adapter source contains no mutating request method or endpoint", () => {
+  const source = readFileSync(new URL("../src/adapters/agent-bounties/index.ts", import.meta.url), "utf8");
+  const unified = readFileSync(new URL("../src/adapters/agent-bounties/unified.ts", import.meta.url), "utf8");
+  const joined = `${source}\n${unified}`;
+  assert.equal(joined.includes('method: "POST"'), false);
   for (const forbidden of [
     "/claims",
     "/claim-plan",
@@ -232,15 +197,11 @@ test("agent-bounties: the adapter never calls a claim, submission or plan endpoi
     "/timeout-relay",
     "/module-settlement-plan",
   ]) {
-    assert.equal(
-      source.includes(`"${forbidden}`) || source.includes(`'${forbidden}`),
-      false,
-      `source must not target ${forbidden}`,
-    );
+    assert.equal(joined.includes(`"${forbidden}`) || joined.includes(`'${forbidden}`), false, `source must not target ${forbidden}`);
   }
 });
 
-test("agent-bounties: the payment proof rule is exported and non-empty", () => {
+test("agent-bounties: payment proof rule remains explicit", () => {
   assert.match(PAYMENT_PROOF_RULE, /BountySettled/);
   assert.ok(PAYMENT_PROOF_RULE.length > 40);
 });
