@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "project": "agent-commerce-hub",
-  "generated_at": "2026-08-29",
+  "generated_at": "2026-08-30",
   "authority": {
     "human_readable": "docs/CURRENT_STATE.md",
     "machine_readable": "state/CURRENT.json",
@@ -10,6 +10,8 @@
   "repository": {
     "default_branch": "main",
     "canonical_repository_branch": "main",
+    "source_main_head_at_reconciliation": "241a446952775baeacf9fc68d69901cd650b2e1f",
+    "reconciled_through_pull_request": 104,
     "production_branch": "feat/hermes-commerce-control-plane",
     "main_protected": true,
     "production_branch_protected": true,
@@ -21,170 +23,37 @@
     "strict_status_checks": true,
     "admins_enforced": true,
     "force_push_allowed": false,
-    "branch_deletion_allowed": false,
-    "default_branch_alignment": "complete_via_pr_81_history_preserving_snapshot",
-    "pre_alignment_main_head": "fb1574abcad25f68c59d9589ae1701d43e3107cc",
-    "pre_alignment_main_preservation_ref": "archive/batch-6c-main-before-alignment-fb1574a",
-    "batch_7_merge_commit": "db344147e8ed490f486a6aa86f4b19a3e1d675bf",
-    "batch_7_admin_closeout": "complete",
-    "batch_9_merge_commit": "dcaa00adb88e3ed62207a870be95128d500a4edb",
-    "batch_10_merge_commit": "91a9ac7c112a455835270066e72567a02e123cdb"
+    "branch_deletion_allowed": false
   },
-  "validated_baseline": {
-    "branch": "fix/p1-root-landing-extraction-batch-15",
-    "implementation_through_batch": 15,
-    "latest_batch": "p1_root_landing_extraction_batch_15",
-    "latest_code_head": "797ea54dcf888036dea50ebc7a16a0f78a99fe78",
-    "latest_pull_request": 94,
-    "state": "validated_production_deployed",
-    "production_change_control_ci": "pass",
-    "distribution_readiness_ci": "pass",
-    "production_deploy_commit": "3c501ee37bd3472afe1736213cc493dc254911a8",
-    "production_deploy_pr": 95
+  "mission": {
+    "document": "docs/REVENUE_OPERATING_PRINCIPLES.md",
+    "primary_objective": "shorten and automate the path from credible paid opportunity to reliable delivery and payment while reducing routine operator babysitting",
+    "revenue_loop": [
+      "opportunity_discovery",
+      "qualification",
+      "pricing",
+      "execution",
+      "quality_gate",
+      "delivery",
+      "payment",
+      "follow_up_repeat_business",
+      "revenue_measurement"
+    ],
+    "engineering_drift_avoidance": true
   },
-  "hardening_batches": [
-    {
-      "name": "p0_security_batch_1",
-      "state": "closed",
-      "head": "fd61b87914a33ba37daf745724a812abe02d9d2c"
-    },
-    {
-      "name": "p1_financial_safety_batch_2",
-      "state": "closed",
-      "head": "0aa39b5da62221b0a22a6a280ac177da1a0ba2da"
-    },
-    {
-      "name": "p1_financial_durability_batch_3",
-      "state": "closed",
-      "head": "e4ccc000f4ff09fb1e89f04655467ee8c9c9bba9"
-    },
-    {
-      "name": "p1_production_change_control_batch_4",
-      "state": "closed",
-      "head": "f0f9503a4b01cff98003de9b06f4f77db2ce2fdb"
-    },
-    {
-      "name": "p1_preview_resource_abuse_batch_5",
-      "state": "closed",
-      "head": "ab06f198904ff67e3d4b518d8c177af460a2c8ca"
-    },
-    {
-      "name": "p1_canonical_state_batch_6a",
-      "state": "closed",
-      "head": "54674d29ffb6fed9614ea6ef56b1520d16a8ec47"
-    },
-    {
-      "name": "p1_seller_lifecycle_batch_6b",
-      "state": "closed",
-      "head": "c9512348567459be3164f2413d4e187a7bed7501"
-    },
-    {
-      "name": "p1_repository_alignment_batch_6c",
-      "state": "closed",
-      "alignment_pr": 81
-    },
-    {
-      "name": "p1_commerce_control_durability_batch_7",
-      "state": "closed",
-      "validated_head": "378fdcec5240076c20381b3310ad7fbdb018eae9",
-      "pull_request": 82,
-      "merge_commit": "db344147e8ed490f486a6aa86f4b19a3e1d675bf"
-    },
-    {
-      "name": "p1_seller_pricing_source_batch_8",
-      "state": "closed",
-      "validated_code_head": "85918d271c107881d8cd9a7781370f4e1742a42e",
-      "pull_request": 84
-    },
-    {
-      "name": "p1_upstream_response_bounds_batch_9",
-      "state": "closed",
-      "validated_head": "f9d465fa0986fb6f9a902acfae2a3fb2a57a2576",
-      "pull_request": 86,
-      "merge_commit": "dcaa00adb88e3ed62207a870be95128d500a4edb"
-    },
-    {
-      "name": "p1_holiday_provenance_batch_10",
-      "state": "closed",
-      "validated_code_head": "63a8d78a3c0db7d6de75e3f267647015af4cccec",
-      "pull_request": 87,
-      "merge_commit": "91a9ac7c112a455835270066e72567a02e123cdb"
-    },
-    {
-      "name": "p1_production_candidate_alignment_batch_11",
-      "state": "closed",
-      "production_candidate_pr": 89,
-      "production_branch_unchanged": true
-    },
-    {
-      "name": "p1_public_private_runtime_boundary_batch_12",
-      "state": "closed",
-      "validated_code_head": "53b1c500af48257cd524f674367041640ec0850a",
-      "pull_request": 91,
-      "production_branch_unchanged": true
-    },
-    {
-      "name": "p1_workflow_shell_interpolation_batch_13",
-      "state": "closed",
-      "validated_code_head": "5e1d0ce3e7d6a790acfaf3409ca67c82185a4ce0",
-      "pull_request": 92,
-      "production_branch_unchanged": true
-    },
-    {
-      "name": "p1_testnet_signer_writeback_batch_14",
-      "state": "closed",
-      "validated_code_head": "c1c4778cd04a6dd77f35f1cd8fd3cf7a7a9d0378",
-      "pull_request": 93,
-      "production_branch_unchanged": true
-    },
-    {
-      "name": "p1_root_landing_extraction_batch_15",
-      "state": "closed",
-      "validated_code_head": "797ea54dcf888036dea50ebc7a16a0f78a99fe78",
-      "pull_request": 94,
-      "replaces_stale_pr": 63,
-      "production_branch_unchanged": true
-    }
-  ],
   "deployment": {
     "provider": "render",
     "auto_deploy_branch": "feat/hermes-commerce-control-plane",
     "production_branch_head": "3c501ee37bd3472afe1736213cc493dc254911a8",
     "production_promotion_pr": 95,
-    "production_promotion_branch": "promote/main-through-batch-10",
-    "production_promotion_state": "merged",
-    "production_promotion_merged": true,
-    "candidate_reconciles_production_and_main": true,
-    "candidate_requires_refresh_if_main_advances": false,
-    "validated_implementation_through_batch": 15,
-    "validated_implementation_deployed": true,
-    "candidate_root_dir": "products/published/data-quality-profiler",
-    "candidate_root_dir_deployed": true,
-    "rule": "Canonical main remains separate from the Render-linked protected production branch. Future production changes must use a newly validated promotion path and explicit production authorization; do not treat a main-branch merge as a production deployment.",
-    "superseded_production_candidate_pr": 89,
-    "superseded_production_candidate_state": "closed_unmerged",
     "render_service": "hermes-counterparty-api",
-    "render_service_id": "srv-da3g6hj7uimc73ajr8e0",
     "render_deploy_id": "dep-da9fhedg1s2s73a930n0",
-    "render_deploy_trigger": "blueprint_sync",
     "render_deploy_status": "live",
     "render_deployed_at": "2026-08-29T15:21:12.959916Z",
-    "blueprint_root_dir": "products/published/data-quality-profiler",
-    "blueprint_x402_facilitator_mode": "xpay",
-    "blueprint_sync_applied": true
-  },
-  "workflow_security": {
-    "external_actions_sha_pinned": true,
-    "checkout_credentials_persisted": false,
-    "direct_github_expression_interpolation_in_run_allowed": false,
-    "workflow_policy_enforces_env_mediation_for_run_expressions": true,
-    "signer_testnet_only": true,
-    "testnet_signer_selected_branch_writeback": false,
-    "testnet_signer_audit_branch_pattern": "testnet-audit/run-<run_id>-<run_attempt>",
-    "testnet_signer_force_push_allowed": false,
-    "testnet_signer_auto_merge": false,
-    "public_buyer_execute_mode_available": false,
-    "live_seller_smoke_read_only": true
+    "root_dir": "products/published/data-quality-profiler",
+    "x402_facilitator_mode": "xpay",
+    "main_merge_is_production_deploy": false,
+    "future_production_change_requires_fresh_promotion_and_explicit_authorization": true
   },
   "financial": {
     "transactional_authority": "local_gitignored_sqlite",
@@ -209,189 +78,118 @@
   },
   "seller": {
     "path": "products/published/data-quality-profiler/",
-    "previous_path": "products/drafts/data-quality-profiler/",
-    "lifecycle_path_state": "canonical_published_production_deployed",
-    "tree_move_preserves_file_content": true,
-    "old_active_path_retired": true,
+    "lifecycle_state": "published_and_production_deployed",
     "paid_x402_operations": 13,
     "free_preview": "/v1/company-domain-intelligence/preview",
-    "root_landing": {
-      "path": "/",
-      "module": "products/published/data-quality-profiler/src/root-landing.mjs",
-      "registered_from": "products/published/data-quality-profiler/src/server.mjs",
-      "read_only_static": true,
-      "request_derived_html": false,
-      "response_bound_bytes": 16384,
-      "discovery_links": [
-        "/openapi.json",
-        "/llms.txt",
-        "/.well-known/x402",
-        "/health"
-      ],
-      "replaces_stale_pr": 63
-    },
+    "root_landing": "/",
     "pricing_authority": "products/published/data-quality-profiler/src/config.mjs#SELLER_PRICE_DEFAULTS+SELLER_PRICE_CATALOG",
-    "pricing_catalog_operation_count": 13,
-    "pricing_route_env_config_mapping_canonical": true,
-    "agent402_manifest_uses_canonical_pricing": true,
-    "openapi_uses_canonical_pricing": true,
-    "pricing_consistency_ci": true,
-    "dependency_vulnerability_default_price": "$0.005",
-    "package_maintenance_default_price": "$0.005",
-    "deployment_boundary": {
-      "docker_context_excludes_operator_scripts": true,
-      "docker_context_excludes_tests_and_docs": true,
-      "docker_context_excludes_buyer_discovery": true,
-      "docker_context_excludes_private_financial_modules": true,
-      "public_server_import_graph_checked": true,
-      "seller_x402_plugin_remains_reachable": true,
-      "private_financial_modules_reachable_from_server": false,
-      "buyer_discovery_reachable_from_server": false
-    },
-    "upstream_response_bounds": {
-      "helper": "products/published/data-quality-profiler/src/bounded-response.mjs",
-      "osv_bytes": 2097152,
-      "package_registry_bytes": 8388608,
-      "rdap_bytes": 2097152,
-      "sec_ticker_map_bytes": 8388608,
-      "sec_submissions_bytes": 8388608,
-      "sec_company_facts_bytes": 33554432,
-      "ofac_csv_each_bytes": 33554432,
-      "preparse_streaming_enforced": true
-    },
-    "holiday_calendar": {
-      "rule_set_id": "counterparty-availability-static-holidays",
-      "rule_set_version": "2026-08-29.1",
-      "method": "deterministic_repository_rules",
-      "live_authoritative_lookup": false,
-      "use": "advisory_business_availability",
-      "provenance_exposed_in_response": true,
-      "brazil_carnival_classification": "ponto_facultativo_not_national_public_holiday"
-    }
-  },
-  "commerce_control": {
-    "path": "tools/hermes-commerce-control/",
-    "seller_readiness_path": "products/published/data-quality-profiler",
-    "jsonl_multiwriter_locking": true,
-    "evaluation_claim_before_model_call": true,
-    "evaluation_claim_lease_ms": 1800000,
-    "verification_resolution_multiwriter_locking": true,
-    "sqlite_sanitize_before_persist": true,
-    "legacy_latest_snapshots_authoritative": false,
-    "legacy_latest_active_paths_retired": true,
-    "legacy_export_paths": [
-      "analytics/commerce-control/legacy/services-snapshot.json",
-      "analytics/commerce-control/legacy/work-snapshot.json",
-      "analytics/commerce-control/legacy/source-health-snapshot.json",
-      "analytics/commerce-control/legacy/status-snapshot.json"
-    ],
-    "legacy_export_paths_authoritative": false,
-    "legacy_export_forbids_state_namespace": true,
-    "legacy_export_forbids_latest_filenames": true,
-    "retired_snapshot_archive": "Unknown/Archived/legacy-commerce-exports/2026-08-29/",
-    "retired_snapshot_blobs": {
-      "services-latest.json": "74eac508a8c54e1e0e50101b9d817051c3a12765",
-      "work-latest.json": "963facec4a4cf93fa8aa43c904190f07b00e1e24",
-      "source-health-latest.json": "f2969d7242a0ce9b5b03702f9ca1f6c44be403cc"
-    },
-    "retired_status_path": "state/commerce-control/STATUS.json",
-    "retired_status_path_regenerated": false,
-    "legacy_export_namespace_cleanup": "closed_batch_7"
-  },
-  "pull_requests": {
-    "closed_unmerged_batch_6c": [
-      1,
-      2,
-      33,
-      34,
-      35,
-      64,
-      76,
-      77,
-      78,
-      80
-    ],
-    "closed_unmerged_connector_workarounds": [
-      83,
-      85
-    ],
-    "closed_unmerged_superseded_production_candidates": [
-      79,
-      88
-    ],
-    "closed_unmerged_replaced": [
-      63
-    ],
-    "deferred_open": [
-      8
-    ],
-    "production_candidate": null,
-    "production_candidate_state": "none",
-    "production_candidate_branch": null,
-    "alignment_pr": 81,
-    "commerce_control_durability_pr": 82,
-    "seller_pricing_source_pr": 84,
-    "upstream_response_bounds_pr": 86,
-    "holiday_provenance_pr": 87,
-    "public_private_runtime_boundary_pr": 91,
-    "workflow_shell_interpolation_pr": 92,
-    "testnet_signer_writeback_pr": 93,
-    "root_landing_extraction_pr": 94,
-    "preservation_index": "Unknown/Archived/branches/2026-08-29-batch-6c-pr-branch-index.md",
-    "closed_unmerged_production_connector_workarounds": [
-      89
-    ],
-    "production_promotion_pr": 95,
-    "production_promotion_state": "merged",
-    "production_promotion_merge_commit": "3c501ee37bd3472afe1736213cc493dc254911a8"
-  },
-  "repository_cleanup": {
-    "obsolete_branches_deleted_batch_7_admin": 10,
-    "preservation_refs_retained": true
-  },
-  "current_sequence": {
-    "completed": [
-      "6a",
-      "6b",
-      "6c",
-      "7",
-      "8",
-      "9",
-      "10",
-      "11",
-      "12",
-      "13",
-      "14",
-      "15"
-    ],
-    "current_batch": "p1_root_landing_extraction_batch_15",
-    "state": "closed",
-    "next": [
-      "post_deploy_observation",
-      "buyer_demand_validation",
-      "remaining_operational_hardening"
-    ]
-  },
-  "post_deploy_verification": {
-    "observed_at": "2026-08-29T15:28:04Z",
-    "render_deploy_live": true,
-    "render_root_dir": "products/published/data-quality-profiler",
-    "external_unpaid_x402_challenges_observed": true,
-    "external_unpaid_probe_status": 402,
-    "external_probe_endpoints": [
-      "/v1/package-maintenance-snapshot",
-      "/v1/schema-drift",
-      "/v1/counterparty-availability",
-      "/v1/dependency-vulnerability-check",
-      "/v1/company-domain-intelligence"
-    ],
+    "public_private_deployment_boundary_enforced": true,
+    "upstream_response_bounds_enforced": true,
+    "production_payment_challenges_observed": true,
     "payment_succeeded_observed_since_deploy": false,
-    "agent402_listing_observation": {
+    "agent402_observation": {
       "status": "listed_healthy",
       "tools": 14,
       "paid_tools": 13,
       "chain_label": "unresolved_in_marketplace_snapshot",
       "transient_observation": true
     }
+  },
+  "commerce_control": {
+    "path": "tools/hermes-commerce-control/",
+    "opportunity_pipeline": {
+      "ingestion": true,
+      "dedupe": true,
+      "triage": true,
+      "local_model_evaluation": true,
+      "durable_evaluation_queue": true,
+      "revenue_ranking": true,
+      "verification_planning": true,
+      "verification_resolutions": true,
+      "pursuit_dossiers": true,
+      "operator_packets": true,
+      "reddit_rss_adapter": true
+    },
+    "marketplace_service_adapters": [
+      "agent402",
+      "the402",
+      "agent-bounties",
+      "bountybook",
+      "cdp-bazaar",
+      "paysh",
+      "piprail"
+    ],
+    "jsonl_multiwriter_locking": true,
+    "evaluation_claim_before_model_call": true,
+    "verification_resolution_multiwriter_locking": true,
+    "sqlite_sanitize_before_persist": true,
+    "legacy_latest_snapshots_authoritative": false
+  },
+  "cshop_worker": {
+    "path": "tools/cshop-worker-adapter/",
+    "runtime": "stubbb/c-shop",
+    "runtime_commit": "f3b2033c07df92e8e72ff83a29955a2c10494d95",
+    "private_worker": true,
+    "public_endpoint": false,
+    "loopback_by_default": true,
+    "raw_script_accepted": false,
+    "style_commands_enabled": false,
+    "real_mcp_smoke": "PASS",
+    "regression_invariant_gate": "PASS_required_workflow-policy"
+  },
+  "products": {
+    "product_listing_graphic": {
+      "path": "products/drafts/product-listing-graphic/",
+      "version": "0.2.0",
+      "status": "draft",
+      "graphics_acceptance": "PASS",
+      "graphics_acceptance_receipt": "receipts/visual-acceptance/product-listing-graphic/2026-08-30-split-layout-v02/acceptance.json",
+      "pricing_status": "unset",
+      "payment_integration": "not-configured",
+      "published": false,
+      "deployed": false,
+      "remaining_commercial_gates": [
+        "buyer_facing_scope_and_acceptance",
+        "initial_price_and_delivery_expectations",
+        "customer_asset_intake",
+        "finished_output_delivery",
+        "first_sale_payment_distribution_path",
+        "complete_non_live_commercial_dry_run"
+      ]
+    }
+  },
+  "open_pull_requests": {
+    "deferred": [
+      {
+        "number": 8,
+        "title": "feat: add the402 provider adapter",
+        "reason": "requires provider credentials/secret custody and explicit production authorization before revival"
+      }
+    ]
+  },
+  "strategic_frontier": {
+    "commercial_fact": "No successful paid seller transaction has been recorded in the canonical post-deploy observation.",
+    "current_bottleneck": "paid demand and executable opportunity conversion rather than additional generic seller hardening",
+    "next_work": [
+      "execution_routing",
+      "human_fulfillment",
+      "buyer_demand_validation",
+      "commercialize_product_listing_graphic"
+    ],
+    "human_fulfillment": {
+      "implemented": false,
+      "recommended_integration_point": "tools/hermes-commerce-control/src/opportunities",
+      "rule": "extend the existing opportunity and policy machinery rather than create a duplicate repository or second opportunity engine"
+    }
+  },
+  "workflow_security": {
+    "external_actions_sha_pinned": true,
+    "checkout_credentials_persisted": false,
+    "direct_github_expression_interpolation_in_run_allowed": false,
+    "signer_testnet_only": true,
+    "testnet_signer_audit_branch_pattern": "testnet-audit/run-<run_id>-<run_attempt>",
+    "testnet_signer_force_push_allowed": false,
+    "public_buyer_execute_mode_available": false,
+    "live_seller_smoke_read_only": true
   }
 }

@@ -75,14 +75,17 @@
     "backgroundRemoval": false
   },
   "validation": {
-    "adapterTests": "5/5 PASS before v0.2 layout change; rerun required",
+    "adapterTests": "PASS",
     "cshopBuild": "PASS",
     "cshopWorkspaceTests": "PASS",
     "realMcpSmoke": "PASS",
     "historicalSmokeOutput": "1200 x 1200 RGBA PNG, 151467 bytes",
     "runtimeReceipt": "handoffs/hermes-to-chatgpt/cshop-worker-runtime-validation-2026-08-29.json",
-    "fullBleedAssetLayout": "FAIL human visual review",
-    "v0.2SplitLayout": "PENDING real runtime and human visual acceptance"
+    "fullBleedAssetLayout": "FAIL human visual review; superseded by v0.2 split layout",
+    "v0.2SplitLayout": "PASS real runtime and human visual acceptance",
+    "v0.2AcceptanceReceipt": "receipts/visual-acceptance/product-listing-graphic/2026-08-30-split-layout-v02/acceptance.json",
+    "regressionInvariantGate": "PASS and required through workflow-policy",
+    "acceptanceMatrix": "available at tools/cshop-worker-adapter/scripts/acceptance-matrix.mjs"
   },
   "commercial": {
     "pricingStatus": "unset",

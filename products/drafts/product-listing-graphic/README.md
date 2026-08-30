@@ -13,7 +13,7 @@ Create one product graphic from either:
 
 ### Supplied product image
 
-A customer photo is **not** used as a full-bleed text background anymore.
+A customer photo is **not** used as a full-bleed text background.
 
 The v0.2 draft uses a conservative split card:
 
@@ -33,7 +33,7 @@ The v0.2 draft uses a conservative split card:
 
 The source image is proportionally contained inside the upper image zone, so the complete source remains visible without stretching or default cropping. The configured `background` colour fills any remaining space and the lower text panel. Title and optional price are measured before placement and centered in that lower panel.
 
-This change exists because the earlier full-bleed layout passed mechanical resize checks but failed human visual review on a real coffee image. Enlarging/cropping the photograph and laying a dark gradient across it made the saucer around the cup read like a large artificial shadow/halo. That output was not good enough to sell even though its dimensions and text placement were technically valid.
+This layout exists because the earlier full-bleed version passed mechanical resize checks but failed human visual review on a real coffee image. Enlarging/cropping the photograph and laying a dark gradient across it made the saucer around the cup read like a large artificial shadow/halo. That output was not good enough to sell even though its dimensions and text placement were technically valid.
 
 ### Blank canvas
 
@@ -120,34 +120,43 @@ Current constraints:
 
 ## Validation state
 
-The underlying integration remains validated:
+The graphics implementation and its known failure classes are now closed at the current v0.2 scope:
 
 - pinned C-Shop release build: **PASS**;
 - full C-Shop Cargo workspace tests: **PASS**;
 - real MCP graphics smoke: **PASS**;
 - long-title fitting: **PASS**;
-- source aspect-ratio preservation: **PASS**.
+- source aspect-ratio preservation: **PASS**;
+- v0.2 split-layout adapter suite: **PASS**;
+- exact real coffee-photo runtime case: **PASS**;
+- human visual review of the v0.2 output: **PASS**;
+- reusable geometry/property regression gate: **PASS** and wired into required `workflow-policy` CI.
 
-However, the previous full-bleed source-photo layout is now explicitly recorded as a **human visual FAIL**. The v0.2 split layout must pass the adapter suite, the real coffee-photo runtime case, and human visual inspection before this product's graphics acceptance is considered complete.
+The superseded full-bleed source-photo layout remains intentionally recorded as a **human visual FAIL**. It is evidence for why the split layout exists, not the current acceptance state.
 
-Canonical runtime receipt:
+Current visual acceptance receipt:
+
+`receipts/visual-acceptance/product-listing-graphic/2026-08-30-split-layout-v02/acceptance.json`
+
+Canonical underlying runtime receipt:
 
 `handoffs/hermes-to-chatgpt/cshop-worker-runtime-validation-2026-08-29.json`
 
 ## Commercial state
 
-No price is assigned in this draft yet. No payment route, x402 resource, marketplace listing, Render service, or public deployment is created by this draft.
+Graphics acceptance is complete, but commercialization is not.
+
+No price is assigned yet. No customer asset-intake mechanism, payment route, x402 resource, finished-output delivery path, marketplace listing, Render service, or public deployment is created by this draft.
 
 ## Promotion gate
 
 Move this product out of `products/drafts/` only after:
 
-1. the v0.2 supplied-photo layout passes real visual acceptance;
-2. the buyer-facing scope and acceptance criteria are fixed;
-3. initial price and delivery expectations are set;
-4. customer asset intake into the isolated worker is defined;
-5. finished-output delivery is defined;
-6. the payment/distribution path for the first sale is selected;
-7. one complete non-live commercial dry run passes.
+1. buyer-facing scope and acceptance criteria are fixed;
+2. initial price and delivery expectations are set;
+3. customer asset intake into the isolated worker is defined;
+4. finished-output delivery is defined;
+5. the payment/distribution path for the first sale is selected;
+6. one complete non-live commercial dry run passes.
 
-Until then, this remains a product draft, not a published product.
+The prior graphics-validation item is no longer a blocker. Until the remaining commercial items are closed, this remains a product draft, not a published product.
