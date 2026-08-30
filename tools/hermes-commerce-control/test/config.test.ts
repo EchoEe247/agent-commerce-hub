@@ -2,21 +2,24 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { loadConfig, SECRET_ENV_DENYLIST } from "../src/config.js";
 
-test("config: defaults to Mode A with both activation gates false", () => {
+const APPROVED_INTENT = "hintent_0123456789abcdef0123456789abcdef";
+
+test("config: defaults to Mode A with all external/value gates false", () => {
   const cfg = loadConfig({});
   assert.equal(cfg.mode, "A");
   assert.equal(cfg.externalWritesEnabled, false);
   assert.equal(cfg.liveValueMovementEnabled, false);
+  assert.equal(cfg.humanRecruitmentActivation.enabled, false);
+  assert.equal(cfg.humanRecruitmentActivation.approvedIntentId, null);
 });
 
-test("config: enabling either activation gate fails closed in Mode A", () => {
-  assert.throws(() => loadConfig({ EXTERNAL_WRITES_ENABLED: "true" }), /Mode A/);
+test("config: general external-write and value-movement gates still fail closed", () => {
+  assert.throws(() => loadConfig({ EXTERNAL_WRITES_ENABLED: "true" }), /General external writes/);
   assert.throws(() => loadConfig({ LIVE_VALUE_MOVEMENT_ENABLED: "true" }), /Mode A/);
-  // Any truthy spelling must be rejected, not just the lowercase one.
   for (const v of ["TRUE", "True", "1", "yes", "YES", "on", "enabled"]) {
     assert.throws(
       () => loadConfig({ EXTERNAL_WRITES_ENABLED: v }),
-      /Mode A/,
+      /external writes/i,
       `expected rejection for EXTERNAL_WRITES_ENABLED=${v}`,
     );
     assert.throws(
@@ -27,13 +30,43 @@ test("config: enabling either activation gate fails closed in Mode A", () => {
   }
 });
 
+test("config: exact-intent human recruitment activation requires both gate and valid intent id", () => {
+  assert.throws(
+    () => loadConfig({ HUMAN_RECRUITMENT_B1_ENABLED: "true" }),
+    /requires HUMAN_RECRUITMENT_B1_APPROVED_INTENT_ID/,
+  );
+  assert.throws(
+    () => loadConfig({ HUMAN_RECRUITMENT_B1_APPROVED_INTENT_ID: APPROVED_INTENT }),
+    /disabled/,
+  );
+  assert.throws(
+    () =>
+      loadConfig({
+        HUMAN_RECRUITMENT_B1_ENABLED: "true",
+        HUMAN_RECRUITMENT_B1_APPROVED_INTENT_ID: "not-an-intent",
+      }),
+    /hintent_/,
+  );
+
+  const cfg = loadConfig({
+    HUMAN_RECRUITMENT_B1_ENABLED: "true",
+    HUMAN_RECRUITMENT_B1_APPROVED_INTENT_ID: APPROVED_INTENT,
+  });
+  assert.equal(cfg.humanRecruitmentActivation.enabled, true);
+  assert.equal(cfg.humanRecruitmentActivation.approvedIntentId, APPROVED_INTENT);
+  assert.equal(cfg.externalWritesEnabled, false, "general external writes must remain disabled");
+  assert.equal(cfg.liveValueMovementEnabled, false);
+});
+
 test("config: explicitly false gates are accepted", () => {
   const cfg = loadConfig({
     EXTERNAL_WRITES_ENABLED: "false",
     LIVE_VALUE_MOVEMENT_ENABLED: "0",
+    HUMAN_RECRUITMENT_B1_ENABLED: "off",
   });
   assert.equal(cfg.externalWritesEnabled, false);
   assert.equal(cfg.liveValueMovementEnabled, false);
+  assert.equal(cfg.humanRecruitmentActivation.enabled, false);
 });
 
 test("config: a mode other than A is rejected", () => {
@@ -46,6 +79,7 @@ test("config: absence of a gate never means enabled", () => {
   const cfg = loadConfig({ SOME_UNRELATED: "x" });
   assert.equal(cfg.externalWritesEnabled, false);
   assert.equal(cfg.liveValueMovementEnabled, false);
+  assert.equal(cfg.humanRecruitmentActivation.enabled, false);
 });
 
 test("config: network bounds match the approved defaults", () => {
@@ -91,7 +125,6 @@ test("config: an adapter can be disabled by environment", () => {
 
 test("config: the config object carries no secret-valued field", () => {
   const cfg = loadConfig({
-    // Even if the environment is polluted, none of this may land in config.
     PRIVATE_KEY: "0xdeadbeef",
     MNEMONIC: "test test test test test test test test test test test junk",
     NWC_URL: "nostr+walletconnect://abc",
@@ -100,11 +133,7 @@ test("config: the config object carries no secret-valued field", () => {
   });
   const serialized = JSON.stringify(cfg);
   for (const forbidden of ["0xdeadbeef", "junk", "nostr+walletconnect", "sk-should-not-appear", "0xabc"]) {
-    assert.equal(
-      serialized.includes(forbidden),
-      false,
-      `config leaked ${forbidden}`,
-    );
+    assert.equal(serialized.includes(forbidden), false, `config leaked ${forbidden}`);
   }
 });
 
@@ -115,12 +144,16 @@ test("config: the secret env denylist covers the forbidden classes", () => {
   }
 });
 
-test("config: config is deeply frozen so callers cannot flip a gate at runtime", () => {
+test("config: config is deeply frozen so callers cannot flip activation at runtime", () => {
   const cfg = loadConfig({});
   assert.equal(Object.isFrozen(cfg), true);
   assert.equal(Object.isFrozen(cfg.network), true);
   assert.equal(Object.isFrozen(cfg.adapters), true);
+  assert.equal(Object.isFrozen(cfg.humanRecruitmentActivation), true);
   assert.throws(() => {
     (cfg as unknown as { externalWritesEnabled: boolean }).externalWritesEnabled = true;
+  });
+  assert.throws(() => {
+    (cfg.humanRecruitmentActivation as unknown as { enabled: boolean }).enabled = true;
   });
 });

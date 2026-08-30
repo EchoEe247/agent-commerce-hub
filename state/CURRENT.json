@@ -10,8 +10,8 @@
   "repository": {
     "default_branch": "main",
     "canonical_repository_branch": "main",
-    "source_main_head_at_recruitment_adapter_start": "b10d6c1f7a4e65ec80ad8a930ca6b8ea0e821b4d",
-    "reconciled_through_pull_request": 108,
+    "source_main_head_at_recruitment_b1_start": "e01b53b8c554487eb1339ea7e5608d0dc1c4e5df",
+    "reconciled_through_pull_request": 109,
     "production_branch": "feat/hermes-commerce-control-plane",
     "main_protected": true,
     "production_branch_protected": true,
@@ -110,6 +110,8 @@
       "human_contract_drafting": true,
       "worker_facing_recruitment_payloads": true,
       "external_recruitment_intent_preparation": true,
+      "scoped_recruitment_b1_authorization": true,
+      "provider_neutral_recruitment_executor": true,
       "human_fulfillment_lifecycle_persistence": true,
       "human_attempt_review": true,
       "verification_planning": true,
@@ -128,17 +130,17 @@
         "manual_review",
         "watch",
         "reject"
-      ],
-      "mode": "analysis_only",
-      "external_mutation_allowed": false
+      ]
     },
     "human_fulfillment": {
       "contract_module": "tools/hermes-commerce-control/src/opportunities/human-fulfillment.ts",
       "recruitment_adapter_module": "tools/hermes-commerce-control/src/opportunities/human-recruitment-adapters.ts",
       "recruitment_intent_module": "tools/hermes-commerce-control/src/opportunities/human-recruitment-intent.ts",
+      "recruitment_executor_module": "tools/hermes-commerce-control/src/opportunities/human-recruitment-executor.ts",
       "lifecycle_module": "tools/hermes-commerce-control/src/opportunities/human-fulfillment-lifecycle.ts",
       "contract_document": "docs/human-fulfillment-contract.md",
       "adapter_document": "docs/human-recruitment-adapters.md",
+      "activation_document": "docs/human-recruitment-b1-activation.md",
       "policy_version": 1,
       "recruitment_channels": [
         "reddit",
@@ -149,17 +151,29 @@
       "worker_payload_excludes_internal_economics_source_text_and_model_metadata": true,
       "worker_payload_requires_positive_economic_readiness": true,
       "target_rules_verification_timestamp_required": true,
+      "target_rules_max_age_days_at_execution": 7,
       "direct_recruitment_private_message_only": true,
-      "external_recruitment_policy_class": "EXTERNAL_WRITE",
-      "external_recruitment_policy_rule": "A_MODE_EXTERNAL_WRITE",
-      "external_recruitment_execution_enabled": false,
-      "external_mutation_executed": false,
-      "operator_approval_required": true,
+      "general_external_writes_enabled": false,
+      "scoped_b1_config": {
+        "enabled_env": "HUMAN_RECRUITMENT_B1_ENABLED",
+        "approved_intent_env": "HUMAN_RECRUITMENT_B1_APPROVED_INTENT_ID",
+        "approved_intent_pattern": "hintent_<32 hex>",
+        "exact_intent_required": true,
+        "stale_intent_without_enabled_gate_rejected": true,
+        "policy_rule": "B1_HUMAN_RECRUITMENT_EXACT_INTENT"
+      },
+      "unmatched_recruitment_external_write_reason": "EXTERNAL_WRITE_NOT_AUTHORIZED",
+      "unrelated_external_write_reason": "EXTERNAL_WRITE_DISABLED",
+      "signer_or_secret_access_allowed": false,
+      "live_value_movement_allowed": false,
+      "transport_contract_requires_intent_idempotency_key": true,
+      "credential_bearing_channel_transport_implemented": false,
       "lifecycle_store": "append_only_jsonl",
       "lifecycle_multiwriter_locking": true,
       "lifecycle_event_types": [
         "recruitment_payload_prepared",
         "external_action_intent_prepared",
+        "external_action_executed",
         "candidate_recorded",
         "contract_recorded",
         "worker_acceptance_recorded",
@@ -238,11 +252,12 @@
   },
   "strategic_frontier": {
     "commercial_fact": "No successful paid seller transaction has been recorded in the canonical post-deploy observation.",
-    "current_bottleneck": "paid demand and explicitly authorized real external recruitment/contact rather than additional internal planning infrastructure",
+    "current_bottleneck": "real provider transport, worker/counterparty qualification, and upstream demand conversion rather than additional generic planning infrastructure",
     "next_work": [
-      "b1_recruitment_activation",
+      "first_real_recruitment_transport",
+      "candidate_qualification_and_assignment_state",
       "real_worker_counterparty_validation",
-      "buyer_demand_validation",
+      "buyer_upstream_demand_validation",
       "b2_worker_payment_when_required",
       "commercialize_product_listing_graphic"
     ],
@@ -252,14 +267,16 @@
       "contract_draft_core_implemented": true,
       "worker_facing_payload_adapter_implemented": true,
       "external_action_intent_boundary_implemented": true,
+      "exact_intent_b1_authorization_implemented": true,
+      "provider_neutral_executor_implemented": true,
       "persistent_lifecycle_core_implemented": true,
       "attempt_review_core_implemented": true,
-      "external_recruitment_implemented": false,
-      "worker_contact_implemented": false,
+      "credential_bearing_channel_transport_implemented": false,
+      "real_worker_contact_observed": false,
       "worker_payment_implemented": false,
       "physical_safety_review_required": true,
       "integration_point": "tools/hermes-commerce-control/src/opportunities",
-      "rule": "future B1 worker-facing executors must consume frozen payload/intent artifacts and remain behind the central policy/authorization boundary rather than duplicate or bypass recruitment economics and compensation policy"
+      "rule": "real channel transports must consume frozen payload/intent artifacts, honor the intent id as an idempotency key, and remain behind the exact-intent central policy grant"
     }
   },
   "workflow_security": {

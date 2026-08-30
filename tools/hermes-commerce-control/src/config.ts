@@ -1,15 +1,14 @@
 /**
- * Immutable Mode-A configuration.
+ * Immutable Commerce Control configuration.
  *
- * Two properties are load-bearing:
+ * The default posture remains Mode A. A narrowly scoped B1 recruitment grant
+ * may be enabled for exactly one prepared human-recruitment intent. This does
+ * not enable general external writes and never enables live value movement.
  *
- *  1. Both activation gates fail closed. Absence never means enabled, and any
- *     attempt to set either one true in Mode A throws at load time rather than
- *     producing a config object that a later caller might trust.
- *  2. No field of this config ever holds a secret *value*. Adapters that would
- *     need credentials declare an environment-variable *name* only. The
- *     denylist below documents the classes of environment variable this process
- *     must never copy into its own state.
+ * No field of this config ever holds a secret *value*. Adapters that would need
+ * credentials declare an environment-variable *name* only. The denylist below
+ * documents the classes of environment variable this process must never copy
+ * into its own state.
  */
 import { homedir } from "node:os";
 import { join, resolve } from "node:path";
@@ -64,10 +63,17 @@ export interface AdapterConfig {
   readonly credentialEnvVar?: string | undefined;
 }
 
+export interface HumanRecruitmentActivationConfig {
+  readonly enabled: boolean;
+  readonly approvedIntentId: string | null;
+}
+
 export interface CommerceConfig {
   readonly mode: "A";
+  /** General external writes remain disabled even when a scoped recruitment grant is active. */
   readonly externalWritesEnabled: false;
   readonly liveValueMovementEnabled: false;
+  readonly humanRecruitmentActivation: HumanRecruitmentActivationConfig;
   readonly stateRoot: string;
   readonly databasePath: string;
   readonly cacheRoot: string;
@@ -86,6 +92,19 @@ function isTruthy(raw: string | undefined): boolean {
   return !FALSE_TOKENS.has(raw.trim().toLowerCase());
 }
 
+function optionalHumanRecruitmentIntentId(raw: string | undefined): string | null {
+  if (raw === undefined || raw.trim() === "") return null;
+  const value = raw.trim();
+  if (!/^hintent_[0-9a-f]{32}$/.test(value)) {
+    throw new CommerceError(
+      "CONFIG_ERROR",
+      "HUMAN_RECRUITMENT_B1_APPROVED_INTENT_ID must be an exact prepared hintent_<32 hex> id.",
+      { gate: "HUMAN_RECRUITMENT_B1_APPROVED_INTENT_ID" },
+    );
+  }
+  return value;
+}
+
 const DEFAULT_BASE_URLS: Readonly<Record<PlatformId, string>> = Object.freeze({
   cdp_bazaar: "https://api.cdp.coinbase.com/platform/v2/x402/discovery/",
   agent402: "https://agent402.tools/",
@@ -100,7 +119,7 @@ const DEFAULT_BASE_URLS: Readonly<Record<PlatformId, string>> = Object.freeze({
  * Loads configuration from an explicit environment map.
  *
  * Taking the env as a parameter (rather than reading `process.env` internally)
- * keeps the loader pure and lets the contract tests prove the gate behaviour
+ * keeps the loader pure and lets the contract tests prove gate behaviour
  * without mutating global state.
  */
 export function loadConfig(env: Env = process.env): CommerceConfig {
@@ -109,7 +128,7 @@ export function loadConfig(env: Env = process.env): CommerceConfig {
     throw new CommerceError(
       "CONFIG_ERROR",
       `only Mode A is implemented; refusing to run in mode ${JSON.stringify(mode)}. ` +
-        "Stage B1/B2 activation requires a separate design and authorization.",
+        "Scoped human recruitment uses a separate exact-intent B1 grant rather than enabling a general mode.",
       { requestedMode: mode },
     );
   }
@@ -117,8 +136,8 @@ export function loadConfig(env: Env = process.env): CommerceConfig {
   if (isTruthy(env.EXTERNAL_WRITES_ENABLED)) {
     throw new CommerceError(
       "CONFIG_ERROR",
-      "EXTERNAL_WRITES_ENABLED cannot be enabled in Mode A. External writes are a " +
-        "Stage B1 capability and are not implemented.",
+      "EXTERNAL_WRITES_ENABLED cannot be enabled in Mode A. General external writes remain disabled; " +
+        "human recruitment uses the exact-intent HUMAN_RECRUITMENT_B1_* gate.",
       { gate: "EXTERNAL_WRITES_ENABLED" },
     );
   }
@@ -128,6 +147,27 @@ export function loadConfig(env: Env = process.env): CommerceConfig {
       "LIVE_VALUE_MOVEMENT_ENABLED cannot be enabled in Mode A. Live value movement is a " +
         "Stage B2 capability and is not implemented.",
       { gate: "LIVE_VALUE_MOVEMENT_ENABLED" },
+    );
+  }
+
+  const recruitmentEnabled = isTruthy(env.HUMAN_RECRUITMENT_B1_ENABLED);
+  const approvedIntentId = optionalHumanRecruitmentIntentId(
+    env.HUMAN_RECRUITMENT_B1_APPROVED_INTENT_ID,
+  );
+  if (recruitmentEnabled && approvedIntentId === null) {
+    throw new CommerceError(
+      "CONFIG_ERROR",
+      "HUMAN_RECRUITMENT_B1_ENABLED requires HUMAN_RECRUITMENT_B1_APPROVED_INTENT_ID. " +
+        "The grant must be scoped to one already-prepared recruitment intent.",
+      { gate: "HUMAN_RECRUITMENT_B1_ENABLED" },
+    );
+  }
+  if (!recruitmentEnabled && approvedIntentId !== null) {
+    throw new CommerceError(
+      "CONFIG_ERROR",
+      "HUMAN_RECRUITMENT_B1_APPROVED_INTENT_ID is set while HUMAN_RECRUITMENT_B1_ENABLED is disabled. " +
+        "Refusing ambiguous stale authorization state.",
+      { gate: "HUMAN_RECRUITMENT_B1_APPROVED_INTENT_ID" },
     );
   }
 
@@ -174,6 +214,10 @@ export function loadConfig(env: Env = process.env): CommerceConfig {
     mode: "A" as const,
     externalWritesEnabled: false as const,
     liveValueMovementEnabled: false as const,
+    humanRecruitmentActivation: Object.freeze({
+      enabled: recruitmentEnabled,
+      approvedIntentId,
+    }),
     stateRoot,
     databasePath: join(stateRoot, "state.db"),
     cacheRoot: join(stateRoot, "cache"),

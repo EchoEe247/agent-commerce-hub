@@ -13,6 +13,7 @@ export type PolicyOutcome = "allow" | "block";
 /** Stable block reasons. These strings appear in receipts and handoffs. */
 export type PolicyReason =
   | "EXTERNAL_WRITE_DISABLED"
+  | "EXTERNAL_WRITE_NOT_AUTHORIZED"
   | "LIVE_VALUE_MOVEMENT_DISABLED"
   | "SECRET_ACCESS_FORBIDDEN"
   | "POLICY_BLOCKED";
@@ -26,6 +27,8 @@ export interface PolicyRequest {
   readonly movesValue?: boolean | undefined;
   /** True when the operation would mutate external state. */
   readonly mutatesExternal?: boolean | undefined;
+  /** Exact immutable external-action intent id, when the action is intent-scoped. */
+  readonly externalIntentId?: string | undefined;
   readonly network?: string | undefined;
   readonly platform?: string | undefined;
 }
