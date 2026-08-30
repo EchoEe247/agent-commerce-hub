@@ -4,7 +4,7 @@
 
 Last current-state reconciliation: **2026-08-30**.
 
-This snapshot is intended to land with PR **#113**. Its source `main` baseline is `705199fb2a6d49fa7705113c9fb594cca4b67536`.
+This snapshot is intended to land with PR **#114**. Its source `main` baseline is `81352ff42348a7984bec4dd8357a2150ff33679e`.
 
 ## Project mission
 
@@ -59,6 +59,7 @@ Implemented stages include:
 - local model evaluation and durable evaluation claiming;
 - revenue-oriented ranking;
 - execution routing;
+- **Agent Bounties unified canonical ready-to-earn discovery, including Open Competition V2**;
 - human fulfillment planning;
 - recruitment drafting;
 - frozen worker contract drafting;
@@ -83,7 +84,30 @@ Implemented stages include:
 - pursuit dossiers and operator packets;
 - Reddit RSS opportunity ingestion.
 
-Marketplace/service discovery adapters remain Agent402, the402, Agent Bounties, BountyBook, CDP Bazaar, PaySH, and Piprail. GiveGigs is now a concrete human-recruitment execution and application-ingestion path, not a duplicate opportunity engine.
+Marketplace/service discovery adapters remain Agent402, the402, Agent Bounties, BountyBook, CDP Bazaar, PaySH, and Piprail. GiveGigs is a concrete human-recruitment execution and application-ingestion path, not a duplicate opportunity engine.
+
+## Agent Bounties unified ready-to-earn discovery
+
+Canonical adapter modules:
+
+- `tools/hermes-commerce-control/src/adapters/agent-bounties/index.ts`
+- `tools/hermes-commerce-control/src/adapters/agent-bounties/unified.ts`
+
+Agent Bounties' public discovery contract was re-checked on **2026-08-30**. The platform itself instructs agents to use its current machine-readable funded market and the unified canonical projection. The adapter now reads:
+
+`GET /v1/opportunities?limit=<bounded>&network=base-mainnet&source_type=canonical_base&view=ready_to_earn`
+
+The live projection reported 75 canonical Base items when this slice was implemented. It includes both autonomous canonical bounties and Open Competition V2 inventory, replacing the older discovery limitation where Commerce Control only saw `/v1/base/autonomous-bounties/inventory-summary`.
+
+Unified opportunity normalization preserves exact atomic USDC conversion and exposes the fields downstream revenue evaluation actually needs: goal, public URL, work/payment state, verifier readiness/profile, deadline, competition mode, required external spend, provider-advertised gross cash margin, qualifying-action objective, scoring phase/window, and provider safe-next-action instructions.
+
+Funding remains evidence-conservative: `payment_state=escrowed` maps to a funded opportunity with observed evidence, not proof of solver payment. Canonical settlement remains authoritative. Open Competition V2 items use `CompetitionSettledV2` as the payment-proof rule; autonomous bounties use `BountySettled`.
+
+Competition actionability is phase-aware. A funded/claimable/verification-ready V2 item is preparation-eligible only while `participation_phase=scoring`. Upcoming and proof-phase competitions remain visible to the pipeline but do not become claim/entry-preparable early or after scoring closes. Live claim, funding, submission, proof, signing, and value movement remain false.
+
+A concrete live candidate observed during implementation is the active **“Highest externally funded canonical GMV — August 24 to September 21”** competition. Its projection advertised a 3 USDC solver reward, 0.11 USDC configured external spend, 2.89 USDC gross cash margin before gas/taxes/losing risk/other unlisted costs, and a scoring window through 2026-09-21. Its qualifying action requires useful marketplace demand funded from the entrant wallet and canonical settlement by a different eligible wallet. This is commercially relevant because it is a real counterparty-required path rather than generic internal orchestration, but it remains competitive and the advertised gross margin is not guaranteed profit.
+
+Standing 2 USDC meta-bounties were also visible with 1 USDC required child funding and 1 USDC advertised gross parent margin. Their GitHub mirrors currently carry a publication-gate warning not to start, claim, sign, or spend from the incomplete mirror, so those mirrors are not treated as executable invitations merely because canonical funding exists.
 
 ## Execution routing
 
@@ -277,7 +301,7 @@ The product remains commercially unfinished: pricing unset, payment integration 
 
 The deliberately deferred provider PR remains **#8 — `feat: add the402 provider adapter`**, pending provider credentials/secret custody and explicit production authorization if revived.
 
-PR **#113** is the GiveGigs application-ingestion/candidate-binding change represented by this snapshot. It targets `main` only and is not a production deployment.
+PR **#114** is the unified Agent Bounties ready-to-earn discovery change represented by this snapshot. It targets `main` only and is not a production deployment.
 
 ## Strategic frontier
 
@@ -285,15 +309,17 @@ The internal human path now reaches:
 
 `qualified upstream opportunity → frozen worker terms → exact GiveGigs-bound recruitment payload → exact B1 approval → concrete OFFSITE_PAY task POST → public application read → candidate-specific frozen contract → qualification → assignment/acceptance → attempt/correction/blocker/replacement handling → final review → private performance history`
 
-The first concrete marketplace path now covers both outbound recruitment and inbound application discovery without conflating marketplace application status with qualification or hiring. The remaining blocker is real demand + real worker execution, not another generic candidate layer.
+The discovery side now exposes a concrete active upstream opportunity whose qualifying action itself requires a different eligible wallet/counterparty to complete canonically settled marketplace demand. That is a real reason to use the human/counterparty fulfillment stack: the second participant is part of the upstream acceptance condition, not labor we could simply keep in-house without violating the task terms.
+
+The current commercial blocker is no longer “the adapter cannot see the opportunity.” The next consequential step would require an exact live opportunity decision plus wallet/funding authorization and a real independent participant. Do not replace that external blocker with more generic internal orchestration.
 
 Priority after this slice:
 
-1. **real worker/counterparty validation** — once there is a verified upstream opportunity and valid secret custody, explicitly approve one exact B1 GiveGigs recruitment intent, observe real applications through the safe-read bridge, bind/qualify one candidate, and exercise assignment/attempt handling;
-2. **buyer/upstream demand validation** — record actual conversion and payout evidence;
-3. **provider-side GiveGigs application acceptance/hire write** — implement only when a real validated case requires the marketplace mutation, with its own exact scoped authorization rather than general external writes;
-4. **B2 worker-payment path** — only when an accepted real worker transaction requires value movement, with separate explicit financial authorization;
-5. **commercialize Product Listing Graphic** where it competes favorably with upstream-demand work.
+1. **select/re-fetch one still-active Agent Bounties opportunity immediately before action** — favor a scoring-phase item with explicit positive economics and a counterparty requirement that our existing human path can satisfy;
+2. **prepare the exact child-demand/worker terms and cost envelope without signing or funding** — include all external spend, worker cost, gas/proof fees, competitive losing risk, and deadline/window;
+3. **obtain explicit operator authorization for any claim/funding/signature** — only after the exact opportunity, maximum spend, chain, asset, recipient/contracts, and failure exposure are fixed;
+4. **real worker/counterparty validation** — recruit/qualify an independent participant only when the upstream terms actually require one and the combined economics remain positive;
+5. **provider-side GiveGigs application acceptance/hire write and B2 worker payment** only when the chosen real case requires those mutations.
 
 Do not create a second opportunity engine or duplicate recruitment economics/compensation rules per provider.
 
@@ -304,26 +330,30 @@ Do not create a second opportunity engine or duplicate recruitment economics/com
 3. Preserve the separate protected production branch; production mutation requires explicit authorization.
 4. Do not reopen completed reliability work without new failure evidence.
 5. Prefer coherent implementation followed by the relevant full gate; fix concrete failures rather than repeatedly re-planning settled architecture.
-6. Worker-facing adapters must consume frozen contract artifacts and must not leak upstream payout/internal margin/model scoring by default.
-7. Never enable general external writes to recruit a worker. B1 recruitment authorization must bind to one exact prepared `hintent_...` id.
-8. GiveGigs worker-visible contact/payment/location configuration must remain bound into the `givegigs:offsite-pay:<hash>` target; changing it requires a fresh recruitment payload/intent and approval.
-9. Never persist or commit a raw GiveGigs API key. The credential may exist only in secret custody and the fixed provider request path.
-10. An ambiguous GiveGigs POST outcome must remain pending until remote reconciliation; do not automatically retry and risk a duplicate listing.
-11. GiveGigs application reads must remain no-auth `SafeFetch` reads derived from a validated GiveGigs task reference; do not accept provider-controlled read destinations or credential headers.
-12. A GiveGigs application is not qualification or hiring. Bind only the concrete worker identity into a candidate-specific frozen contract; do not change scope, evidence, compensation, deadline, or economics during binding.
-13. Raw applicant messages are untrusted and must not be promoted into qualification evidence or persisted to lifecycle state by default.
-14. An incomplete candidate questionnaire is `needs_followup`; do not silently convert missing information into a hard rejection.
-15. Only `qualified` + accepted assignments may begin worker execution.
-16. Physical qualification must explicitly confirm location feasibility.
-17. Corrections must address frozen deficiencies only; do not add scope or change compensation after execution begins.
-18. Replacement does not retroactively decide the previous worker's compensation outcome.
-19. Operator/upstream/site blockers must not be converted into worker fault or a worker-performance penalty.
-20. Worker payment/value movement remains a separate B2 concern.
-21. Good-faith partial compensation must be fixed before execution, not invented retroactively.
-22. Suspicion alone must not automatically become a zero-compensation/fraud outcome or permanent worker ban.
-23. Seller pricing changes must use the canonical price catalog and pass consistency coverage.
-24. Public seller Docker changes must preserve the private buyer/financial/operator boundary.
-25. GitHub expressions must not appear directly inside workflow `run:` commands; use `env:` and quoted shell variables.
-26. Testnet signer audit snapshots must write only to run-scoped audit branches and must not force-push.
-27. Never commit secrets, private paid results, local SQLite/WAL/SHM files, or generated `node_modules`.
-28. `Unknown/Archived/` is historical evidence only.
+6. Agent Bounties discovery must use the unified canonical `ready_to_earn` projection for current revenue inventory; legacy autonomous inventory normalization is compatibility only.
+7. An Open Competition V2 item is preparation-eligible only in its advertised scoring phase; upcoming/proof phases must not become executable merely because the contract remains claimable/escrowed.
+8. Treat advertised gross cash margin as provider-reported gross economics, not guaranteed profit; account for required spend, worker/counterparty cost, gas/proof fees, failure probability, and competitive losing risk before action.
+9. A canonical funded opportunity still does not authorize wallet signatures, claims, funding, or submissions. Those remain explicit consequential actions.
+10. Worker-facing adapters must consume frozen contract artifacts and must not leak upstream payout/internal margin/model scoring by default.
+11. Never enable general external writes to recruit a worker. B1 recruitment authorization must bind to one exact prepared `hintent_...` id.
+12. GiveGigs worker-visible contact/payment/location configuration must remain bound into the `givegigs:offsite-pay:<hash>` target; changing it requires a fresh recruitment payload/intent and approval.
+13. Never persist or commit a raw GiveGigs API key. The credential may exist only in secret custody and the fixed provider request path.
+14. An ambiguous GiveGigs POST outcome must remain pending until remote reconciliation; do not automatically retry and risk a duplicate listing.
+15. GiveGigs application reads must remain no-auth `SafeFetch` reads derived from a validated GiveGigs task reference; do not accept provider-controlled read destinations or credential headers.
+16. A GiveGigs application is not qualification or hiring. Bind only the concrete worker identity into a candidate-specific frozen contract; do not change scope, evidence, compensation, deadline, or economics during binding.
+17. Raw applicant messages are untrusted and must not be promoted into qualification evidence or persisted to lifecycle state by default.
+18. An incomplete candidate questionnaire is `needs_followup`; do not silently convert missing information into a hard rejection.
+19. Only `qualified` + accepted assignments may begin worker execution.
+20. Physical qualification must explicitly confirm location feasibility.
+21. Corrections must address frozen deficiencies only; do not add scope or change compensation after execution begins.
+22. Replacement does not retroactively decide the previous worker's compensation outcome.
+23. Operator/upstream/site blockers must not be converted into worker fault or a worker-performance penalty.
+24. Worker payment/value movement remains a separate B2 concern.
+25. Good-faith partial compensation must be fixed before execution, not invented retroactively.
+26. Suspicion alone must not automatically become a zero-compensation/fraud outcome or permanent worker ban.
+27. Seller pricing changes must use the canonical price catalog and pass consistency coverage.
+28. Public seller Docker changes must preserve the private buyer/financial/operator boundary.
+29. GitHub expressions must not appear directly inside workflow `run:` commands; use `env:` and quoted shell variables.
+30. Testnet signer audit snapshots must write only to run-scoped audit branches and must not force-push.
+31. Never commit secrets, private paid results, local SQLite/WAL/SHM files, or generated `node_modules`.
+32. `Unknown/Archived/` is historical evidence only.
