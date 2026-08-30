@@ -4,7 +4,7 @@
 
 Last current-state reconciliation: **2026-08-30**.
 
-This snapshot is intended to land with PR **#110**. Its source `main` baseline is `ae237a389bcaf8ed7b7ee473c7da54fd855e9610`.
+This snapshot is intended to land with PR **#111**. Its source `main` baseline is `f11c3a4aa7cc08c3e3ae21c7600c7be29afe2339`.
 
 ## Project mission
 
@@ -66,11 +66,15 @@ Implemented stages include:
 - recruitment external-action intent preparation;
 - exact-intent scoped B1 human-recruitment authorization;
 - provider-neutral recruitment execution boundary;
-- **candidate qualification / follow-up / rejection classification**;
-- **assignment offer / acceptance / replacement state**;
-- **private worker-performance / future-eligibility records**;
+- candidate qualification / follow-up / rejection classification;
+- assignment offer / acceptance / replacement state;
+- **accepted-assignment attempt submission and assessment**;
+- **bounded correction request/response orchestration**;
+- **external-blocker attribution without automatic worker fault**;
+- **explicit replacement authorization from supported terminal conditions**;
+- private worker-performance / future-eligibility records;
 - append-only human-fulfillment lifecycle persistence;
-- human attempt/QA review;
+- final human attempt/compensation review;
 - verification planning/resolution;
 - pursuit dossiers and operator packets;
 - Reddit RSS opportunity ingestion.
@@ -97,7 +101,7 @@ Detailed contract: `docs/human-fulfillment-contract.md`.
 
 The contract freezes worker scope, acceptance criteria, evidence requirements, worker reference, deadline, full compensation, and positive pre-agreed good-faith-attempt compensation. Unknown upstream payout or a zero/negative gross margin floor blocks worker-facing economic readiness. Suspicion alone cannot automatically deny compensation.
 
-Reviewed outcomes remain:
+Final reviewed outcomes remain:
 
 - `accepted` → full compensation due;
 - `good_faith_failed` → pre-agreed partial compensation due;
@@ -168,6 +172,30 @@ Only a fully qualified candidate on the same financially viable contract/opportu
 
 Assignment/qualification records never execute payment.
 
+## Attempt, correction, blocker, and replacement orchestration
+
+Canonical module: `tools/hermes-commerce-control/src/opportunities/human-attempt-orchestration.ts`.
+
+Documentation: `docs/human-attempt-correction-orchestration.md`.
+
+A worker attempt can be recorded only against the same accepted assignment, contract, opportunity, and candidate. Attempts carry bounded evidence, an explicit attempt number, submission time, and a late flag relative to the frozen task deadline.
+
+Attempt assessment outcomes are:
+
+- `accepted` — recommends the existing final `accepted` review path;
+- `correction_required` — requires concrete deficiencies and can produce a bounded correction request;
+- `worker_failed` — may justify replacement consideration but does not decide compensation;
+- `manual_review` — stays on the existing suspicious/manual-review path without automatic worker fault or no-pay;
+- `external_blocker` — attributes a blocker to operator/upstream/site/other-external conditions instead of worker fault.
+
+Corrections are bounded by a pre-set maximum cycle count and a deadline that cannot exceed the original frozen task deadline. Each correction request records a hash of the original task brief, acceptance criteria, evidence requirements, both compensation amounts, and deadline. New scope and compensation changes are explicitly disallowed.
+
+Correction responses require a fresh assessment; they do not self-certify acceptance.
+
+External blockers cannot themselves create a worker performance penalty. When a good-faith attempt is documented they recommend the existing `good_faith_failed` final review path; otherwise the case remains manual/suspicious rather than inventing worker fault.
+
+Replacement authorization is supported only for an assignment declined/withdrawn/expired, worker cannot continue, an actually expired correction deadline, actually exhausted correction cycles, or a final review that explicitly established `no_meaningful_effort`. Replacement does not change the previous worker's compensation outcome.
+
 ## Private worker performance history
 
 Final QA can be converted into a private performance record containing correction counts, communication quality, timeliness, and a bounded note.
@@ -185,7 +213,7 @@ Suspicion does not become an automatic fraud finding or permanent ban.
 
 Canonical store: `tools/hermes-commerce-control/src/opportunities/human-fulfillment-lifecycle.ts`.
 
-The append-only lifecycle supports recruitment payloads/intents/execution, candidate observations, candidate qualification, contracts, assignments, assignment decisions, worker acceptance, attempt evidence, final review, and private worker performance. Candidate/assignment/performance events can carry their deterministic record ids.
+The append-only lifecycle supports recruitment payloads/intents/execution, candidate observations, candidate qualification, contracts, assignments, assignment decisions, worker acceptance, attempt submission/assessment, correction request/response, external blockers, replacement authorization, final review, and private worker performance. Events can carry their deterministic record ids without creating a second execution store.
 
 Events remain schema-validated, deterministic, deduplicated by event id, file-locked, filterable by opportunity, and crash-tail-repaired.
 
@@ -207,24 +235,23 @@ The product remains commercially unfinished: pricing unset, payment integration 
 
 The deliberately deferred provider PR remains **#8 — `feat: add the402 provider adapter`**, pending provider credentials/secret custody and explicit production authorization if revived.
 
-PR **#110** is the candidate qualification/assignment state change represented by this snapshot. It targets `main` only and is not a production deployment.
+PR **#111** is the attempt/correction/replacement orchestration change represented by this snapshot. It targets `main` only and is not a production deployment.
 
 ## Strategic frontier
 
 The internal human path now reaches:
 
-`qualified upstream opportunity → frozen worker terms → recruitment payload → exact B1 action → candidate response → questionnaire/evidence follow-up → qualification → assignment/acceptance → execution → QA → private performance history`
+`qualified upstream opportunity → frozen worker terms → recruitment payload → exact B1 action → candidate response → questionnaire/evidence follow-up → qualification → assignment/acceptance → attempt → assessment → bounded correction/blocker/replacement handling → final review → private performance history`
 
-The remaining gap is increasingly real-world execution rather than internal state machinery.
+The remaining blocker is real external demand/worker execution, not another generic internal orchestration layer.
 
 Priority after this slice:
 
 1. **real recruitment transport for the first chosen channel** — use the existing frozen payload, exact-intent B1 gate, and idempotency contract rather than duplicating business logic;
-2. **real worker/counterparty validation** — exercise recruitment + questionnaire + assignment on an actual upstream opportunity whose delegation, payout, location, deadline, and economics are verified;
-3. **execution correction/replacement orchestration** — connect attempt evidence and follow-up deadlines to the existing assignment/review records when real worker execution begins;
-4. **buyer/upstream demand validation** — record actual conversion and payout evidence;
-5. **B2 worker-payment path** — only when an accepted real worker transaction requires value movement, with separate explicit financial authorization;
-6. **commercialize Product Listing Graphic** where it competes favorably with upstream-demand work.
+2. **real worker/counterparty validation** — exercise recruitment + questionnaire + assignment + attempt/correction on an actual upstream opportunity whose delegation, payout, location, deadline, and economics are verified;
+3. **buyer/upstream demand validation** — record actual conversion and payout evidence;
+4. **B2 worker-payment path** — only when an accepted real worker transaction requires value movement, with separate explicit financial authorization;
+5. **commercialize Product Listing Graphic** where it competes favorably with upstream-demand work.
 
 Do not create a second opportunity engine or duplicate recruitment economics/compensation rules per provider.
 
@@ -241,12 +268,15 @@ Do not create a second opportunity engine or duplicate recruitment economics/com
 9. An incomplete candidate questionnaire is `needs_followup`; do not silently convert missing information into a hard rejection.
 10. Only `qualified` + accepted assignments may begin worker execution.
 11. Physical qualification must explicitly confirm location feasibility.
-12. Worker payment/value movement remains a separate B2 concern.
-13. Good-faith partial compensation must be fixed before execution, not invented retroactively.
-14. Suspicion alone must not automatically become a zero-compensation/fraud outcome or permanent worker ban.
-15. Seller pricing changes must use the canonical price catalog and pass consistency coverage.
-16. Public seller Docker changes must preserve the private buyer/financial/operator boundary.
-17. GitHub expressions must not appear directly inside workflow `run:` commands; use `env:` and quoted shell variables.
-18. Testnet signer audit snapshots must write only to run-scoped audit branches and must not force-push.
-19. Never commit secrets, private paid results, local SQLite/WAL/SHM files, or generated `node_modules`.
-20. `Unknown/Archived/` is historical evidence only.
+12. Corrections must address frozen deficiencies only; do not add scope or change compensation after execution begins.
+13. Replacement does not retroactively decide the previous worker's compensation outcome.
+14. Operator/upstream/site blockers must not be converted into worker fault or a worker-performance penalty.
+15. Worker payment/value movement remains a separate B2 concern.
+16. Good-faith partial compensation must be fixed before execution, not invented retroactively.
+17. Suspicion alone must not automatically become a zero-compensation/fraud outcome or permanent worker ban.
+18. Seller pricing changes must use the canonical price catalog and pass consistency coverage.
+19. Public seller Docker changes must preserve the private buyer/financial/operator boundary.
+20. GitHub expressions must not appear directly inside workflow `run:` commands; use `env:` and quoted shell variables.
+21. Testnet signer audit snapshots must write only to run-scoped audit branches and must not force-push.
+22. Never commit secrets, private paid results, local SQLite/WAL/SHM files, or generated `node_modules`.
+23. `Unknown/Archived/` is historical evidence only.

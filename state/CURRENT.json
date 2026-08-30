@@ -10,8 +10,8 @@
   "repository": {
     "default_branch": "main",
     "canonical_repository_branch": "main",
-    "source_main_head_at_candidate_assignment_start": "ae237a389bcaf8ed7b7ee473c7da54fd855e9610",
-    "reconciled_through_pull_request": 110,
+    "source_main_head_at_attempt_orchestration_start": "f11c3a4aa7cc08c3e3ae21c7600c7be29afe2339",
+    "reconciled_through_pull_request": 111,
     "production_branch": "feat/hermes-commerce-control-plane",
     "main_protected": true,
     "production_branch_protected": true,
@@ -116,6 +116,11 @@
       "candidate_followup_classification": true,
       "assignment_offer_and_decision": true,
       "assignment_replacement_linkage": true,
+      "attempt_submission": true,
+      "attempt_assessment": true,
+      "correction_request_and_response": true,
+      "external_blocker_attribution": true,
+      "replacement_authorization": true,
       "worker_performance_history": true,
       "human_fulfillment_lifecycle_persistence": true,
       "human_attempt_review": true,
@@ -143,11 +148,13 @@
       "recruitment_intent_module": "tools/hermes-commerce-control/src/opportunities/human-recruitment-intent.ts",
       "recruitment_executor_module": "tools/hermes-commerce-control/src/opportunities/human-recruitment-executor.ts",
       "candidate_assignment_module": "tools/hermes-commerce-control/src/opportunities/human-candidate-assignment.ts",
+      "attempt_orchestration_module": "tools/hermes-commerce-control/src/opportunities/human-attempt-orchestration.ts",
       "lifecycle_module": "tools/hermes-commerce-control/src/opportunities/human-fulfillment-lifecycle.ts",
       "contract_document": "docs/human-fulfillment-contract.md",
       "adapter_document": "docs/human-recruitment-adapters.md",
       "activation_document": "docs/human-recruitment-b1-activation.md",
       "candidate_assignment_document": "docs/human-candidate-assignment.md",
+      "attempt_orchestration_document": "docs/human-attempt-correction-orchestration.md",
       "policy_version": 1,
       "recruitment_channels": [
         "reddit",
@@ -213,6 +220,43 @@
         "replacement_assignment_pointer_supported": true,
         "payment_execution_allowed": false
       },
+      "attempt_orchestration": {
+        "attempt_requires_accepted_assignment": true,
+        "attempt_outcomes": [
+          "accepted",
+          "correction_required",
+          "worker_failed",
+          "manual_review",
+          "external_blocker"
+        ],
+        "correction_requires_concrete_deficiencies": true,
+        "correction_cycles_prebounded": true,
+        "correction_deadline_cannot_exceed_frozen_task_deadline": true,
+        "correction_frozen_terms_hash_covers_scope_acceptance_evidence_compensation_and_deadline": true,
+        "correction_new_scope_allowed": false,
+        "correction_compensation_change_allowed": false,
+        "correction_response_requires_fresh_assessment": true,
+        "external_blocker_parties": [
+          "operator",
+          "upstream",
+          "site_access",
+          "other_external"
+        ],
+        "external_blocker_establishes_worker_fault": false,
+        "external_blocker_worker_performance_penalty_allowed": false,
+        "replacement_reasons": [
+          "assignment_declined",
+          "assignment_withdrawn",
+          "assignment_expired",
+          "worker_cannot_continue",
+          "correction_deadline_expired",
+          "correction_cycles_exhausted",
+          "no_meaningful_effort_established"
+        ],
+        "replacement_changes_prior_worker_compensation_outcome": false,
+        "attempt_assessment_decides_final_compensation": false,
+        "payment_execution_allowed": false
+      },
       "worker_performance": {
         "future_eligibility_states": [
           "eligible",
@@ -237,6 +281,12 @@
         "assignment_recorded",
         "assignment_decision_recorded",
         "worker_acceptance_recorded",
+        "attempt_submitted",
+        "attempt_assessed",
+        "correction_requested",
+        "correction_response_recorded",
+        "external_blocker_recorded",
+        "replacement_authorized",
         "attempt_evidence_recorded",
         "review_recorded",
         "worker_performance_recorded"
@@ -313,11 +363,10 @@
   },
   "strategic_frontier": {
     "commercial_fact": "No successful paid seller transaction has been recorded in the canonical post-deploy observation.",
-    "current_bottleneck": "first real recruitment transport and real upstream/worker validation rather than more generic internal planning infrastructure",
+    "current_bottleneck": "first real recruitment transport and real upstream/worker validation rather than more generic internal orchestration",
     "next_work": [
       "first_real_recruitment_transport",
       "real_worker_counterparty_validation",
-      "execution_correction_and_replacement_orchestration",
       "buyer_upstream_demand_validation",
       "b2_worker_payment_when_required",
       "commercialize_product_listing_graphic"
@@ -332,6 +381,10 @@
       "provider_neutral_executor_implemented": true,
       "candidate_qualification_implemented": true,
       "assignment_and_replacement_state_implemented": true,
+      "attempt_submission_and_assessment_implemented": true,
+      "correction_orchestration_implemented": true,
+      "external_blocker_attribution_implemented": true,
+      "replacement_authorization_implemented": true,
       "private_worker_performance_history_implemented": true,
       "persistent_lifecycle_core_implemented": true,
       "attempt_review_core_implemented": true,
@@ -340,7 +393,7 @@
       "worker_payment_implemented": false,
       "physical_safety_review_required": true,
       "integration_point": "tools/hermes-commerce-control/src/opportunities",
-      "rule": "real channel transports and worker execution must consume the frozen payload/qualification/assignment artifacts instead of bypassing recruitment economics, qualification, acceptance, or compensation policy"
+      "rule": "real channel transports and worker execution must consume the frozen payload/qualification/assignment/attempt artifacts instead of bypassing recruitment economics, qualification, acceptance, correction, or compensation policy"
     }
   },
   "workflow_security": {
