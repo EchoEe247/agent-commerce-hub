@@ -9,10 +9,14 @@ export const HUMAN_FULFILLMENT_EVENT_TYPES = [
   "external_action_intent_prepared",
   "external_action_executed",
   "candidate_recorded",
+  "candidate_qualification_recorded",
   "contract_recorded",
+  "assignment_recorded",
+  "assignment_decision_recorded",
   "worker_acceptance_recorded",
   "attempt_evidence_recorded",
   "review_recorded",
+  "worker_performance_recorded",
 ] as const;
 export type HumanFulfillmentEventType = (typeof HUMAN_FULFILLMENT_EVENT_TYPES)[number];
 
@@ -30,6 +34,10 @@ export const humanFulfillmentLifecycleEventSchema = z
     executionReceiptId: z.string().min(1).max(128).optional(),
     externalReference: z.string().min(1).max(2_048).optional(),
     candidateReference: z.string().min(1).max(512).optional(),
+    qualificationId: z.string().min(1).max(128).optional(),
+    assignmentId: z.string().min(1).max(128).optional(),
+    assignmentDecisionId: z.string().min(1).max(128).optional(),
+    performanceId: z.string().min(1).max(128).optional(),
     evidenceSummary: z.array(z.string().min(1).max(2_000)).max(32).optional(),
     reviewId: z.string().min(1).max(128).optional(),
     note: z.string().max(2_000).optional(),
@@ -49,6 +57,10 @@ export interface CreateHumanFulfillmentLifecycleEventInput {
   readonly executionReceiptId?: string | undefined;
   readonly externalReference?: string | undefined;
   readonly candidateReference?: string | undefined;
+  readonly qualificationId?: string | undefined;
+  readonly assignmentId?: string | undefined;
+  readonly assignmentDecisionId?: string | undefined;
+  readonly performanceId?: string | undefined;
   readonly evidenceSummary?: readonly string[] | undefined;
   readonly reviewId?: string | undefined;
   readonly note?: string | undefined;
@@ -73,20 +85,40 @@ export function createHumanFulfillmentLifecycleEvent(
   const opportunityId = nonEmpty("opportunityId", input.opportunityId, 128);
   const evidenceSummary = input.evidenceSummary?.map((item) => nonEmpty("evidenceSummary item", item, 2_000));
   if ((evidenceSummary?.length ?? 0) > 32) throw new Error("evidenceSummary exceeds 32 items");
+
+  const optional = {
+    contractId: optionalText(input.contractId, 128),
+    recruitmentDraftId: optionalText(input.recruitmentDraftId, 128),
+    payloadId: optionalText(input.payloadId, 128),
+    intentId: optionalText(input.intentId, 128),
+    executionReceiptId: optionalText(input.executionReceiptId, 128),
+    externalReference: optionalText(input.externalReference, 2_048),
+    candidateReference: optionalText(input.candidateReference, 512),
+    qualificationId: optionalText(input.qualificationId, 128),
+    assignmentId: optionalText(input.assignmentId, 128),
+    assignmentDecisionId: optionalText(input.assignmentDecisionId, 128),
+    performanceId: optionalText(input.performanceId, 128),
+    reviewId: optionalText(input.reviewId, 128),
+  };
+
   const body = {
     schemaVersion: 1 as const,
     type: input.type,
     opportunityId,
     occurredAt: input.occurredAt,
-    ...(optionalText(input.contractId, 128) === undefined ? {} : { contractId: optionalText(input.contractId, 128) }),
-    ...(optionalText(input.recruitmentDraftId, 128) === undefined ? {} : { recruitmentDraftId: optionalText(input.recruitmentDraftId, 128) }),
-    ...(optionalText(input.payloadId, 128) === undefined ? {} : { payloadId: optionalText(input.payloadId, 128) }),
-    ...(optionalText(input.intentId, 128) === undefined ? {} : { intentId: optionalText(input.intentId, 128) }),
-    ...(optionalText(input.executionReceiptId, 128) === undefined ? {} : { executionReceiptId: optionalText(input.executionReceiptId, 128) }),
-    ...(optionalText(input.externalReference, 2_048) === undefined ? {} : { externalReference: optionalText(input.externalReference, 2_048) }),
-    ...(optionalText(input.candidateReference, 512) === undefined ? {} : { candidateReference: optionalText(input.candidateReference, 512) }),
+    ...(optional.contractId === undefined ? {} : { contractId: optional.contractId }),
+    ...(optional.recruitmentDraftId === undefined ? {} : { recruitmentDraftId: optional.recruitmentDraftId }),
+    ...(optional.payloadId === undefined ? {} : { payloadId: optional.payloadId }),
+    ...(optional.intentId === undefined ? {} : { intentId: optional.intentId }),
+    ...(optional.executionReceiptId === undefined ? {} : { executionReceiptId: optional.executionReceiptId }),
+    ...(optional.externalReference === undefined ? {} : { externalReference: optional.externalReference }),
+    ...(optional.candidateReference === undefined ? {} : { candidateReference: optional.candidateReference }),
+    ...(optional.qualificationId === undefined ? {} : { qualificationId: optional.qualificationId }),
+    ...(optional.assignmentId === undefined ? {} : { assignmentId: optional.assignmentId }),
+    ...(optional.assignmentDecisionId === undefined ? {} : { assignmentDecisionId: optional.assignmentDecisionId }),
+    ...(optional.performanceId === undefined ? {} : { performanceId: optional.performanceId }),
     ...(evidenceSummary === undefined ? {} : { evidenceSummary }),
-    ...(optionalText(input.reviewId, 128) === undefined ? {} : { reviewId: optionalText(input.reviewId, 128) }),
+    ...(optional.reviewId === undefined ? {} : { reviewId: optional.reviewId }),
     ...(input.note === undefined ? {} : { note: input.note.trim().slice(0, 2_000) }),
   };
   const eventId = `hfevt_${canonicalHash(body).slice(0, 32)}`;
