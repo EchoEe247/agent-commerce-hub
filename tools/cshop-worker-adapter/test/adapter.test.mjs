@@ -73,7 +73,7 @@ test('commerce job rejects path traversal and unsupported fields before C-Shop s
   );
 });
 
-test('product graphics workflow uses measured placement and proportional cover crop', async () => {
+test('product graphics workflow keeps supplied photos out of the text panel', async () => {
   const requests = [];
   const fetchImpl = async (_url, init) => {
     const body = JSON.parse(init.body);
@@ -104,12 +104,12 @@ test('product graphics workflow uses measured placement and proportional cover c
     if (args.return_image) {
       return reply({
         content: [
-          { type: 'text', text: '1200x1200, 4 layers; 5 steps ran, 0 failed' },
+          { type: 'text', text: '1200x1200, 4 layers; 3 steps ran, 0 failed' },
           { type: 'image', mimeType: 'image/png', data: 'iVBORw0KGgo=' },
         ],
       });
     }
-    return reply({ content: [{ type: 'text', text: '1200x1200, 1 layers; 1 steps ran, 0 failed' }] });
+    return reply({ content: [{ type: 'text', text: '1200x1200, 2 layers; steps ran, 0 failed' }] });
   };
 
   const client = new CShopClient({ sessionId: 'commerce-job-5678', fetchImpl });
@@ -131,13 +131,20 @@ test('product graphics workflow uses measured placement and proportional cover c
   assert.match(emitted, /measure text "Coffee"/);
   assert.match(emitted, /export "coffee-card\.png"/);
   assert.doesNotMatch(emitted, /\bstyle\b/);
+  assert.doesNotMatch(emitted, /\bgradient\b/);
 
-  const assetResize = scripts.find((script) => script.startsWith('resize scale='));
-  assert.ok(assetResize, 'expected a proportional cover resize before composition');
-  const scale = Number(/^resize scale=([^\n]+)/.exec(assetResize)?.[1]);
-  assert.ok(Math.abs(scale - (1200 / 900)) < 1e-9);
-  assert.match(assetResize, /\nresize 1200 1200 canvas$/);
-  assert.doesNotMatch(assetResize, /^resize 1200 1200$/m);
+  const assetLayout = scripts.find((script) => script.startsWith('resize scale='));
+  assert.ok(assetLayout, 'expected a proportional contain resize before composition');
+  const scale = Number(/^resize scale=([^\n]+)/.exec(assetLayout)?.[1]);
+  assert.ok(Math.abs(scale - 0.75) < 1e-9);
+  assert.match(assetLayout, /\nresize 1200 1200 canvas/);
+  assert.match(assetLayout, /\nmove 0 -216/);
+  assert.match(assetLayout, /\nlayer new\nset name="commerce-background"\nfill #111827\norder bottom$/);
+  assert.doesNotMatch(assetLayout, /^resize 1200 1200$/m);
+
+  const compose = scripts.find((script) => script.includes('export "coffee-card.png"'));
+  assert.match(compose, /text 450 973 "Coffee" size=72 color=#ffffff bold/);
+  assert.match(compose, /text 530 1045 "\$9\.99" size=45 color=#f9fafb bold/);
   assert.ok(requests.every((request) => request.jsonrpc === '2.0'));
 });
 

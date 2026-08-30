@@ -3,6 +3,7 @@ import { toolImage, toolText } from './cshop-client.mjs';
 const SAFE_FILENAME = /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/;
 const HEX_COLOUR = /^#[0-9a-fA-F]{6}(?:[0-9a-fA-F]{2})?$/;
 const OUTPUT_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg']);
+const ASSET_PANEL_RATIO = 0.36;
 const ALLOWED_JOB_FIELDS = new Set([
   'width',
   'height',
@@ -91,8 +92,15 @@ export function normalizeProductGraphicsJob(input) {
   const height = integer(input.height ?? 1200, 'height', 256, 4096);
   const title = text(input.title, 'title', 120);
   const price = input.price == null ? null : text(input.price, 'price', 40);
-  const titleSize = integer(input.titleSize ?? Math.max(42, Math.round(width * 0.075)), 'titleSize', 18, 320);
-  const priceSize = integer(input.priceSize ?? Math.max(30, Math.round(titleSize * 0.62)), 'priceSize', 14, 240);
+  const asset = input.asset == null ? null : filename(input.asset, 'asset');
+  const defaultTitleSize = asset
+    ? Math.max(24, Math.round(Math.min(width, height) * 0.06))
+    : Math.max(42, Math.round(width * 0.075));
+  const titleSize = integer(input.titleSize ?? defaultTitleSize, 'titleSize', 18, 320);
+  const defaultPriceSize = asset
+    ? Math.max(18, Math.round(titleSize * 0.62))
+    : Math.max(30, Math.round(titleSize * 0.62));
+  const priceSize = integer(input.priceSize ?? defaultPriceSize, 'priceSize', 14, 240);
 
   return Object.freeze({
     width,
@@ -106,7 +114,7 @@ export function normalizeProductGraphicsJob(input) {
     priceColor: colour(input.priceColor ?? '#f9fafb', 'priceColor'),
     overlayFrom: colour(input.overlayFrom ?? '#00000000', 'overlayFrom'),
     overlayTo: colour(input.overlayTo ?? '#000000cc', 'overlayTo'),
-    asset: input.asset == null ? null : filename(input.asset, 'asset'),
+    asset,
     output: filename(input.output ?? 'product-graphic.png', 'output', { output: true }),
   });
 }
@@ -140,22 +148,45 @@ function centredX(canvasWidth, measurement, margin = 24) {
   return Math.max(margin, Math.round((canvasWidth - measurement.width) / 2 - measurement.offsetX));
 }
 
+function assetPanelHeight(canvasHeight) {
+  return Math.min(canvasHeight - 64, Math.max(96, Math.round(canvasHeight * ASSET_PANEL_RATIO)));
+}
+
 async function prepareCanvas(client, job) {
   if (!job.asset) {
     await client.runScript(`new ${job.width} ${job.height} background=${job.background}`, {
       returnImage: false,
     });
-    return;
+    return { kind: 'blank' };
   }
 
   const opened = await client.runScript(`open ${quote(job.asset)}\ninfo`, { returnImage: false });
   const source = parseDocumentSize(toolText(opened));
-  const coverScale = Math.max(job.width / source.width, job.height / source.height);
+  const panelHeight = assetPanelHeight(job.height);
+  const imageZoneHeight = job.height - panelHeight;
+  const containScale = Math.min(job.width / source.width, imageZoneHeight / source.height);
+  const verticalShift = Math.round(panelHeight / 2);
 
   await client.runScript(
-    [`resize scale=${coverScale}`, `resize ${job.width} ${job.height} canvas`].join('\n'),
+    [
+      `resize scale=${containScale}`,
+      `resize ${job.width} ${job.height} canvas`,
+      `move 0 -${verticalShift}`,
+      'layer new',
+      'set name="commerce-background"',
+      `fill ${job.background}`,
+      'order bottom',
+    ].join('\n'),
     { returnImage: false },
   );
+
+  return {
+    kind: 'asset',
+    panelTop: imageZoneHeight,
+    panelHeight,
+    source,
+    scale: containScale,
+  };
 }
 
 export async function executeProductGraphicsJob(client, rawJob) {
@@ -163,9 +194,9 @@ export async function executeProductGraphicsJob(client, rawJob) {
   await client.initialize();
 
   try {
-    await prepareCanvas(client, job);
-
-    const horizontalMargin = Math.max(24, Math.round(job.width * 0.04));
+    const layout = await prepareCanvas(client, job);
+    const isAssetLayout = layout.kind === 'asset';
+    const horizontalMargin = Math.max(24, Math.round(job.width * (isAssetLayout ? 0.08 : 0.04)));
     const maxTextWidth = job.width - horizontalMargin * 2;
     const fittedTitle = await fitMeasuredText(client, job.title, job.titleSize, maxTextWidth, {
       bold: true,
@@ -173,29 +204,60 @@ export async function executeProductGraphicsJob(client, rawJob) {
     });
     const titleMeasure = fittedTitle.measurement;
     const titleX = centredX(job.width, titleMeasure, horizontalMargin);
-    const titleTop = Math.round(job.height * 0.69);
-    const titleBaseline = Math.min(job.height - 24, Math.max(24, titleTop - titleMeasure.offsetY));
 
-    let priceLine = '';
+    let fittedPrice = null;
     if (job.price) {
-      const fittedPrice = await fitMeasuredText(client, job.price, job.priceSize, maxTextWidth, {
+      fittedPrice = await fitMeasuredText(client, job.price, job.priceSize, maxTextWidth, {
         bold: true,
         minSize: 14,
       });
-      const priceMeasure = fittedPrice.measurement;
-      const priceX = centredX(job.width, priceMeasure, horizontalMargin);
-      const priceTop = Math.min(job.height - priceMeasure.height - 24, titleTop + titleMeasure.height + 24);
-      const priceBaseline = Math.min(job.height - 20, Math.max(20, priceTop - priceMeasure.offsetY));
-      priceLine = `\ntext ${priceX} ${priceBaseline} ${quote(job.price)} size=${fittedPrice.size} color=${job.priceColor} bold`;
     }
 
-    const compose = [
-      'layer new',
-      'set name="commerce-overlay"',
-      `gradient 0 ${job.height} 0 ${Math.round(job.height * 0.42)} from=${job.overlayTo} to=${job.overlayFrom}`,
-      `text ${titleX} ${titleBaseline} ${quote(job.title)} size=${fittedTitle.size} color=${job.titleColor} bold${priceLine}`,
-      `export ${quote(job.output)}`,
-    ].join('\n');
+    let titleTop;
+    let priceTop = null;
+    if (isAssetLayout) {
+      const priceHeight = fittedPrice?.measurement.height ?? 0;
+      const gap = fittedPrice ? Math.max(12, Math.round(layout.panelHeight * 0.05)) : 0;
+      const blockHeight = titleMeasure.height + gap + priceHeight;
+      const panelPadding = Math.max(12, Math.round(layout.panelHeight * 0.08));
+      if (blockHeight > layout.panelHeight - panelPadding * 2) {
+        throw new RangeError('title and price cannot fit within the product-card text panel');
+      }
+      titleTop = layout.panelTop + Math.round((layout.panelHeight - blockHeight) / 2);
+      if (fittedPrice) priceTop = titleTop + titleMeasure.height + gap;
+    } else {
+      titleTop = Math.round(job.height * 0.69);
+      if (fittedPrice) {
+        priceTop = Math.min(
+          job.height - fittedPrice.measurement.height - 24,
+          titleTop + titleMeasure.height + 24,
+        );
+      }
+    }
+
+    const titleBaseline = Math.min(job.height - 24, Math.max(24, titleTop - titleMeasure.offsetY));
+    const textLines = [
+      `text ${titleX} ${titleBaseline} ${quote(job.title)} size=${fittedTitle.size} color=${job.titleColor} bold`,
+    ];
+
+    if (fittedPrice) {
+      const priceMeasure = fittedPrice.measurement;
+      const priceX = centredX(job.width, priceMeasure, horizontalMargin);
+      const priceBaseline = Math.min(job.height - 20, Math.max(20, priceTop - priceMeasure.offsetY));
+      textLines.push(
+        `text ${priceX} ${priceBaseline} ${quote(job.price)} size=${fittedPrice.size} color=${job.priceColor} bold`,
+      );
+    }
+
+    const compose = isAssetLayout
+      ? [...textLines, `export ${quote(job.output)}`].join('\n')
+      : [
+          'layer new',
+          'set name="commerce-overlay"',
+          `gradient 0 ${job.height} 0 ${Math.round(job.height * 0.42)} from=${job.overlayTo} to=${job.overlayFrom}`,
+          ...textLines,
+          `export ${quote(job.output)}`,
+        ].join('\n');
 
     const result = await client.runScript(compose, { returnImage: true, imageFit: 768 });
     return {

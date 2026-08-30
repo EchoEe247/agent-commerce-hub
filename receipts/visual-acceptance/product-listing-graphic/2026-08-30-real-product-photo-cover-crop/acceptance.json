@@ -36,21 +36,25 @@
   "mechanical_result": "PASS",
 
   "visual_review": {
-    "reviewer": "ChatGPT",
-    "status": "PASS_WITH_LIMITATION",
+    "reviewers": ["ChatGPT", "human follow-up"],
+    "status": "FAIL",
     "product_visibly_stretched": false,
     "product_visibly_squashed": false,
     "title_fully_visible": true,
     "price_fully_visible": true,
     "text_overlap": false,
     "text_readable_over_photo": true,
-    "gradient_looks_intentional": true,
-    "composition_looks_reasonable": true,
-    "buyer_deliverable_quality": true,
-    "known_limitation": "Centered cover cropping can trim edge content when source and output aspect ratios differ; this sample trims part of the cup handle and saucer at the right edge."
+    "composition_looks_reasonable": false,
+    "buyer_deliverable_quality": false,
+    "failure": "The full-bleed photo treatment made the large pale saucer region around the coffee cup read like an artificial circular shadow/halo. The bottom gradient amplified that source-photo boundary, so the result looked synthetic despite mechanically correct resizing and text placement.",
+    "secondary_limitations": [
+      "Centered cover cropping trimmed edge content from the cup handle and saucer.",
+      "The title occupied too much of the photograph instead of living in a dedicated text region."
+    ]
   },
 
-  "final_result": "PASS_WITH_LIMITATION",
+  "final_result": "FAIL",
+  "superseded_by": "v0.2 contained-photo plus separate text-panel layout pending real runtime and human visual acceptance",
 
   "process_safety": {
     "other_hermes_processes_touched": false
