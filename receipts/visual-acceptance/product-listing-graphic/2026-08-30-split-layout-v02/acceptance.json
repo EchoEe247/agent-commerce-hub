@@ -1,0 +1,52 @@
+{
+  "product": "product-listing-graphic",
+  "version": "0.2.0",
+  "acceptance": "split-layout-real-product-photo",
+  "date": "2026-08-30",
+
+  "repository": "EchoEe247/agent-commerce-hub",
+  "branch": "fix/cshop-split-product-card-layout",
+  "pr": 102,
+  "code_head": "c8241767930d8b42066bd6aa1d962141e3bb3763",
+
+  "source": {
+    "file": "source-coffee.jpg",
+    "dimensions": "1280x853",
+    "bytes": 45441,
+    "sha256": "d32ae1283102eecd1a828156840222a1a0754bcbf5b6f13cf596879800453847"
+  },
+
+  "output": {
+    "file": "coffee-card-v02.jpg",
+    "dimensions": "1200x1200",
+    "bytes": 103456,
+    "sha256": "fdd8b12e71b2bba9a3f6dca890e9ef58f9fa218eeeb1047fc07355b93e5b4ba8"
+  },
+
+  "layout": {
+    "photo_zone": "upper 64%",
+    "text_panel": "lower 36%",
+    "source_aspect_ratio_preserved": true,
+    "source_fully_visible": true,
+    "source_default_cropping": false,
+    "photo_overlaps_text_panel": false,
+    "background_layer_present": true,
+    "title_in_lower_panel": true,
+    "price_in_lower_panel": true,
+    "commerce_gradient_layer_present": false
+  },
+
+  "tests": {
+    "adapter": "5/5 PASS"
+  },
+
+  "mechanical_result": "PASS",
+
+  "visual_review": {
+    "status": "PENDING_CHATGPT_AND_HUMAN"
+  },
+
+  "process_safety": {
+    "other_hermes_processes_touched": false
+  }
+}
