@@ -43,8 +43,20 @@
   "mechanical_result": "PASS",
 
   "visual_review": {
-    "status": "PENDING_CHATGPT_AND_HUMAN"
+    "reviewer": "ChatGPT",
+    "status": "PASS",
+    "halo_or_false_shadow_effect": false,
+    "source_reads_as_normal_product_photo": true,
+    "title_fully_visible": true,
+    "price_fully_visible": true,
+    "text_overlap": false,
+    "text_readable": true,
+    "composition_looks_reasonable": true,
+    "buyer_deliverable_quality": true,
+    "known_limitation": "Contain layout can leave narrow side gutters when source and photo-zone aspect ratios differ; this preserves the full source instead of cropping it."
   },
+
+  "final_result": "PASS",
 
   "process_safety": {
     "other_hermes_processes_touched": false
