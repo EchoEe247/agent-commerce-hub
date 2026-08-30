@@ -68,6 +68,15 @@ function parseMeasurement(report) {
   };
 }
 
+function parseDocumentSize(report) {
+  const match = /\bdocument:\s+(\d+)x(\d+)\b/.exec(report) ?? /\b(\d+)x(\d+)\b/.exec(report);
+  if (!match) throw new Error(`C-Shop did not return a usable document size: ${report}`);
+  return {
+    width: Number(match[1]),
+    height: Number(match[2]),
+  };
+}
+
 export function normalizeProductGraphicsJob(input) {
   if (!input || typeof input !== 'object' || Array.isArray(input)) {
     throw new TypeError('job must be an object');
@@ -131,16 +140,30 @@ function centredX(canvasWidth, measurement, margin = 24) {
   return Math.max(margin, Math.round((canvasWidth - measurement.width) / 2 - measurement.offsetX));
 }
 
+async function prepareCanvas(client, job) {
+  if (!job.asset) {
+    await client.runScript(`new ${job.width} ${job.height} background=${job.background}`, {
+      returnImage: false,
+    });
+    return;
+  }
+
+  const opened = await client.runScript(`open ${quote(job.asset)}\ninfo`, { returnImage: false });
+  const source = parseDocumentSize(toolText(opened));
+  const coverScale = Math.max(job.width / source.width, job.height / source.height);
+
+  await client.runScript(
+    [`resize scale=${coverScale}`, `resize ${job.width} ${job.height} canvas`].join('\n'),
+    { returnImage: false },
+  );
+}
+
 export async function executeProductGraphicsJob(client, rawJob) {
   const job = normalizeProductGraphicsJob(rawJob);
   await client.initialize();
 
-  const bootstrap = job.asset
-    ? `open ${quote(job.asset)}\nresize ${job.width} ${job.height}`
-    : `new ${job.width} ${job.height} background=${job.background}`;
-
   try {
-    await client.runScript(bootstrap, { returnImage: false });
+    await prepareCanvas(client, job);
 
     const horizontalMargin = Math.max(24, Math.round(job.width * 0.04));
     const maxTextWidth = job.width - horizontalMargin * 2;

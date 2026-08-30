@@ -4,6 +4,8 @@ Private, pre-production adapter between `agent-commerce-hub` and the standalone 
 
 This package does **not** vendor C-Shop, publish a graphics service, alter the live seller, or expose C-Shop to the public internet. C-Shop remains a separately cloned runtime. The adapter provides one deliberately narrow first workflow: create a marketplace/product graphic from a workspace image (or a blank canvas), measured title text, an optional price, a deterministic gradient overlay, and an exported PNG/JPEG.
 
+When an input asset is supplied, the adapter preserves its aspect ratio: it proportionally cover-scales the image until the requested canvas is filled, then applies C-Shop's centered canvas crop to reach the exact requested output dimensions. It does not stretch a non-square photograph into a square output.
+
 ## Upstream pin for validation
 
 Validate against:
@@ -71,8 +73,9 @@ The tests cover:
 2. loopback-by-default and authenticated explicit remote opt-in;
 3. path traversal rejection;
 4. rejection of raw/unknown job fields such as `script`;
-5. measured title/price placement;
-6. no `style` command being emitted by the product workflow.
+5. measured title/price placement and long-title fitting;
+6. proportional cover-scaling plus centered canvas cropping for supplied assets;
+7. no `style` command being emitted by the product workflow.
 
 ## Live smoke test
 

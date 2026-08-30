@@ -73,7 +73,7 @@ test('commerce job rejects path traversal and unsupported fields before C-Shop s
   );
 });
 
-test('product graphics workflow uses measured placement and emits only its constrained script', async () => {
+test('product graphics workflow uses measured placement and proportional cover crop', async () => {
   const requests = [];
   const fetchImpl = async (_url, init) => {
     const body = JSON.parse(init.body);
@@ -87,6 +87,14 @@ test('product graphics workflow uses measured placement and emits only its const
     assert.ok(['run_script', 'reset'].includes(name));
     if (name === 'reset') return reply({ content: [{ type: 'text', text: 'reset' }] });
 
+    if (args.script.startsWith('open "coffee.jpg"')) {
+      return reply({
+        content: [{
+          type: 'text',
+          text: 'coffee.jpg: 1600x900, 1 layers\n  document: 1600x900, 1 layers\n2 steps ran, 0 failed',
+        }],
+      });
+    }
     if (args.script.startsWith('measure text "Coffee"')) {
       return reply({ content: [{ type: 'text', text: 'measure "Coffee": 300x72 (offset 0, -58)' }] });
     }
@@ -119,10 +127,17 @@ test('product graphics workflow uses measured placement and emits only its const
     .filter((request) => request.method === 'tools/call' && request.params.name === 'run_script')
     .map((request) => request.params.arguments.script);
   const emitted = scripts.join('\n');
-  assert.match(emitted, /open "coffee\.jpg"/);
+  assert.match(emitted, /open "coffee\.jpg"\ninfo/);
   assert.match(emitted, /measure text "Coffee"/);
   assert.match(emitted, /export "coffee-card\.png"/);
   assert.doesNotMatch(emitted, /\bstyle\b/);
+
+  const assetResize = scripts.find((script) => script.startsWith('resize scale='));
+  assert.ok(assetResize, 'expected a proportional cover resize before composition');
+  const scale = Number(/^resize scale=([^\n]+)/.exec(assetResize)?.[1]);
+  assert.ok(Math.abs(scale - (1200 / 900)) < 1e-9);
+  assert.match(assetResize, /\nresize 1200 1200 canvas$/);
+  assert.doesNotMatch(assetResize, /^resize 1200 1200$/m);
   assert.ok(requests.every((request) => request.jsonrpc === '2.0'));
 });
 

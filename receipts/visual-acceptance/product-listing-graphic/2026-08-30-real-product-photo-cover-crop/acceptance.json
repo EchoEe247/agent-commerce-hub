@@ -1,0 +1,58 @@
+{
+  "product": "product-listing-graphic",
+  "acceptance": "real-product-photo-cover-crop",
+  "date": "2026-08-30",
+
+  "repository": "EchoEe247/agent-commerce-hub",
+  "branch": "fix/cshop-asset-cover-crop",
+  "pr": 101,
+  "code_head": "b5039510f55c16970e748e3435210436970be4c1",
+
+  "source": {
+    "dimensions": "1280x853",
+    "bytes": 45441
+  },
+
+  "output": {
+    "file": "rendered-coffee-card-fixed.jpg",
+    "dimensions": "1200x1200",
+    "bytes": 128476
+  },
+
+  "resize": {
+    "proportional_scale_used": true,
+    "exact_stretch_resize_used": false,
+    "centered_canvas_crop_used": true,
+    "source_aspect_ratio_preserved_during_scaling": true
+  },
+
+  "text": {
+    "title": "Fresh Roasted Coffee",
+    "price": "$12.99",
+    "title_present": true,
+    "price_present": true
+  },
+
+  "mechanical_result": "PASS",
+
+  "visual_review": {
+    "reviewer": "ChatGPT",
+    "status": "PASS_WITH_LIMITATION",
+    "product_visibly_stretched": false,
+    "product_visibly_squashed": false,
+    "title_fully_visible": true,
+    "price_fully_visible": true,
+    "text_overlap": false,
+    "text_readable_over_photo": true,
+    "gradient_looks_intentional": true,
+    "composition_looks_reasonable": true,
+    "buyer_deliverable_quality": true,
+    "known_limitation": "Centered cover cropping can trim edge content when source and output aspect ratios differ; this sample trims part of the cup handle and saucer at the right edge."
+  },
+
+  "final_result": "PASS_WITH_LIMITATION",
+
+  "process_safety": {
+    "other_hermes_processes_touched": false
+  }
+}
