@@ -31,16 +31,18 @@ When run without installer-specific overrides:
 
 `COMMERCE_REPO_ROOT` is optional. When explicitly supplied it selects the local repository/workspace used for product inspection and evidence export. The package does **not** need to live inside `agent-commerce-hub`.
 
-### Legacy Hermes installer layout
+### Hermes installer layout
 
-The existing native Hermes installer may additionally create:
+The Hermes integration installer creates:
 
 - `~/.hermes/commerce-control/commerce-control-mcp.sh`
 - `~/.hermes/commerce-control/commerce-control-cli.sh`
 - `~/.hermes/commerce-control/state/`
 - `~/.hermes/commerce-control/install.log`
 
-That installer is Hermes/Termux integration glue, not the portable package boundary. Its remaining monorepo assumptions are being removed separately.
+These wrappers are intentionally thin. They set the installer-specific state root and execute the hardened Node launchers; they do not duplicate wallet-secret scrubbing or the Mode-A gate logic.
+
+The installer does **not** derive a workspace from the package's monorepo location. With no workspace option it leaves `COMMERCE_REPO_ROOT` unset. An operator who needs deterministic evidence/product paths for a long-lived Hermes registration can pin an explicit existing workspace with `--workspace PATH`.
 
 ---
 
@@ -151,17 +153,35 @@ No installer should silently replace this portable behavior with the package's o
 
 ## Hermes integration
 
-The existing native installer still supports the validated Hermes registration path:
+Build, validate, and create local wrappers without changing Hermes registration:
 
 ```bash
-# Build, validate and create local wrappers without changing Hermes registration
 bash scripts/install-hermes-commerce-control.sh --skip-register
+```
 
-# Full local Hermes integration
+Perform full local Hermes integration using runtime CWD as the default workspace behavior:
+
+```bash
 bash scripts/install-hermes-commerce-control.sh
 ```
 
-The installer is being treated as adapter/glue code. The portable Node launchers are the canonical security boundary; future installer cleanup should call those launchers rather than duplicate wallet-secret scrubbing logic.
+For a persistent Hermes registration that should always inspect/export against one known repository, pin that choice explicitly:
+
+```bash
+bash scripts/install-hermes-commerce-control.sh \
+  --workspace /absolute/path/to/workspace
+```
+
+Other supported options:
+
+```text
+--skip-deps       reuse the current dependency tree
+--skip-register   validate/install wrappers without modifying Hermes registration
+--force           remove and re-add an existing commerce-control MCP registration
+--workspace PATH  explicitly pin COMMERCE_REPO_ROOT in generated wrappers
+```
+
+The installer validates Node `>=24.15.0 <25`, builds the package, proves the direct doctor sees a fake wallet canary while the hardened launcher removes it, proves hostile inherited gate values normalize back to Mode A, runs the doctor through the hardened wrapper, and verifies the exact MCP tool set before registration.
 
 Do not publish the package or remove `private: true` merely because the installer works.
 
@@ -217,11 +237,13 @@ A portability/security validation should prove all of the following before this 
 5. The MCP launcher answers initialize + `tools/list` over stdio and exposes exactly 11 safe tools.
 6. Setting hostile gate values in the parent environment cannot change Mode A through the hardened launcher.
 7. With `COMMERCE_REPO_ROOT` unset, workspace-relative behavior follows the caller's current working directory instead of the package's monorepo location.
-8. No production Termux/Hermes state is destroyed merely to validate portability.
+8. `--workspace PATH` pins only an explicitly requested workspace and does not reintroduce an inferred monorepo dependency.
+9. The installer passes with an isolated temporary `HERMES_HOME` and does not touch production Hermes state.
+10. No package is published and no licensing/provenance status is changed by portability validation.
 
 ---
 
-## Uninstallation of the legacy Hermes layout
+## Uninstallation of the Hermes integration layout
 
 ```bash
 if command -v hermes >/dev/null 2>&1; then
