@@ -1,4 +1,4 @@
-name: HCC Dependency Audit Diagnostic
+name: HCC Portable Package Diagnostic
 
 on:
   push:
@@ -9,7 +9,7 @@ permissions:
   contents: read
 
 jobs:
-  license-inventory:
+  portable-package:
     runs-on: ubuntu-24.04
     defaults:
       run:
@@ -27,78 +27,130 @@ jobs:
           cache-dependency-path: tools/hermes-commerce-control/package-lock.json
       - name: Install exact patched lock tree
         run: npm ci
-      - name: Confirm dependency security clean
+      - name: Build typecheck and contracts
         run: |
-          npm audit --audit-level=moderate
-          npm audit --omit=dev --audit-level=moderate
-      - name: Inventory installed package licenses
+          npm run build
+          npm run typecheck
+          npm run test:contracts
+      - name: Verify built hardened launchers
         run: |
+          test -f dist/launch/cli.js
+          test -f dist/launch/mcp.js
+          test "$(head -1 dist/launch/cli.js)" = '#!/usr/bin/env node'
+          test "$(head -1 dist/launch/mcp.js)" = '#!/usr/bin/env node'
+          echo 'BUILT_LAUNCHERS=PASS'
+      - name: Prove canary scrub and hostile gate normalization
+        shell: bash
+        run: |
+          set +e
+          PIPRAIL_PRIVATE_KEY=canary-not-a-real-key node dist/cli.js doctor --json > "$RUNNER_TEMP/direct-doctor.json"
+          direct_status=$?
+          set -e
+          PIPRAIL_PRIVATE_KEY=canary-not-a-real-key node dist/launch/cli.js doctor --json > "$RUNNER_TEMP/hardened-doctor.json"
+          COMMERCE_MODE=B EXTERNAL_WRITES_ENABLED=true LIVE_VALUE_MOVEMENT_ENABLED=true \
+            node dist/launch/cli.js doctor --json > "$RUNNER_TEMP/hostile-doctor.json"
           node <<'NODE'
           const fs = require('node:fs');
-          const path = require('node:path');
-
-          const root = path.resolve('node_modules');
-          const packages = new Map();
-
-          function recordPackage(pkgDir) {
-            const pkgPath = path.join(pkgDir, 'package.json');
-            if (!fs.existsSync(pkgPath)) return;
-            let pkg;
-            try { pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8')); } catch { return; }
-            if (!pkg.name || !pkg.version) return;
-            const key = `${pkg.name}@${pkg.version}`;
-            if (packages.has(key)) return;
-            const license = typeof pkg.license === 'string'
-              ? pkg.license.trim()
-              : Array.isArray(pkg.licenses)
-                ? pkg.licenses.map(x => typeof x === 'string' ? x : x?.type).filter(Boolean).join(' OR ')
-                : '';
-            const notices = fs.readdirSync(pkgDir)
-              .filter(name => /^(LICENSE|LICENCE|COPYING|NOTICE)(\.|$)/i.test(name))
-              .sort();
-            packages.set(key, { name: pkg.name, version: pkg.version, license: license || 'MISSING', notices });
-          }
-
-          function scanNodeModules(nmDir) {
-            if (!fs.existsSync(nmDir)) return;
-            for (const entry of fs.readdirSync(nmDir, { withFileTypes: true })) {
-              if (!entry.isDirectory() || entry.name.startsWith('.')) continue;
-              const entryPath = path.join(nmDir, entry.name);
-              if (entry.name.startsWith('@')) {
-                for (const scoped of fs.readdirSync(entryPath, { withFileTypes: true })) {
-                  if (!scoped.isDirectory()) continue;
-                  const pkgDir = path.join(entryPath, scoped.name);
-                  recordPackage(pkgDir);
-                  scanNodeModules(path.join(pkgDir, 'node_modules'));
-                }
-              } else {
-                recordPackage(entryPath);
-                scanNodeModules(path.join(entryPath, 'node_modules'));
-              }
-            }
-          }
-
-          scanNodeModules(root);
-          const list = [...packages.values()].sort((a,b) => `${a.name}@${a.version}`.localeCompare(`${b.name}@${b.version}`));
-          const byLicense = new Map();
-          for (const p of list) {
-            if (!byLicense.has(p.license)) byLicense.set(p.license, []);
-            byLicense.get(p.license).push(`${p.name}@${p.version}`);
-          }
-
-          const flagRe = /GPL|AGPL|LGPL|SSPL|EPL|MPL|CDDL|OSL|CPAL|SEE LICENSE|MISSING|UNLICENSED|PROPRIETARY|CUSTOM/i;
-          const flagged = list.filter(p => flagRe.test(p.license));
-          const noticeFiles = list.filter(p => p.notices.some(n => /^NOTICE(\.|$)/i.test(n)));
-
-          console.log(`INSTALLED_UNIQUE_PACKAGES=${list.length}`);
-          console.log(`UNIQUE_LICENSE_EXPRESSIONS=${byLicense.size}`);
-          console.log('LICENSE_SUMMARY_BEGIN');
-          for (const [license, pkgs] of [...byLicense.entries()].sort((a,b) => a[0].localeCompare(b[0]))) {
-            console.log(`${license}\t${pkgs.length}\t${pkgs.join(',')}`);
-          }
-          console.log('LICENSE_SUMMARY_END');
-          console.log(`FLAGGED_LICENSE_PACKAGES=${flagged.length}`);
-          for (const p of flagged) console.log(`FLAGGED\t${p.name}@${p.version}\t${p.license}\t${p.notices.join(',')}`);
-          console.log(`NOTICE_FILE_PACKAGES=${noticeFiles.length}`);
-          for (const p of noticeFiles) console.log(`NOTICE\t${p.name}@${p.version}\t${p.license}\t${p.notices.join(',')}`);
+          const direct = JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP + '/direct-doctor.json', 'utf8'));
+          const hard = JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP + '/hardened-doctor.json', 'utf8'));
+          const hostile = JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP + '/hostile-doctor.json', 'utf8'));
+          if (direct.data?.walletSecretPresent !== true) throw new Error('direct implementation did not detect canary');
+          if (hard.data?.walletSecretPresent !== false) throw new Error('hardened launcher retained canary');
+          if ((hard.data?.walletSecretEnvNames ?? []).length !== 0) throw new Error('hardened launcher reported wallet env names');
+          if (hostile.data?.mode !== 'A') throw new Error('hostile mode escaped Mode A');
+          if (hostile.data?.externalWritesEnabled !== false) throw new Error('external writes escaped false');
+          if (hostile.data?.liveValueMovementEnabled !== false) throw new Error('live value movement escaped false');
+          if (hostile.data?.walletSecretPresent !== false) throw new Error('hostile doctor sees wallet secret');
+          console.log('CANARY_AND_MODE_A=PASS');
           NODE
+          echo "DIRECT_DOCTOR_EXIT=$direct_status"
+      - name: Prove portable workspace selection
+        shell: bash
+        run: |
+          HCC_ROOT="$PWD"
+          CWD_WORKSPACE="$(mktemp -d)"
+          EXPLICIT_WORKSPACE="$(mktemp -d)"
+          (
+            cd "$CWD_WORKSPACE"
+            node "$HCC_ROOT/dist/launch/cli.js" doctor --json
+          ) > "$RUNNER_TEMP/cwd-doctor.json"
+          COMMERCE_REPO_ROOT="$EXPLICIT_WORKSPACE" node dist/launch/cli.js doctor --json > "$RUNNER_TEMP/explicit-doctor.json"
+          CWD_WORKSPACE="$CWD_WORKSPACE" EXPLICIT_WORKSPACE="$EXPLICIT_WORKSPACE" node <<'NODE'
+          const fs = require('node:fs');
+          const path = require('node:path');
+          const cwd = JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP + '/cwd-doctor.json', 'utf8'));
+          const explicit = JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP + '/explicit-doctor.json', 'utf8'));
+          if (path.resolve(cwd.data?.paths?.repoRoot ?? '') !== path.resolve(process.env.CWD_WORKSPACE)) throw new Error(`CWD repoRoot mismatch: ${cwd.data?.paths?.repoRoot}`);
+          if (path.resolve(explicit.data?.paths?.repoRoot ?? '') !== path.resolve(process.env.EXPLICIT_WORKSPACE)) throw new Error(`explicit repoRoot mismatch: ${explicit.data?.paths?.repoRoot}`);
+          console.log('WORKSPACE_SELECTION=PASS');
+          NODE
+      - name: Validate npm pack and installed CLI bin
+        shell: bash
+        run: |
+          npm pack --dry-run --json > "$RUNNER_TEMP/pack-dry-run.json"
+          node <<'NODE'
+          const fs = require('node:fs');
+          const report = JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP + '/pack-dry-run.json', 'utf8'));
+          const files = new Set((report[0]?.files ?? []).map(x => x.path));
+          for (const required of ['dist/launch/cli.js', 'dist/launch/mcp.js', 'package.json', 'README.md']) {
+            if (!files.has(required)) throw new Error(`pack missing ${required}`);
+          }
+          console.log(`PACK_FILE_COUNT=${files.size}`);
+          NODE
+          PKG_TGZ="$(npm pack --silent)"
+          TMP_PREFIX="$(mktemp -d)"
+          npm install --prefix "$TMP_PREFIX" "$PWD/$PKG_TGZ" --ignore-scripts
+          test -x "$TMP_PREFIX/node_modules/.bin/commerce"
+          test -x "$TMP_PREFIX/node_modules/.bin/commerce-mcp"
+          "$TMP_PREFIX/node_modules/.bin/commerce" doctor --json > "$RUNNER_TEMP/installed-bin-doctor.json"
+          node <<'NODE'
+          const fs = require('node:fs');
+          const d = JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP + '/installed-bin-doctor.json', 'utf8'));
+          if (d.data?.mode !== 'A' || d.data?.walletSecretPresent !== false) throw new Error('installed commerce bin is not hardened');
+          console.log('LOCAL_BIN_INSTALL=PASS');
+          NODE
+          rm -f "$PKG_TGZ"
+      - name: Verify hardened MCP stdio handshake
+        shell: bash
+        run: |
+          {
+            printf '%s\n' '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"portable-ci","version":"1.0.0"}}}'
+            printf '%s\n' '{"jsonrpc":"2.0","method":"notifications/initialized"}'
+            printf '%s\n' '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}'
+          } | PIPRAIL_PRIVATE_KEY=canary-not-a-real-key node dist/launch/mcp.js > "$RUNNER_TEMP/mcp.out" 2> "$RUNNER_TEMP/mcp.err"
+          if grep -Fq 'canary-not-a-real-key' "$RUNNER_TEMP/mcp.err"; then
+            echo 'secret canary leaked to stderr' >&2
+            exit 1
+          fi
+          node <<'NODE'
+          const fs = require('node:fs');
+          const expected = [
+            'commerce_discover_services','commerce_discover_work','commerce_export_evidence',
+            'commerce_inspect','commerce_prepare_claim','commerce_prepare_publish',
+            'commerce_prepare_purchase','commerce_probe','commerce_quote','commerce_sources','commerce_status'
+          ].sort();
+          const text = fs.readFileSync(process.env.RUNNER_TEMP + '/mcp.out', 'utf8');
+          const lines = text.split('\n').filter(x => x.trim());
+          const msgs = lines.map(line => JSON.parse(line));
+          if (msgs.some(m => m.jsonrpc !== '2.0')) throw new Error('non-protocol stdout');
+          if (!msgs.find(m => m.id === 1)?.result) throw new Error('initialize response missing');
+          const listed = msgs.find(m => m.id === 2);
+          const names = (listed?.result?.tools ?? []).map(t => t.name).sort();
+          if (JSON.stringify(names) !== JSON.stringify(expected)) throw new Error(`tool mismatch: ${names.join(',')}`);
+          const forbidden = /(^|_)(pay|purchase|claim|submit|settle|transfer|withdraw|fund)$/;
+          if (names.some(name => forbidden.test(name))) throw new Error('live-action tool exposed');
+          console.log(`MCP_TOOL_COUNT=${names.length}`);
+          console.log('MCP_HANDSHAKE=PASS');
+          NODE
+      - name: Verify isolated installer compatibility
+        shell: bash
+        run: |
+          TMP_HERMES_HOME="$(mktemp -d)"
+          HERMES_HOME="$TMP_HERMES_HOME" bash scripts/install-hermes-commerce-control.sh --skip-deps --skip-register
+          test -x "$TMP_HERMES_HOME/commerce-control/commerce-control-cli.sh"
+          test -x "$TMP_HERMES_HOME/commerce-control/commerce-control-mcp.sh"
+          TMP_WORKSPACE="$(mktemp -d)"
+          TMP_HERMES_HOME_PINNED="$(mktemp -d)"
+          HERMES_HOME="$TMP_HERMES_HOME_PINNED" bash scripts/install-hermes-commerce-control.sh --skip-deps --skip-register --workspace "$TMP_WORKSPACE"
+          grep -Fq "COMMERCE_REPO_ROOT" "$TMP_HERMES_HOME_PINNED/commerce-control/commerce-control-cli.sh"
+          echo 'ISOLATED_INSTALLER=PASS'
