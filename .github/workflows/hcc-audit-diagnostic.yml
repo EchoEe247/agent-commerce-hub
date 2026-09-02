@@ -1,0 +1,47 @@
+name: HCC Dependency Audit Diagnostic
+
+on:
+  push:
+    branches:
+      - diagnostic/hcc-audit-20260902
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: tools/hermes-commerce-control
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: tools/hermes-commerce-control/package-lock.json
+      - name: Install exact lock tree
+        run: npm ci
+      - name: Full audit JSON
+        shell: bash
+        run: |
+          set +e
+          npm audit --json > "$RUNNER_TEMP/hcc-audit-full.json"
+          status=$?
+          set -e
+          cat "$RUNNER_TEMP/hcc-audit-full.json"
+          echo "FULL_AUDIT_EXIT=$status"
+      - name: Runtime-only audit JSON
+        shell: bash
+        run: |
+          set +e
+          npm audit --omit=dev --json > "$RUNNER_TEMP/hcc-audit-runtime.json"
+          status=$?
+          set -e
+          cat "$RUNNER_TEMP/hcc-audit-runtime.json"
+          echo "RUNTIME_AUDIT_EXIT=$status"
