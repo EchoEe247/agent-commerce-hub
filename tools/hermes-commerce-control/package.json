@@ -7,7 +7,8 @@
     "node": ">=24.15.0 <25"
   },
   "bin": {
-    "commerce": "dist/cli.js"
+    "commerce": "dist/launch/cli.js",
+    "commerce-mcp": "dist/launch/mcp.js"
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
