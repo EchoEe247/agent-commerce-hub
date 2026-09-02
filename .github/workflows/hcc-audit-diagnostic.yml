@@ -129,6 +129,11 @@ jobs:
             'commerce_inspect','commerce_prepare_claim','commerce_prepare_publish',
             'commerce_prepare_purchase','commerce_probe','commerce_quote','commerce_sources','commerce_status'
           ].sort();
+          const forbidden = [
+            'commerce_pay','commerce_purchase','commerce_claim','commerce_submit','commerce_settle',
+            'commerce_transfer','commerce_withdraw','commerce_fund','commerce_publish',
+            'piprail_pay_request','pay','purchase','claim','submit','settle','transfer','withdraw','publish'
+          ];
           const text = fs.readFileSync(process.env.RUNNER_TEMP + '/mcp.out', 'utf8');
           const lines = text.split('\n').filter(x => x.trim());
           const msgs = lines.map(line => JSON.parse(line));
@@ -137,8 +142,8 @@ jobs:
           const listed = msgs.find(m => m.id === 2);
           const names = (listed?.result?.tools ?? []).map(t => t.name).sort();
           if (JSON.stringify(names) !== JSON.stringify(expected)) throw new Error(`tool mismatch: ${names.join(',')}`);
-          const forbidden = /(^|_)(pay|purchase|claim|submit|settle|transfer|withdraw|fund)$/;
-          if (names.some(name => forbidden.test(name))) throw new Error('live-action tool exposed');
+          const exposed = forbidden.filter(name => names.includes(name));
+          if (exposed.length) throw new Error(`live-action tools exposed: ${exposed.join(',')}`);
           console.log(`MCP_TOOL_COUNT=${names.length}`);
           console.log('MCP_HANDSHAKE=PASS');
           NODE
