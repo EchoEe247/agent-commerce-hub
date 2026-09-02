@@ -6,10 +6,11 @@ on:
       - diagnostic/hcc-audit-20260902
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   audit:
+    if: ${{ !contains(github.event.head_commit.message, '[skip ci]') }}
     runs-on: ubuntu-24.04
     defaults:
       run:
@@ -18,30 +19,32 @@ jobs:
       - name: Checkout
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
-          persist-credentials: false
+          persist-credentials: true
       - name: Setup Node.js
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: '24'
           cache: npm
           cache-dependency-path: tools/hermes-commerce-control/package-lock.json
-      - name: Install exact lock tree
+      - name: Install exact current lock tree
         run: npm ci
-      - name: Full audit JSON
+      - name: Refresh only vulnerable transitive locks
+        run: npm update fast-uri@3.1.6 qs@6.16.0 --package-lock-only --ignore-scripts
+      - name: Show generated lockfile scope
+        run: git diff -- package-lock.json
+      - name: Require clean full audit
+        run: npm audit --audit-level=moderate
+      - name: Require clean runtime-only audit
+        run: npm audit --omit=dev --audit-level=moderate
+      - name: Commit generated lockfile on diagnostic branch
         shell: bash
         run: |
-          set +e
-          npm audit --json > "$RUNNER_TEMP/hcc-audit-full.json"
-          status=$?
-          set -e
-          cat "$RUNNER_TEMP/hcc-audit-full.json"
-          echo "FULL_AUDIT_EXIT=$status"
-      - name: Runtime-only audit JSON
-        shell: bash
-        run: |
-          set +e
-          npm audit --omit=dev --json > "$RUNNER_TEMP/hcc-audit-runtime.json"
-          status=$?
-          set -e
-          cat "$RUNNER_TEMP/hcc-audit-runtime.json"
-          echo "RUNTIME_AUDIT_EXIT=$status"
+          if git diff --quiet -- package-lock.json; then
+            echo "No lockfile change generated"
+            exit 0
+          fi
+          git config user.name "EchoEe247"
+          git config user.email "campos1012001@gmail.com"
+          git add package-lock.json
+          git commit -m "fix(deps): refresh HCC vulnerable transitive locks [skip ci]"
+          git push origin HEAD:diagnostic/hcc-audit-20260902
