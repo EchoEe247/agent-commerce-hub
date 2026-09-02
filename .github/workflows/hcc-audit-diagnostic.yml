@@ -6,11 +6,10 @@ on:
       - diagnostic/hcc-audit-20260902
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  audit:
-    if: ${{ !contains(github.event.head_commit.message, '[skip ci]') }}
+  license-inventory:
     runs-on: ubuntu-24.04
     defaults:
       run:
@@ -19,32 +18,87 @@ jobs:
       - name: Checkout
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
-          persist-credentials: true
+          persist-credentials: false
       - name: Setup Node.js
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: '24'
           cache: npm
           cache-dependency-path: tools/hermes-commerce-control/package-lock.json
-      - name: Install exact current lock tree
+      - name: Install exact patched lock tree
         run: npm ci
-      - name: Refresh only vulnerable transitive locks
-        run: npm update fast-uri qs --package-lock-only --ignore-scripts
-      - name: Show generated lockfile scope
-        run: git diff -- package-lock.json
-      - name: Require clean full audit
-        run: npm audit --audit-level=moderate
-      - name: Require clean runtime-only audit
-        run: npm audit --omit=dev --audit-level=moderate
-      - name: Commit generated lockfile on diagnostic branch
-        shell: bash
+      - name: Confirm dependency security clean
         run: |
-          if git diff --quiet -- package-lock.json; then
-            echo "No lockfile change generated"
-            exit 0
-          fi
-          git config user.name "EchoEe247"
-          git config user.email "campos1012001@gmail.com"
-          git add package-lock.json
-          git commit -m "fix(deps): refresh HCC vulnerable transitive locks [skip ci]"
-          git push origin HEAD:diagnostic/hcc-audit-20260902
+          npm audit --audit-level=moderate
+          npm audit --omit=dev --audit-level=moderate
+      - name: Inventory installed package licenses
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const path = require('node:path');
+
+          const root = path.resolve('node_modules');
+          const packages = new Map();
+
+          function recordPackage(pkgDir) {
+            const pkgPath = path.join(pkgDir, 'package.json');
+            if (!fs.existsSync(pkgPath)) return;
+            let pkg;
+            try { pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8')); } catch { return; }
+            if (!pkg.name || !pkg.version) return;
+            const key = `${pkg.name}@${pkg.version}`;
+            if (packages.has(key)) return;
+            const license = typeof pkg.license === 'string'
+              ? pkg.license.trim()
+              : Array.isArray(pkg.licenses)
+                ? pkg.licenses.map(x => typeof x === 'string' ? x : x?.type).filter(Boolean).join(' OR ')
+                : '';
+            const notices = fs.readdirSync(pkgDir)
+              .filter(name => /^(LICENSE|LICENCE|COPYING|NOTICE)(\.|$)/i.test(name))
+              .sort();
+            packages.set(key, { name: pkg.name, version: pkg.version, license: license || 'MISSING', notices });
+          }
+
+          function scanNodeModules(nmDir) {
+            if (!fs.existsSync(nmDir)) return;
+            for (const entry of fs.readdirSync(nmDir, { withFileTypes: true })) {
+              if (!entry.isDirectory() || entry.name.startsWith('.')) continue;
+              const entryPath = path.join(nmDir, entry.name);
+              if (entry.name.startsWith('@')) {
+                for (const scoped of fs.readdirSync(entryPath, { withFileTypes: true })) {
+                  if (!scoped.isDirectory()) continue;
+                  const pkgDir = path.join(entryPath, scoped.name);
+                  recordPackage(pkgDir);
+                  scanNodeModules(path.join(pkgDir, 'node_modules'));
+                }
+              } else {
+                recordPackage(entryPath);
+                scanNodeModules(path.join(entryPath, 'node_modules'));
+              }
+            }
+          }
+
+          scanNodeModules(root);
+          const list = [...packages.values()].sort((a,b) => `${a.name}@${a.version}`.localeCompare(`${b.name}@${b.version}`));
+          const byLicense = new Map();
+          for (const p of list) {
+            if (!byLicense.has(p.license)) byLicense.set(p.license, []);
+            byLicense.get(p.license).push(`${p.name}@${p.version}`);
+          }
+
+          const flagRe = /GPL|AGPL|LGPL|SSPL|EPL|MPL|CDDL|OSL|CPAL|SEE LICENSE|MISSING|UNLICENSED|PROPRIETARY|CUSTOM/i;
+          const flagged = list.filter(p => flagRe.test(p.license));
+          const noticeFiles = list.filter(p => p.notices.some(n => /^NOTICE(\.|$)/i.test(n)));
+
+          console.log(`INSTALLED_UNIQUE_PACKAGES=${list.length}`);
+          console.log(`UNIQUE_LICENSE_EXPRESSIONS=${byLicense.size}`);
+          console.log('LICENSE_SUMMARY_BEGIN');
+          for (const [license, pkgs] of [...byLicense.entries()].sort((a,b) => a[0].localeCompare(b[0]))) {
+            console.log(`${license}\t${pkgs.length}\t${pkgs.join(',')}`);
+          }
+          console.log('LICENSE_SUMMARY_END');
+          console.log(`FLAGGED_LICENSE_PACKAGES=${flagged.length}`);
+          for (const p of flagged) console.log(`FLAGGED\t${p.name}@${p.version}\t${p.license}\t${p.notices.join(',')}`);
+          console.log(`NOTICE_FILE_PACKAGES=${noticeFiles.length}`);
+          for (const p of noticeFiles) console.log(`NOTICE\t${p.name}@${p.version}\t${p.license}\t${p.notices.join(',')}`);
+          NODE
