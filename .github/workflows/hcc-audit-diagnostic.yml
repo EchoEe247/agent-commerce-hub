@@ -29,7 +29,7 @@ jobs:
       - name: Install exact current lock tree
         run: npm ci
       - name: Refresh only vulnerable transitive locks
-        run: npm update fast-uri@3.1.6 qs@6.16.0 --package-lock-only --ignore-scripts
+        run: npm update fast-uri qs --package-lock-only --ignore-scripts
       - name: Show generated lockfile scope
         run: git diff -- package-lock.json
       - name: Require clean full audit
