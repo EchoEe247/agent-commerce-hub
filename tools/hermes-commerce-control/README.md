@@ -2,7 +2,7 @@
 
 Unified agent-commerce command center and Model Context Protocol (MCP) server for local discovery, ranking, evidence capture, and preparation-only machine-commerce workflows.
 
-> **Publication status:** this package is still marked `private` while provenance and licensing are under review. The portable package work described here is an engineering/readiness change, not permission to publish it to npm or apply an OSS license yet.
+> **Publication status:** this package remains `private` while the standalone release boundary and OSS license are finalized. Source provenance has been traced to the project design/implementation history and direct/transitive dependency licensing has been audited; those reviews do **not** by themselves authorize npm publication. No npm package has been published from this branch.
 
 ## Architecture
 
@@ -102,11 +102,14 @@ From this package directory:
 
 ```bash
 npm ci
-npm run build
 npm run typecheck
+npm run build
 npm test
 npm run test:contracts
+npm run test:package
 ```
+
+`test:package` runs `npm pack --dry-run` and fails if development-only paths such as `src/`, `test/`, `tsconfig.json`, or the package-boundary verifier itself enter the release tarball. `package.json` has an explicit `files` allowlist for the compiled runtime and the Hermes installer script.
 
 Run the hardened CLI directly from the build:
 
@@ -122,14 +125,14 @@ Run the hardened stdio MCP entrypoint:
 node dist/launch/mcp.js
 ```
 
-The package metadata also defines these future installable bins:
+The package metadata defines these installable bins:
 
 ```text
 commerce     -> dist/launch/cli.js
 commerce-mcp -> dist/launch/mcp.js
 ```
 
-The package remains `private` until the separate provenance/license gate is cleared.
+The package remains `private` until the standalone release and license decision is complete.
 
 ### Workspace selection
 
@@ -183,7 +186,29 @@ Other supported options:
 
 The installer validates Node `>=24.15.0 <25`, builds the package, proves the direct doctor sees a fake wallet canary while the hardened launcher removes it, proves hostile inherited gate values normalize back to Mode A, runs the doctor through the hardened wrapper, and verifies the exact MCP tool set before registration.
 
-Do not publish the package or remove `private: true` merely because the installer works.
+### Native Termux / Hermes v0.20.0 compatibility
+
+Pixel 6a validation on native Termux showed two host-runtime problems in Hermes v0.20.0 that are outside HCC:
+
+1. the Hermes Python environment can fail loading `cryptography` with `PyLong_Type` on Termux;
+2. the v0.20.0 per-server MCP stdio watchdog can fail to `exec()` a `#!/usr/bin/env bash` wrapper even when that wrapper runs directly in the Termux shell.
+
+HCC itself passed the native runtime gate by registering the **absolute Node executable** as the MCP command and `dist/launch/mcp.js` as its argument. Hermes successfully connected and discovered all 11 tools. This is also the most direct integration shape for environments where wrapper execution is unreliable:
+
+```bash
+NODE_REAL="$(command -v node)"
+MCP_JS="$(pwd)/dist/launch/mcp.js"
+
+hermes mcp add commerce-control \
+  --command "$NODE_REAL" \
+  --args "$MCP_JS"
+```
+
+`--args` must be the final Hermes option. Add `--env COMMERCE_STATE_ROOT=...` and/or `--env COMMERCE_REPO_ROOT=...` before `--args` when explicit state/workspace locations are required.
+
+If the Hermes CLI itself fails before MCP operations with the Termux `cryptography` loader error, repair/update the Hermes runtime first. HCC does not require `LD_PRELOAD` or a Python runtime modification.
+
+Do not publish the package or remove `private: true` merely because the installer/runtime validation works.
 
 ---
 
@@ -226,20 +251,22 @@ No live-action sibling is part of the exposed tool set.
 
 ---
 
-## Validation expectations
+## Validated release-readiness evidence
 
-A portability/security validation should prove all of the following before this branch is merged:
+The current portability branch has passed:
 
-1. `npm ci`, build, typecheck, full tests, and contract tests pass on Node 24.
-2. `package-lock.json` is regenerated so its root `bin` metadata matches `package.json`.
-3. With a canary wallet variable present, `node dist/launch/cli.js doctor --json` reports `walletSecretPresent:false`.
-4. The direct internal CLI path still detects the canary, proving the launcher—not the test—is removing it.
-5. The MCP launcher answers initialize + `tools/list` over stdio and exposes exactly 11 safe tools.
-6. Setting hostile gate values in the parent environment cannot change Mode A through the hardened launcher.
-7. With `COMMERCE_REPO_ROOT` unset, workspace-relative behavior follows the caller's current working directory instead of the package's monorepo location.
-8. `--workspace PATH` pins only an explicitly requested workspace and does not reintroduce an inferred monorepo dependency.
-9. The installer passes with an isolated temporary `HERMES_HOME` and does not touch production Hermes state.
-10. No package is published and no licensing/provenance status is changed by portability validation.
+1. Node 24 clean install, build, typecheck, full test suite, and contract suite;
+2. **562/562** full tests and **68/68** contract tests on the Pixel validation revision;
+3. full and runtime-only npm security audit with zero vulnerabilities after the transitive lock update;
+4. direct and transitive dependency-license inventory with no missing/custom/copyleft license flags in the installed tree;
+5. wallet-canary removal and forced Mode-A gate normalization;
+6. CWD-default and explicit-workspace portability;
+7. packed CLI and MCP bin execution;
+8. isolated installer validation;
+9. native Pixel 6a / Android 17 / Termux execution;
+10. real Hermes MCP connection through the direct Node entrypoint with exactly **11 discovered tools** and no HCC stderr failure.
+
+The remaining release work is package-size/boundary CI confirmation, standalone repository extraction, OSS license selection, contributor/security documentation, and the deliberate removal of `private: true` only when publication is approved.
 
 ---
 
