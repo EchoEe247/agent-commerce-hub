@@ -33,6 +33,12 @@ jobs:
       - name: Typecheck
         working-directory: tools/hermes-commerce-control
         run: npm run typecheck
+      - name: Build
+        working-directory: tools/hermes-commerce-control
+        run: npm run build
       - name: Test
         working-directory: tools/hermes-commerce-control
         run: npm test
+      - name: Verify package boundary
+        working-directory: tools/hermes-commerce-control
+        run: npm run test:package
