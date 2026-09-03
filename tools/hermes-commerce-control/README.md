@@ -1,127 +1,240 @@
 # Hermes Commerce Control Plane
 
-Unified agent-commerce command center and Model Context Protocol (MCP) server for local discovery, ranking, and preparation of machine-to-machine transactions.
+Unified agent-commerce command center and Model Context Protocol (MCP) server for local discovery, ranking, evidence capture, and preparation-only machine-commerce workflows.
 
-## Architecture & Layout
+> **Publication status:** this package remains `private` while the standalone release boundary and OSS license are finalized. Source provenance has been traced to the project design/implementation history and direct/transitive dependency licensing has been audited; those reviews do **not** by themselves authorize npm publication. No npm package has been published from this branch.
 
-The control plane is implemented as a single, self-contained, lightweight Node.js 24 TypeScript application. It provides two user-facing interfaces:
-1. **Command Line Interface (CLI):** A stable wrapper for manual operator commands and scripting.
-2. **Model Context Protocol (MCP) Server:** A standard stdio-based protocol layer for secure integration with LLMs and agents (e.g., Hermes).
+## Architecture
 
-### Directory & State Layout
+The control plane is a Node.js 24 TypeScript package with two supported process entrypoints:
 
-The application isolates its active runtime state from the shared git repository. All state is maintained locally within a dedicated layout:
+1. **CLI launcher:** `dist/launch/cli.js` (`commerce` package bin)
+2. **MCP launcher:** `dist/launch/mcp.js` (`commerce-mcp` package bin)
 
-- **Package Root:** `tools/hermes-commerce-control/` (compiled to `dist/`)
-- **State Directory:** `~/.hermes/commerce-control/state/`
-- **SQLite Database:** `~/.hermes/commerce-control/state/commerce.db` (managed via built-in `node:sqlite`)
-- **Stable MCP Wrapper:** `~/.hermes/commerce-control/commerce-control-mcp.sh`
-- **Stable CLI Wrapper:** `~/.hermes/commerce-control/commerce-control-cli.sh`
-- **Install Logs:** `~/.hermes/commerce-control/install.log`
+Both launchers harden the environment **before dynamically importing application code**. This makes the Mode-A launch boundary part of the Node package itself instead of depending on a generated Bash wrapper.
 
----
+The implementation modules remain reusable libraries:
 
-## The Mode-A Security Boundary
+- `src/cli.ts` — command implementation and `runCli()`
+- `src/mcp/server.ts` — MCP server implementation and `serveStdio()`
+- `src/launch/safe-env.ts` — wallet/signing-secret removal and forced Mode-A gates
 
-This control plane operates strictly under **Mode A** (Read-Only Planning and Discovery). 
+## Runtime and state
 
-### Security Invariants (Always Enforced)
-- **EXTERNAL_WRITES_ENABLED = false:** (Stage B1 not implemented). Any write operations to external services, publishing production services, submitting bounties, or executing state-mutating actions are blocked.
-- **LIVE_VALUE_MOVEMENT_ENABLED = false:** (Stage B2 not implemented). Transferring funds, signing transactions, setting up payment channels, or interacting with live mainnets (such as Base or Solana) is blocked.
-- **No Wallet Secret Presence:** The control plane actively detects and refuses to run if any wallet/signing secret variable is present in its environment. The stable wrappers actively scrub wallet-related environment variable keys (like `*_PRIVATE_KEY*`, `*MNEMONIC*`, `*SEED_PHRASE*`, `*NWC*`, etc.) before booting the process to ensure absolute separation.
+### Portable package defaults
 
----
+When run without installer-specific overrides:
 
-## Platforms & Adapters
+- **State root:** `~/.hermes/commerce-control/`
+- **SQLite database:** `~/.hermes/commerce-control/state.db`
+- **Repository/workspace root:** `process.cwd()`
 
-The control plane coordinates with seven decentralized machine commerce platforms through lightweight adapters:
+`COMMERCE_REPO_ROOT` is optional. When explicitly supplied it selects the local repository/workspace used for product inspection and evidence export. The package does **not** need to live inside `agent-commerce-hub`.
 
-### Primary Adapters
-- **CDP Bazaar (x402):** Discover machine-native HTTP service catalogs registered via Coinbase Developer Platform.
-- **Agent402.Tools:** Discover tool schemas, pricing, and routes.
-- **PipRail:** Discover micro-payment routing and walletless paths.
-- **Agent Bounties:** Discover and index open claimable programmatic task rewards.
+### Hermes installer layout
 
-### Secondary Adapters
-- **BountyBook:** Index open jobs, budgets, and criteria.
-- **the402:** Discover agent-facing capabilities and catalog postings.
-- **Pay.sh / pay-skills:** Extract Solana payment-prose metadata from service files.
+The Hermes integration installer creates:
 
-### Graceful Degradation Behavior
-All platform communication uses the shared safe-network layer. If an upstream platform is rate-limited (429), slow (timeout), down (5xx), returns malformed data, or is unreachable:
-- The error is captured, typed, and recorded as a warning or partial degradation.
-- Aggregate operations (such as multi-source discovery or health probing) **continue** instead of failing.
-- Unreachable or degraded adapters are flagged in the status scorecard rather than crashing the control plane.
+- `~/.hermes/commerce-control/commerce-control-mcp.sh`
+- `~/.hermes/commerce-control/commerce-control-cli.sh`
+- `~/.hermes/commerce-control/state/`
+- `~/.hermes/commerce-control/install.log`
+
+These wrappers are intentionally thin. They set the installer-specific state root and execute the hardened Node launchers; they do not duplicate wallet-secret scrubbing or the Mode-A gate logic.
+
+The installer does **not** derive a workspace from the package's monorepo location. With no workspace option it leaves `COMMERCE_REPO_ROOT` unset. An operator who needs deterministic evidence/product paths for a long-lived Hermes registration can pin an explicit existing workspace with `--workspace PATH`.
 
 ---
 
-## Installation, Uninstallation & Recovery
+## Mode-A security boundary
 
-### Pre-requisites
-- **Node.js:** Version 24 is required (built-in `node:sqlite`/`DatabaseSync` support).
-- **npm:** For installing locked exact package dependencies.
+The control plane operates under **Mode A**: discovery, local persistence, inspection, ranking, evidence export, and preparation-only intents.
 
-### Installation
-To install the package and configure the stable wrappers, execute the native installer from the package root:
+### Enforced launch invariants
+
+The hardened CLI and MCP launchers:
+
+- remove inherited environment variables whose names indicate wallet or financial-signing authority, including private keys, mnemonics, seed phrases, signing keys, keystores, xprv values, and NWC values;
+- force `COMMERCE_MODE=A`;
+- force `EXTERNAL_WRITES_ENABLED=false`;
+- force `LIVE_VALUE_MOVEMENT_ENABLED=false`;
+- preserve ordinary non-wallet configuration such as API credentials and an explicitly configured `COMMERCE_REPO_ROOT`.
+
+The hardening happens before the launcher imports `cli.ts` or `mcp/server.ts`. Wallet values are never copied into diagnostic output; tests deal with variable **names** only.
+
+The doctor command independently reports whether wallet/signing-secret variables are visible to the process. This provides a useful control check when testing direct/internal entrypoints versus the hardened launchers.
+
+### Capability boundary
+
+There is no live pay, purchase, claim, settlement, transfer, withdrawal, funding, or production-publish tool in the exposed MCP surface. Preparation commands produce reviewable intents and policy decisions; they do not execute the external action.
+
+---
+
+## Platforms and adapters
+
+The control plane currently coordinates seven machine-commerce sources through bounded adapters.
+
+### Primary adapters
+
+- **CDP Bazaar / x402** — discover machine-native HTTP service catalogs.
+- **Agent402.Tools** — discover tool schemas, pricing, and routes.
+- **PipRail** — discover service/payment-routing metadata without exposing a signer.
+- **Agent Bounties** — discover open programmatic work/reward inventory.
+
+### Secondary adapters
+
+- **BountyBook**
+- **the402**
+- **Pay.sh / pay-skills**
+
+Network failures degrade individual sources rather than crashing aggregate discovery. Timeouts, rate limits, malformed responses, and upstream outages are recorded as typed degraded/unreachable results.
+
+---
+
+## Build and portable local use
+
+### Requirements
+
+- Node.js `>=24.15.0 <25`
+- npm
+
+From this package directory:
+
 ```bash
-# Run local-only installation (compiles, validates, and sets up wrappers, skips Hermes registration)
-bash scripts/install-hermes-commerce-control.sh --skip-register
+npm ci
+npm run typecheck
+npm run build
+npm test
+npm run test:contracts
+npm run test:package
+```
 
-# To perform full Hermes registration (when running inside a Hermes-enabled environment)
+`test:package` runs `npm pack --dry-run` and fails if development-only paths such as `src/`, `test/`, `tsconfig.json`, or the package-boundary verifier itself enter the release tarball. `package.json` has an explicit `files` allowlist for the compiled runtime and the Hermes installer script.
+
+Run the hardened CLI directly from the build:
+
+```bash
+node dist/launch/cli.js doctor --json
+node dist/launch/cli.js status --json
+node dist/launch/cli.js probe
+```
+
+Run the hardened stdio MCP entrypoint:
+
+```bash
+node dist/launch/mcp.js
+```
+
+The package metadata defines these installable bins:
+
+```text
+commerce     -> dist/launch/cli.js
+commerce-mcp -> dist/launch/mcp.js
+```
+
+The package remains `private` until the standalone release and license decision is complete.
+
+### Workspace selection
+
+By default, repository-facing operations use the caller's current working directory:
+
+```bash
+cd /path/to/a/workspace
+node /path/to/hermes-commerce-control/dist/launch/cli.js export
+```
+
+Or set an explicit local workspace:
+
+```bash
+COMMERCE_REPO_ROOT=/path/to/a/workspace \
+  node dist/launch/cli.js export
+```
+
+No installer should silently replace this portable behavior with the package's own monorepo location.
+
+---
+
+## Hermes integration
+
+Build, validate, and create local wrappers without changing Hermes registration:
+
+```bash
+bash scripts/install-hermes-commerce-control.sh --skip-register
+```
+
+Perform full local Hermes integration using runtime CWD as the default workspace behavior:
+
+```bash
 bash scripts/install-hermes-commerce-control.sh
 ```
 
-### Uninstallation
-To completely remove the control plane from your system, execute the following commands:
+For a persistent Hermes registration that should always inspect/export against one known repository, pin that choice explicitly:
+
 ```bash
-# 1. If registered in Hermes, remove the MCP server
-if command -v hermes >/dev/null 2>&1; then
-  hermes mcp remove commerce-control || true
-fi
-
-# 2. Delete the wrappers and state directory
-rm -rf ~/.hermes/commerce-control/
-
-# 3. Clean local package build outputs
-cd tools/hermes-commerce-control
-rm -rf dist/ node_modules/
+bash scripts/install-hermes-commerce-control.sh \
+  --workspace /absolute/path/to/workspace
 ```
 
-### Self-Diagnostics & Recovery
-The system features a built-in doctor command to audit the local environment:
-```bash
-# Run doctor via wrapper
-~/.hermes/commerce-control/commerce-control-cli.sh doctor
+Other supported options:
 
-# Run doctor with raw JSON output
-~/.hermes/commerce-control/commerce-control-cli.sh doctor --json
+```text
+--skip-deps       reuse the current dependency tree
+--skip-register   validate/install wrappers without modifying Hermes registration
+--force           remove and re-add an existing commerce-control MCP registration
+--workspace PATH  explicitly pin COMMERCE_REPO_ROOT in generated wrappers
 ```
 
-If the doctor reports a **FAIL**:
-1. **Wallet Secret present:** Check if your shell has active `PRIVATE_KEY` or `MNEMONIC` exports. Although the wrapper unsets these, verify no nested launching process is overriding this.
-2. **State Root Unwritable:** Ensure `~/.hermes/commerce-control/` has appropriate read/write permissions for the current Termux user.
-3. **Node/SQLite issue:** Ensure you are running Node 24 and that `node:sqlite` is compiled into the binary.
+The installer validates Node `>=24.15.0 <25`, builds the package, proves the direct doctor sees a fake wallet canary while the hardened launcher removes it, proves hostile inherited gate values normalize back to Mode A, runs the doctor through the hardened wrapper, and verifies the exact MCP tool set before registration.
+
+### Native Termux / Hermes v0.20.0 compatibility
+
+Pixel 6a validation on native Termux showed two host-runtime problems in Hermes v0.20.0 that are outside HCC:
+
+1. the Hermes Python environment can fail loading `cryptography` with `PyLong_Type` on Termux;
+2. the v0.20.0 per-server MCP stdio watchdog can fail to `exec()` a `#!/usr/bin/env bash` wrapper even when that wrapper runs directly in the Termux shell.
+
+HCC itself passed the native runtime gate by registering the **absolute Node executable** as the MCP command and `dist/launch/mcp.js` as its argument. Hermes successfully connected and discovered all 11 tools. This is also the most direct integration shape for environments where wrapper execution is unreliable:
+
+```bash
+NODE_REAL="$(command -v node)"
+MCP_JS="$(pwd)/dist/launch/mcp.js"
+
+hermes mcp add commerce-control \
+  --command "$NODE_REAL" \
+  --args "$MCP_JS"
+```
+
+`--args` must be the final Hermes option. Add `--env COMMERCE_STATE_ROOT=...` and/or `--env COMMERCE_REPO_ROOT=...` before `--args` when explicit state/workspace locations are required.
+
+If the Hermes CLI itself fails before MCP operations with the Termux `cryptography` loader error, repair/update the Hermes runtime first. HCC does not require `LD_PRELOAD` or a Python runtime modification.
+
+Do not publish the package or remove `private: true` merely because the installer/runtime validation works.
 
 ---
 
-## Command Reference
+## Command reference
 
-### CLI Usage
-Run the stable wrapper `~/.hermes/commerce-control/commerce-control-cli.sh` with the following commands:
-- `status`: Show local state counts, configuration, and Mode-A status.
-- `discover services`: Query active service platforms and rank results deterministically.
-- `discover work`: Query active job platforms for open, funded, and earnable tasks.
-- `inspect <target>`: Resolve platform details and capability schema for a specific canonical ID or `platform:externalId`.
-- `quote <target>`: Create a non-executable quote for a canonical service.
-- `prepare purchase <target>`: Formulate a blocked, dry-run intent to buy a service.
-- `prepare claim <target>`: Formulate a blocked, dry-run intent to claim/submit a bounty.
-- `prepare publish <product>`: Assess local product readiness and prepare a blocked publish draft.
-- `probe`: Perform on-demand, non-blocking read-only health checks on all platforms.
-- `export`: Flush sanitized discovery evidence, scorecards, and receipts to the git repository.
-- `doctor`: Verify system prerequisites and Mode-A compliance.
+The CLI supports:
 
-### Standalone MCP Handshake
-The MCP server communicates strictly over stdio and exposes exactly **11 canonical tools**:
+- `sources`
+- `status`
+- `discover services`
+- `discover work`
+- `inspect <target>`
+- `quote <target>`
+- `prepare purchase <target>`
+- `prepare claim <target>`
+- `prepare publish <product>`
+- `probe`
+- `export`
+- `doctor`
+
+`--json` keeps stdout machine-readable; diagnostics go to stderr.
+
+## MCP surface
+
+The stdio server exposes exactly these 11 canonical tools:
+
 1. `commerce_status`
 2. `commerce_sources`
 3. `commerce_discover_services`
@@ -134,54 +247,41 @@ The MCP server communicates strictly over stdio and exposes exactly **11 canonic
 10. `commerce_probe`
 11. `commerce_export_evidence`
 
-No mutating or live execution tools (such as `commerce_pay`, `commerce_purchase`, or `commerce_claim`) exist in this codebase.
+No live-action sibling is part of the exposed tool set.
 
 ---
 
-## Live Read-Only Probes & Sanity Checks
+## Validated release-readiness evidence
 
-To query active decentralized platforms without writing data or making payments, run the probe CLI command or use the standalone probe script:
+The current portability branch has passed:
+
+1. Node 24 clean install, build, typecheck, full test suite, and contract suite;
+2. **562/562** full tests and **68/68** contract tests on the Pixel validation revision;
+3. full and runtime-only npm security audit with zero vulnerabilities after the transitive lock update;
+4. direct and transitive dependency-license inventory with no missing/custom/copyleft license flags in the installed tree;
+5. wallet-canary removal and forced Mode-A gate normalization;
+6. CWD-default and explicit-workspace portability;
+7. packed CLI and MCP bin execution;
+8. isolated installer validation;
+9. native Pixel 6a / Android 17 / Termux execution;
+10. real Hermes MCP connection through the direct Node entrypoint with exactly **11 discovered tools** and no HCC stderr failure.
+
+The remaining release work is package-size/boundary CI confirmation, standalone repository extraction, OSS license selection, contributor/security documentation, and the deliberate removal of `private: true` only when publication is approved.
+
+---
+
+## Uninstallation of the Hermes integration layout
+
 ```bash
-# Execute local non-blocking probes via CLI
-~/.hermes/commerce-control/commerce-control-cli.sh probe
+if command -v hermes >/dev/null 2>&1; then
+  hermes mcp remove commerce-control || true
+fi
 
-# Execute exports of sanitized observations to the repository
-~/.hermes/commerce-control/commerce-control-cli.sh export
+rm -rf ~/.hermes/commerce-control/
 ```
 
----
+Package-local build outputs can be removed independently:
 
-## Deferred Hermes Runtime Instructions
-
-Because actual Hermes environment registration and live runtime operations are intentionally deferred to a later execution phase, the operator or Hermes should run the following commands sequentially to activate and verify the installation:
-
-1. **Clean workspace & verify SHA:**
-   Verify that the workspace matches the pushed, validated Git state.
-2. **Run the Native Installer:**
-   ```bash
-   cd tools/hermes-commerce-control
-   bash scripts/install-hermes-commerce-control.sh --force
-   ```
-   This compiles, writes stable wrappers, and registers the unified `commerce-control` stdio MCP server inside Hermes.
-3. **Verify the MCP Server Registration:**
-   ```bash
-   hermes mcp list
-   ```
-   Assert that `commerce-control` is listed with the command set to `~/.hermes/commerce-control/commerce-control-mcp.sh`.
-4. **Inspect Registered Tooling:**
-   ```bash
-   hermes mcp list-tools commerce-control
-   ```
-   Verify that exactly the 11 canonical tools are exposed, and no live-action or payment-related tools are present.
-5. **Execute Read-Only Live Probes:**
-   Trigger the live probe through Hermes:
-   ```bash
-   hermes mcp call commerce-control commerce_probe '{}'
-   ```
-6. **Export Sanities to Git:**
-   Command Hermes to export the verified live platform findings to the shared repository:
-   ```bash
-   hermes mcp call commerce-control commerce_export_evidence '{}'
-   ```
-7. **Finalize the Receipts & Handoffs:**
-   Verify that the exported files under `research/normalized/` and `receipts/` have been generated with accurate platform statistics and a clean Mode-A assertion.
+```bash
+rm -rf dist/ node_modules/
+```
