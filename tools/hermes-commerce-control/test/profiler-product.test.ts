@@ -1,8 +1,8 @@
-import test from "node:test";
+import test, { after } from "node:test";
 import assert from "node:assert/strict";
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
+import { join } from "node:path";
 import {
   buildProfilerManifest,
   inspectProfiler,
@@ -10,16 +10,18 @@ import {
 } from "../src/products/data-quality-profiler.js";
 import { loadConfig } from "../src/config.js";
 import { preparePublish } from "../src/actions/publish.js";
+import { createProfilerRepositoryFixture } from "./fixtures/profiler-repo.js";
 
-/** The real repository root, four levels up from this test file. */
-const REPO_ROOT = resolve(new URL("../../..", import.meta.url).pathname);
+/** Self-contained repository-shaped fixture; never depend on a parent monorepo. */
+const REPO_ROOT = mkdtempSync(join(tmpdir(), "hcc-profiler-repo-"));
+createProfilerRepositoryFixture(REPO_ROOT);
+after(() => rmSync(REPO_ROOT, { recursive: true, force: true }));
 
-test("profiler: derives version, routes, price and network from the real product", () => {
+test("profiler: derives version, routes, price and network from the product tree", () => {
   const readiness = inspectProfiler({ repoRoot: REPO_ROOT });
   assert.equal(readiness.present, true, `product not found under ${REPO_ROOT}`);
   assert.equal(readiness.product, "data-quality-profiler");
   assert.equal(readiness.path, PRODUCT_RELATIVE_PATH);
-  // Derived, not hardcoded by the plan.
   assert.equal(readiness.version, "0.1.0");
   assert.equal(readiness.routes.health, true);
   assert.equal(readiness.routes.profile, true);
@@ -31,15 +33,8 @@ test("profiler: derives version, routes, price and network from the real product
 
 test("profiler: confirms mainnet is NOT permitted by the product config", () => {
   const readiness = inspectProfiler({ repoRoot: REPO_ROOT });
-  assert.equal(
-    readiness.x402.mainnetPermitted,
-    false,
-    "the product must allowlist Base Sepolia only",
-  );
-  assert.equal(
-    readiness.limitations.some((l) => l.includes("mainnet")),
-    false,
-  );
+  assert.equal(readiness.x402.mainnetPermitted, false, "the product must allowlist Base Sepolia only");
+  assert.equal(readiness.limitations.some((l) => l.includes("mainnet")), false);
 });
 
 test("profiler: derives Bazaar metadata status including official validation", () => {
@@ -57,6 +52,7 @@ test("profiler: derives the test inventory and newest verification receipt", () 
   assert.equal(readiness.tests.declared, true);
   assert.ok(readiness.tests.fileCount >= 10, `expected several test files, got ${String(readiness.tests.fileCount)}`);
   assert.ok(readiness.tests.lastVerification !== null, "a verification receipt should exist");
+  assert.equal(readiness.tests.lastVerificationPassed, true);
   assert.equal(readiness.readme, true);
 });
 
@@ -64,7 +60,6 @@ test("profiler: publication is never allowed or executed regardless of readiness
   const readiness = inspectProfiler({ repoRoot: REPO_ROOT });
   assert.equal(readiness.publicationAllowed, false);
   assert.equal(readiness.publicationExecuted, false);
-  // Even though it is otherwise ready.
   assert.equal(readiness.publishIntentReady, true);
 });
 
@@ -173,11 +168,9 @@ test("profiler: a product permitting mainnet is flagged as a limitation", () => 
       readiness.limitations.some((l) => l.includes("mainnet")),
       "permitting mainnet must be recorded as a limitation",
     );
-    // Missing Bazaar metadata blocks the CDP target and the publish intent.
     assert.equal(readiness.bazaar.metadataDeclared, false);
     assert.equal(readiness.targets.cdp_bazaar?.prepared, false);
     assert.equal(readiness.publishIntentReady, false);
-    // Still never publishable.
     assert.equal(readiness.publicationAllowed, false);
   } finally {
     rmSync(dir, { recursive: true, force: true });
@@ -186,10 +179,7 @@ test("profiler: a product permitting mainnet is flagged as a limitation", () => 
 
 test("profiler: inspection performs no network or process activity", async () => {
   const { readFileSync } = await import("node:fs");
-  const source = readFileSync(
-    new URL("../src/products/data-quality-profiler.ts", import.meta.url),
-    "utf8",
-  );
+  const source = readFileSync(new URL("../src/products/data-quality-profiler.ts", import.meta.url), "utf8");
   for (const forbidden of ["fetch(", "child_process", "execSync", "spawn", "listen("]) {
     assert.equal(source.includes(forbidden), false, `readiness inspection must not use ${forbidden}`);
   }
