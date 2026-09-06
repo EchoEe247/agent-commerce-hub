@@ -1,90 +1,108 @@
 #!/usr/bin/env bash
 #
-# Native Termux installer for the Hermes commerce control plane.
+# Hermes integration installer for the Commerce Control Plane.
 #
-# What it does, in order:
+# The Node package owns the Mode-A security boundary. This script is deliberately
+# thin integration glue: install locked dependencies, build, create stable local
+# entrypoint wrappers, validate the package, and optionally register the MCP
+# launcher with Hermes.
 #
-#   1. resolves absolute package and repository paths from its own location, so
-#      it works from any working directory;
-#   2. installs exact locked dependencies and compiles;
-#   3. creates ~/.hermes/commerce-control/ with a stable MCP wrapper;
-#   4. runs the doctor and refuses to register an unhealthy install;
-#   5. inspects the local `hermes mcp` surface and registers ONLY the unified
-#      commerce-control MCP using the supported native syntax;
-#   6. verifies the registration and asserts that no live-action tool exists.
+# It does NOT duplicate wallet-secret scrubbing. Both generated wrappers execute
+# the hardened Node launchers under dist/launch/, which scrub wallet/signing
+# authority and force the Mode-A gates before importing application code.
 #
-# What it deliberately does NOT do:
-#
-#   - it never writes a wallet, private key, mnemonic, seed phrase, NWC URI or
-#     any other financial signing value into the Hermes configuration;
-#   - it never enables EXTERNAL_WRITES_ENABLED or LIVE_VALUE_MOVEMENT_ENABLED;
-#   - it registers exactly one MCP server, not a family of them;
-#   - it edits the Hermes configuration file directly only if the supported CLI
-#     path is unavailable, and takes a timestamped backup first.
-#
-# The generated wrapper actively scrubs wallet-secret-shaped variables from the
-# environment it hands to the server. That matters because Hermes launches the
-# process: without the scrub, a key sitting in the operator's shell would be
-# visible to the control plane, and the Mode-A claim "no signer is reachable"
-# would depend on the operator's shell hygiene rather than on this code.
+# It also does NOT infer a repository/workspace from this package's monorepo
+# location. By default COMMERCE_REPO_ROOT remains unset, so the package uses the
+# process working directory. Use --workspace PATH only when a stable explicit
+# workspace is desired for product inspection/evidence export.
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PACKAGE_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
-REPO_ROOT="$(cd "${PACKAGE_ROOT}/../.." && pwd)"
 
 HERMES_HOME="${HERMES_HOME:-${HOME}/.hermes}"
 INSTALL_DIR="${HERMES_HOME}/commerce-control"
-WRAPPER="${INSTALL_DIR}/commerce-control-mcp.sh"
 STATE_ROOT="${INSTALL_DIR}/state"
 LOG_FILE="${INSTALL_DIR}/install.log"
 MCP_NAME="commerce-control"
+MCP_WRAPPER="${INSTALL_DIR}/commerce-control-mcp.sh"
+CLI_WRAPPER="${INSTALL_DIR}/commerce-control-cli.sh"
 
 SKIP_DEPS=0
 SKIP_REGISTER=0
 FORCE_REREGISTER=0
+WORKSPACE_ROOT=""
+
+log() { printf '[install] %s\n' "$*"; }
+fail() { printf '[install] ERROR: %s\n' "$*" >&2; exit 1; }
 
 usage() {
   cat <<'USAGE'
 Usage: install-hermes-commerce-control.sh [options]
 
-  --skip-deps        do not run "npm ci" (use the tree already installed)
-  --skip-register    install and verify locally, but do not touch Hermes
-  --force            remove and re-add an existing commerce-control MCP entry
-  -h, --help         show this help
+  --skip-deps          do not run "npm ci" (use the tree already installed)
+  --skip-register      install and verify locally, but do not touch Hermes
+  --force              remove and re-add an existing commerce-control MCP entry
+  --workspace PATH     pin COMMERCE_REPO_ROOT to an explicit existing workspace
+                       in the generated wrappers; default is no override
+  -h, --help           show this help
 USAGE
 }
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --skip-deps) SKIP_DEPS=1 ;;
-    --skip-register) SKIP_REGISTER=1 ;;
-    --force) FORCE_REREGISTER=1 ;;
-    -h|--help) usage; exit 0 ;;
-    *) printf 'unknown option: %s\n' "$1" >&2; usage >&2; exit 2 ;;
+    --skip-deps)
+      SKIP_DEPS=1
+      shift
+      ;;
+    --skip-register)
+      SKIP_REGISTER=1
+      shift
+      ;;
+    --force)
+      FORCE_REREGISTER=1
+      shift
+      ;;
+    --workspace)
+      [[ $# -ge 2 ]] || fail "--workspace requires a path"
+      [[ -d "$2" ]] || fail "workspace does not exist or is not a directory: $2"
+      WORKSPACE_ROOT="$(cd "$2" && pwd)"
+      shift 2
+      ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    *)
+      printf 'unknown option: %s\n' "$1" >&2
+      usage >&2
+      exit 2
+      ;;
   esac
-  shift
 done
-
-log() { printf '[install] %s\n' "$*"; }
-fail() { printf '[install] ERROR: %s\n' "$*" >&2; exit 1; }
 
 # ---------------------------------------------------------------- preflight
 
 log "package root: ${PACKAGE_ROOT}"
-log "repository root: ${REPO_ROOT}"
+if [[ -n "${WORKSPACE_ROOT}" ]]; then
+  log "explicit workspace root: ${WORKSPACE_ROOT}"
+else
+  log "workspace root: not pinned (runtime current working directory)"
+fi
 
 command -v node >/dev/null 2>&1 || fail "node is not on PATH"
 command -v npm >/dev/null 2>&1 || fail "npm is not on PATH"
 
 NODE_VERSION="$(node -p 'process.versions.node')"
-NODE_MAJOR="${NODE_VERSION%%.*}"
-[[ "${NODE_MAJOR}" == "24" ]] || fail "Node 24 is required for built-in node:sqlite; found ${NODE_VERSION}"
+node -e '
+  const [major, minor] = process.versions.node.split(".").map(Number);
+  if (major !== 24 || minor < 15) process.exit(1);
+' || fail "Node >=24.15.0 <25 is required for this package; found ${NODE_VERSION}"
 log "node ${NODE_VERSION}"
 
 node -e 'import("node:sqlite").then(m=>{if(typeof m.DatabaseSync!=="function")process.exit(1)}).catch(()=>process.exit(1))' \
-  || fail "built-in node:sqlite is unavailable on this runtime"
+  || fail "built-in node:sqlite DatabaseSync is unavailable on this runtime"
 log "built-in node:sqlite available"
 
 # ------------------------------------------------------- dependencies + build
@@ -102,71 +120,46 @@ fi
 log "compiling TypeScript"
 npm run build
 
-CLI_ENTRY="${PACKAGE_ROOT}/dist/cli.js"
-MCP_ENTRY="${PACKAGE_ROOT}/dist/mcp/server.js"
+DIRECT_CLI_ENTRY="${PACKAGE_ROOT}/dist/cli.js"
+CLI_ENTRY="${PACKAGE_ROOT}/dist/launch/cli.js"
+MCP_ENTRY="${PACKAGE_ROOT}/dist/launch/mcp.js"
+[[ -f "${DIRECT_CLI_ENTRY}" ]] || fail "build did not produce ${DIRECT_CLI_ENTRY}"
 [[ -f "${CLI_ENTRY}" ]] || fail "build did not produce ${CLI_ENTRY}"
 [[ -f "${MCP_ENTRY}" ]] || fail "build did not produce ${MCP_ENTRY}"
-log "compiled entrypoints present"
+log "compiled direct + hardened entrypoints present"
 
 # ------------------------------------------------------------- install layout
 
 mkdir -p "${INSTALL_DIR}" "${STATE_ROOT}"
 log "install directory: ${INSTALL_DIR}"
 
-CLI_WRAPPER="${INSTALL_DIR}/commerce-control-cli.sh"
-
-# Both wrappers share one prologue so the CLI the operator runs and the server
-# Hermes launches see byte-for-byte the same environment.
 write_wrapper() {
   local target_path="$1" entry="$2" title="$3"
-  cat > "${target_path}" <<WRAPPER_EOF
-#!/usr/bin/env bash
-#
-# ${title}
-# Generated by install-hermes-commerce-control.sh — regenerate rather than edit.
-#
-# Mode A is asserted here as well as in the compiled configuration loader, so a
-# stray environment variable cannot flip an activation gate.
-
-set -euo pipefail
-
-# Remove any wallet or financial-signing secret inherited from the launching
-# environment. The control plane must not be able to see spending authority even
-# if the operator's shell exports it, so the Mode-A claim does not depend on
-# shell hygiene.
-for _name in \$(compgen -e); do
-  case "\${_name^^}" in
-    *PRIVATE_KEY*|*PRIVATEKEY*|*MNEMONIC*|*SEED_PHRASE*|*SEEDPHRASE*|*WALLET_SECRET*|*SIGNING_KEY*|*KEYSTORE*|*XPRV*|*NWC*)
-      unset "\${_name}"
-      ;;
-  esac
-done
-unset _name
-
-export COMMERCE_MODE=A
-export EXTERNAL_WRITES_ENABLED=false
-export LIVE_VALUE_MOVEMENT_ENABLED=false
-export COMMERCE_STATE_ROOT="${STATE_ROOT}"
-export COMMERCE_REPO_ROOT="${REPO_ROOT}"
-
-exec node "${entry}" "\$@"
-WRAPPER_EOF
+  {
+    printf '#!/usr/bin/env bash\n'
+    printf '# %s\n' "${title}"
+    printf '# Generated by install-hermes-commerce-control.sh — regenerate rather than edit.\n'
+    printf 'set -euo pipefail\n'
+    printf 'export COMMERCE_STATE_ROOT=%q\n' "${STATE_ROOT}"
+    if [[ -n "${WORKSPACE_ROOT}" ]]; then
+      printf 'export COMMERCE_REPO_ROOT=%q\n' "${WORKSPACE_ROOT}"
+    fi
+    printf 'exec node %q "$@"\n' "${entry}"
+  } > "${target_path}"
   chmod 0755 "${target_path}"
 }
 
-write_wrapper "${WRAPPER}" "${MCP_ENTRY}" "Stable Hermes MCP entrypoint for the commerce control plane."
-write_wrapper "${CLI_WRAPPER}" "${CLI_ENTRY}" "Stable CLI entrypoint for the commerce control plane."
-log "wrote MCP wrapper: ${WRAPPER}"
+write_wrapper "${MCP_WRAPPER}" "${MCP_ENTRY}" "Stable Hermes MCP entrypoint for the Commerce Control Plane."
+write_wrapper "${CLI_WRAPPER}" "${CLI_ENTRY}" "Stable CLI entrypoint for the Commerce Control Plane."
+log "wrote MCP wrapper: ${MCP_WRAPPER}"
 log "wrote CLI wrapper: ${CLI_WRAPPER}"
 
 # ------------------------------------------------- wallet-secret scrub proof
 
-# The doctor exits non-zero when it is unhealthy, which is the correct
-# behaviour, so these checks capture output first rather than piping under
-# `set -o pipefail`.
-
+# The direct implementation is the control: it should see the fake canary and
+# report an unhealthy doctor. The hardened launcher should remove it before the
+# application is imported. Never print the canary value.
 read_wallet_flag() {
-  # Prints "true"/"false"/"error" for the doctor's walletSecretPresent field.
   printf '%s' "$1" | node -e '
     let s = "";
     process.stdin.on("data", (d) => { s += d; }).on("end", () => {
@@ -182,25 +175,47 @@ read_wallet_flag() {
 
 UNSCRUBBED_JSON="$(
   PIPRAIL_PRIVATE_KEY=canary-not-a-real-key \
-  COMMERCE_STATE_ROOT="${STATE_ROOT}" COMMERCE_REPO_ROOT="${REPO_ROOT}" \
-  node "${CLI_ENTRY}" doctor --json 2>/dev/null || true
+  COMMERCE_STATE_ROOT="${STATE_ROOT}" \
+  node "${DIRECT_CLI_ENTRY}" doctor --json 2>/dev/null || true
 )"
 if [[ "$(read_wallet_flag "${UNSCRUBBED_JSON}")" != "true" ]]; then
-  fail "the doctor did not detect a wallet variable; the secret check is not working"
+  fail "direct doctor did not detect the wallet canary; the control check is invalid"
 fi
-log "confirmed: an unscrubbed wallet variable IS detected"
+log "confirmed: direct implementation detects a wallet-secret-shaped variable"
 
 SCRUBBED_JSON="$(
-  PIPRAIL_PRIVATE_KEY=canary-not-a-real-key "${CLI_WRAPPER}" doctor --json 2>/dev/null || true
+  PIPRAIL_PRIVATE_KEY=canary-not-a-real-key \
+  "${CLI_WRAPPER}" doctor --json 2>/dev/null || true
 )"
 if [[ "$(read_wallet_flag "${SCRUBBED_JSON}")" != "false" ]]; then
-  fail "the wrapper did not scrub a wallet variable out of the launch environment"
+  fail "hardened CLI launcher did not remove the wallet canary"
 fi
-log "confirmed: the wrapper scrubs a wallet variable before starting the process"
+log "confirmed: hardened Node launcher removes wallet authority before application import"
+
+# -------------------------------------------------------- hostile gate proof
+
+MODE_A_JSON="$(
+  COMMERCE_MODE=B \
+  EXTERNAL_WRITES_ENABLED=true \
+  LIVE_VALUE_MOVEMENT_ENABLED=true \
+  "${CLI_WRAPPER}" doctor --json 2>/dev/null || true
+)"
+
+printf '%s' "${MODE_A_JSON}" | node -e '
+let s = "";
+process.stdin.on("data", (d) => { s += d; }).on("end", () => {
+  const doc = JSON.parse(s);
+  const data = doc.data ?? {};
+  if (data.mode !== "A") process.exit(1);
+  if (data.externalWritesEnabled !== false) process.exit(1);
+  if (data.liveValueMovementEnabled !== false) process.exit(1);
+});
+' || fail "hardened launcher did not force the Mode-A gates"
+log "confirmed: hostile inherited gate values normalize to Mode A"
 
 # ------------------------------------------------------------------- doctor
 
-log "running doctor through the installed wrapper"
+log "running doctor through the hardened installed wrapper"
 DOCTOR_JSON="$("${CLI_WRAPPER}" doctor --json 2>/dev/null || true)"
 
 printf '%s' "${DOCTOR_JSON}" | node -e '
@@ -226,13 +241,13 @@ log "doctor healthy: mode A, both gates false, no wallet secret"
 
 # --------------------------------------------------------- local MCP handshake
 
-log "verifying the MCP entrypoint answers a stdio handshake"
+log "verifying the hardened MCP entrypoint answers a stdio handshake"
 HANDSHAKE_OUT="$(
   printf '%s\n%s\n%s\n' \
     '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"installer","version":"1.0.0"}}}' \
     '{"jsonrpc":"2.0","method":"notifications/initialized"}' \
     '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}' \
-    | "${WRAPPER}" 2>/dev/null
+    | PIPRAIL_PRIVATE_KEY=canary-not-a-real-key "${MCP_WRAPPER}" 2>/dev/null
 )"
 
 printf '%s' "${HANDSHAKE_OUT}" | node -e '
@@ -251,7 +266,6 @@ let s = "";
 process.stdin.on("data", (d) => { s += d; }).on("end", () => {
   const lines = s.split("\n").filter((l) => l.trim() !== "");
   for (const line of lines) {
-    // stdout must be MCP protocol only.
     const msg = JSON.parse(line);
     if (msg.jsonrpc !== "2.0") { process.stderr.write("[install] ERROR: non-protocol stdout\n"); process.exit(1); }
   }
@@ -281,12 +295,11 @@ else
     HERMES_VERSION="$(hermes --version 2>&1 | head -1 || true)"
     log "hermes: ${HERMES_VERSION}"
 
-    # Inspect the supported surface before using it, rather than assuming.
     MCP_HELP="$(hermes mcp --help 2>&1 || true)"
     printf '%s' "${MCP_HELP}" | grep -q ' add ' \
       || fail "this Hermes build does not support 'hermes mcp add'"
     if printf '%s' "${MCP_HELP}" | grep -q -- '--command'; then
-      : # stdio registration supported
+      :
     elif hermes mcp add --help 2>&1 | grep -q -- '--command'; then
       :
     else
@@ -306,9 +319,7 @@ else
 
     if ! hermes mcp list 2>&1 | grep -q "${MCP_NAME}"; then
       log "registering ${MCP_NAME} (stdio, no credentials)"
-      # Only the wrapper path is passed. No --env is used, so no value of any
-      # kind is written into the Hermes configuration.
-      if hermes mcp add "${MCP_NAME}" --command "${WRAPPER}" --connect-timeout 90; then
+      if hermes mcp add "${MCP_NAME}" --command "${MCP_WRAPPER}" --connect-timeout 90; then
         log "registered ${MCP_NAME}"
       else
         log "WARNING: 'hermes mcp add' failed; the local install is still valid (degraded)"
@@ -330,8 +341,8 @@ fi
 {
   printf 'installed_at=%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
   printf 'package_root=%s\n' "${PACKAGE_ROOT}"
-  printf 'repo_root=%s\n' "${REPO_ROOT}"
-  printf 'wrapper=%s\n' "${WRAPPER}"
+  printf 'workspace_root=%s\n' "${WORKSPACE_ROOT:-<runtime-cwd>}"
+  printf 'mcp_wrapper=%s\n' "${MCP_WRAPPER}"
   printf 'cli_wrapper=%s\n' "${CLI_WRAPPER}"
   printf 'state_root=%s\n' "${STATE_ROOT}"
   printf 'node=%s\n' "${NODE_VERSION}"
@@ -340,5 +351,5 @@ fi
 } >> "${LOG_FILE}"
 
 log "done. Log: ${LOG_FILE}"
-log "CLI:  node ${CLI_ENTRY} status --json"
-log "MCP:  ${WRAPPER}"
+log "CLI:  ${CLI_WRAPPER} status --json"
+log "MCP:  ${MCP_WRAPPER}"

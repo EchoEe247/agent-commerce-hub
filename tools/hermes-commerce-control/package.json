@@ -2,19 +2,40 @@
   "name": "hermes-commerce-control",
   "version": "0.1.0",
   "private": true,
+  "description": "Local-first CLI and MCP control plane for discovery, ranking, evidence capture, and preparation-only agent-commerce workflows.",
+  "keywords": [
+    "mcp",
+    "agent-commerce",
+    "hermes",
+    "x402",
+    "commerce",
+    "typescript"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/EchoEe247/agent-commerce-hub.git",
+    "directory": "tools/hermes-commerce-control"
+  },
   "type": "module",
   "engines": {
     "node": ">=24.15.0 <25"
   },
+  "files": [
+    "dist",
+    "scripts/install-hermes-commerce-control.sh"
+  ],
   "bin": {
-    "commerce": "dist/cli.js"
+    "commerce": "dist/launch/cli.js",
+    "commerce-mcp": "dist/launch/mcp.js"
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
+    "prepack": "npm run build",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "node --import tsx --test test/**/*.test.ts",
     "test:serial": "node --import tsx --test --test-concurrency=1 test/**/*.test.ts",
     "test:contracts": "node --import tsx --test test/config.test.ts test/policy.test.ts test/mcp.test.ts test/security-adversarial.test.ts",
+    "test:package": "node scripts/verify-package.mjs",
     "opportunities:watch": "node --import tsx src/opportunities/cli.ts",
     "opportunities:watch:built": "node dist/opportunities/cli.js",
     "opportunities:review": "node --import tsx src/opportunities/review-cli.ts",
